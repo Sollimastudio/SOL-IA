@@ -87,7 +87,7 @@ export function App() {
   return (
     <main style={{ minHeight: '100vh', background: '#050406', color: '#f6ead7', padding: 24, fontFamily: 'Georgia, serif' }}>
       <section style={{ maxWidth: 1180, margin: '0 auto' }}>
-        <p style={{ color: '#b781ff', letterSpacing: 4, fontSize: 12 }}>SOL.IA v0.4 — SUPABASE DIAGNOSTICS</p>
+        <p style={{ color: '#b781ff', letterSpacing: 4, fontSize: 12 }}>SOL.IA v0.5 — MEMORY SAVE DEBUG</p>
         <h1 style={{ margin: 0, fontSize: 40 }}>Sol.IA — Eu Nao Desapareco</h1>
         <p>Neural Console em evolucao: skills oficiais, guardiao juridico, vida diaria, voz e cofre.</p>
 

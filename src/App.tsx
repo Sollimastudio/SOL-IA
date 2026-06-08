@@ -2,19 +2,16 @@ import React, { useState } from 'react';
 import { classifyInput, buildInternalPrompt } from './core/router';
 import { DIRECTIVE } from './core/directive';
 import { startVoiceCapture, isVoiceCaptureSupported } from './core/voiceCapture';
-import { evaluateVisionaryPotential } from './core/visionarySkill';
 import { saveIdeaCapture } from './services/memoryRepository';
-import { analyzeLegalRisk } from './skills/lexVanguard';
+import { skillRegistry, runSkillSnapshot, SkillId } from './skills/skillRegistry';
 
-type SkillKey = 'Imperatriz' | 'Vault' | 'Visionaria' | 'Lex Vanguard' | 'Publisher' | 'Vida Diaria';
-
-const skills: SkillKey[] = ['Imperatriz', 'Vault', 'Visionaria', 'Lex Vanguard', 'Publisher', 'Vida Diaria'];
-
-function buildResult(rawText: string, activeSkill: SkillKey): string {
+function buildResult(rawText: string, activeSkill: SkillId): string {
   const box = classifyInput(rawText);
   const prompt = buildInternalPrompt(rawText);
-  const vision = evaluateVisionaryPotential(rawText);
-  const lex = analyzeLegalRisk(rawText);
+  const snapshot = runSkillSnapshot(rawText);
+  const vision = snapshot.visionaria;
+  const lex = snapshot.lexVanguard;
+  const daily = snapshot.vidaDiaria;
 
   return [
     'Skill ativa: ' + activeSkill,
@@ -37,6 +34,12 @@ function buildResult(rawText: string, activeSkill: SkillKey): string {
     '- Recomendacao: ' + lex.recommendation,
     '- Pausa obrigatoria: ' + (lex.pauseRequired ? 'SIM' : 'NAO'),
     '',
+    'Vida Diaria:',
+    '- Modo: ' + daily.mode,
+    '- Alerta: ' + daily.alert,
+    '- Acao sugerida: ' + daily.suggestedAction,
+    '- Adiar decisao: ' + (daily.shouldDelayDecision ? 'SIM' : 'NAO'),
+    '',
     'Prompt interno:',
     prompt
   ].join('\n');
@@ -44,7 +47,7 @@ function buildResult(rawText: string, activeSkill: SkillKey): string {
 
 export function App() {
   const [text, setText] = useState('');
-  const [activeSkill, setActiveSkill] = useState<SkillKey>('Imperatriz');
+  const [activeSkill, setActiveSkill] = useState<SkillId>('imperatriz');
   const [result, setResult] = useState('Sol.IA ativa. Eu Nao Desapareco. Escolha uma skill ou despeje uma ideia bruta.');
   const [voiceStatus, setVoiceStatus] = useState('Voz ainda nao iniciada.');
   const [memoryStatus, setMemoryStatus] = useState('Cofre ainda nao acionado.');
@@ -78,33 +81,38 @@ export function App() {
     );
   }
 
+  const activeSkillDefinition = skillRegistry.find((skill) => skill.id === activeSkill);
+
   return (
     <main style={{ minHeight: '100vh', background: '#050406', color: '#f6ead7', padding: 24, fontFamily: 'Georgia, serif' }}>
       <section style={{ maxWidth: 1180, margin: '0 auto' }}>
-        <p style={{ color: '#b781ff', letterSpacing: 4, fontSize: 12 }}>SOL.IA v0.2 — NEXUS FUSION</p>
+        <p style={{ color: '#b781ff', letterSpacing: 4, fontSize: 12 }}>SOL.IA v0.3 — SKILL REGISTRY</p>
         <h1 style={{ margin: 0, fontSize: 40 }}>Sol.IA — Eu Nao Desapareco</h1>
-        <p>Interface oficial em evolucao: a tela simples e o modo teste; a meta visual e o Neural Console com skills.</p>
+        <p>Neural Console em evolucao: skills oficiais, guardiao juridico, vida diaria, voz e cofre.</p>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '18px 0' }}>
-          {skills.map((skill) => (
+          {skillRegistry.map((skill) => (
             <button
-              key={skill}
-              onClick={() => setActiveSkill(skill)}
+              key={skill.id}
+              onClick={() => setActiveSkill(skill.id)}
+              title={skill.description}
               style={{
                 padding: '10px 14px',
                 borderRadius: 999,
-                border: activeSkill === skill ? '1px solid #b781ff' : '1px solid #392449',
-                background: activeSkill === skill ? '#4b167b' : '#120b17',
+                border: activeSkill === skill.id ? '1px solid #b781ff' : '1px solid #392449',
+                background: activeSkill === skill.id ? '#4b167b' : '#120b17',
                 color: '#f6ead7',
                 fontWeight: 700
               }}
             >
-              {skill}
+              {skill.label}
             </button>
           ))}
         </div>
 
-        <p>Skill ativa: <strong>{activeSkill}</strong></p>
+        <p>Skill ativa: <strong>{activeSkillDefinition?.label}</strong></p>
+        <p>{activeSkillDefinition?.description}</p>
+        <p>Modo publico seguro: <strong>{activeSkillDefinition?.publicSafe ? 'SIM' : 'NAO'}</strong></p>
         <p>Caixas: OBRA | METODO | OFERTA | MAQUINA | ESTACIONAMENTO</p>
 
         <textarea

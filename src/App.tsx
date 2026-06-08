@@ -3,6 +3,7 @@ import { classifyInput, buildInternalPrompt } from './core/router';
 import { DIRECTIVE } from './core/directive';
 import { startVoiceCapture, isVoiceCaptureSupported } from './core/voiceCapture';
 import { evaluateVisionaryPotential } from './core/visionarySkill';
+import { saveIdeaCapture } from './services/memoryRepository';
 
 function buildResult(rawText: string): string {
   const box = classifyInput(rawText);
@@ -32,14 +33,18 @@ export function App() {
   const [text, setText] = useState('');
   const [result, setResult] = useState('Sol.IA ativa. Eu Nao Desapareco. Escreva ou fale uma ideia bruta para classificar.');
   const [voiceStatus, setVoiceStatus] = useState('Voz ainda nao iniciada.');
+  const [memoryStatus, setMemoryStatus] = useState('Cofre ainda nao acionado.');
 
-  function run(input = text) {
+  async function run(input = text) {
     const clean = input.trim();
     if (!clean) {
       setResult('Despeje uma ideia primeiro. Pode ser baguncada mesmo.');
       return;
     }
+
     setResult(buildResult(clean));
+    const saveResult = await saveIdeaCapture(clean);
+    setMemoryStatus(saveResult.message);
   }
 
   function captureVoice() {
@@ -72,9 +77,10 @@ export function App() {
         placeholder="Despeje aqui seu pensamento bruto"
       />
       <br />
-      <button onClick={() => run()} style={{ marginTop: 12, padding: 12, borderRadius: 12 }}>Traduzir e executar</button>
+      <button onClick={() => run()} style={{ marginTop: 12, padding: 12, borderRadius: 12 }}>Traduzir, avaliar e salvar</button>
       <button onClick={captureVoice} style={{ marginTop: 12, marginLeft: 8, padding: 12, borderRadius: 12 }}>Capturar por voz</button>
       <p>{voiceStatus}</p>
+      <p>{memoryStatus}</p>
       <pre style={{ whiteSpace: 'pre-wrap', marginTop: 24, background: '#211719', padding: 16, borderRadius: 12 }}>{result}</pre>
       <details>
         <summary>Diretiva</summary>

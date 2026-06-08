@@ -1,22 +1,62 @@
 import React, { useState } from 'react';
 import { classifyInput, buildInternalPrompt } from './core/router';
 import { DIRECTIVE } from './core/directive';
+import { startVoiceCapture, isVoiceCaptureSupported } from './core/voiceCapture';
+import { evaluateVisionaryPotential } from './core/visionarySkill';
+
+function buildResult(rawText: string): string {
+  const box = classifyInput(rawText);
+  const prompt = buildInternalPrompt(rawText);
+  const vision = evaluateVisionaryPotential(rawText);
+
+  return [
+    'Caixa detectada: ' + box,
+    '',
+    'Pedido real:',
+    'Transformar a entrada bruta da Sol em direcao executavel, sem exigir prompt perfeito.',
+    '',
+    'Skill Visionaria:',
+    '- Potencial editorial: ' + vision.editorialPotential + '/10',
+    '- Potencial de conteudo: ' + vision.contentPotential + '/10',
+    '- Potencial de venda: ' + vision.salesPotential + '/10',
+    '- Urgencia: ' + vision.urgency + '/10',
+    '- Risco de dispersao: ' + vision.dispersionRisk + '/10',
+    '- Uso recomendado: ' + vision.recommendedUse,
+    '',
+    'Prompt interno:',
+    prompt
+  ].join('\n');
+}
 
 export function App() {
   const [text, setText] = useState('');
-  const [result, setResult] = useState('Sol.IA ativa. Eu Nao Desapareco. Escreva uma ideia bruta e clique para classificar.');
+  const [result, setResult] = useState('Sol.IA ativa. Eu Nao Desapareco. Escreva ou fale uma ideia bruta para classificar.');
+  const [voiceStatus, setVoiceStatus] = useState('Voz ainda nao iniciada.');
 
-  function run() {
-    const box = classifyInput(text);
-    const prompt = buildInternalPrompt(text);
-    setResult([
-      'Caixa detectada: ' + box,
-      '',
-      'Pedido real: transformar a entrada bruta da Sol em direcao executavel, sem exigir prompt perfeito.',
-      '',
-      'Prompt interno:',
-      prompt
-    ].join('\n'));
+  function run(input = text) {
+    const clean = input.trim();
+    if (!clean) {
+      setResult('Despeje uma ideia primeiro. Pode ser baguncada mesmo.');
+      return;
+    }
+    setResult(buildResult(clean));
+  }
+
+  function captureVoice() {
+    if (!isVoiceCaptureSupported()) {
+      setVoiceStatus('Este navegador nao suporta reconhecimento de voz nativo.');
+      return;
+    }
+
+    setVoiceStatus('Escutando... fale sua ideia bruta.');
+    startVoiceCapture(
+      (transcript) => {
+        setText(transcript);
+        setVoiceStatus('Capturado: ' + transcript);
+        run(transcript);
+      },
+      (error) => setVoiceStatus('Erro na voz: ' + error)
+    );
   }
 
   return (
@@ -32,7 +72,9 @@ export function App() {
         placeholder="Despeje aqui seu pensamento bruto"
       />
       <br />
-      <button onClick={run} style={{ marginTop: 12, padding: 12, borderRadius: 12 }}>Traduzir e executar</button>
+      <button onClick={() => run()} style={{ marginTop: 12, padding: 12, borderRadius: 12 }}>Traduzir e executar</button>
+      <button onClick={captureVoice} style={{ marginTop: 12, marginLeft: 8, padding: 12, borderRadius: 12 }}>Capturar por voz</button>
+      <p>{voiceStatus}</p>
       <pre style={{ whiteSpace: 'pre-wrap', marginTop: 24, background: '#211719', padding: 16, borderRadius: 12 }}>{result}</pre>
       <details>
         <summary>Diretiva</summary>

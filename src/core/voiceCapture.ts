@@ -4,18 +4,32 @@ export type VoiceCaptureResult = {
   error?: string;
 };
 
+type SpeechRecognitionConstructor = new () => {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
+  start: () => void;
+};
+
 declare global {
   interface Window {
-    webkitSpeechRecognition?: any;
-    SpeechRecognition?: any;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+    SpeechRecognition?: SpeechRecognitionConstructor;
   }
 }
 
 export function isVoiceCaptureSupported(): boolean {
+  if (typeof window === 'undefined') return false;
   return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
 export function startVoiceCapture(onResult: (text: string) => void, onError?: (error: string) => void): VoiceCaptureResult {
+  if (typeof window === 'undefined') {
+    return { supported: false, error: 'Janela do navegador indisponivel.' };
+  }
+
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
   if (!Recognition) {
@@ -30,15 +44,15 @@ export function startVoiceCapture(onResult: (text: string) => void, onError?: (e
   recognition.interimResults = false;
   recognition.continuous = false;
 
-  recognition.onresult = (event: any) => {
+  recognition.onresult = (event) => {
     const transcript = Array.from(event.results)
-      .map((result: any) => result[0]?.transcript || '')
+      .map((result) => result[0]?.transcript || '')
       .join(' ')
       .trim();
     onResult(transcript);
   };
 
-  recognition.onerror = (event: any) => {
+  recognition.onerror = (event) => {
     onError?.(event.error || 'Erro desconhecido na captura de voz.');
   };
 

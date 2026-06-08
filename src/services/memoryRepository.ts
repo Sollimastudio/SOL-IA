@@ -7,6 +7,24 @@ export type SaveCaptureResult = {
   message: string;
 };
 
+function explainSupabaseError(message: string): string {
+  const lower = message.toLowerCase();
+
+  if (lower.includes('relation') || lower.includes('does not exist') || lower.includes('schema cache')) {
+    return 'A tabela memories provavelmente nao existe ainda. Rode o arquivo supabase/schema.sql no SQL Editor do Supabase.';
+  }
+
+  if (lower.includes('row-level security') || lower.includes('rls') || lower.includes('permission denied') || lower.includes('violates row-level')) {
+    return 'O Supabase bloqueou a gravacao por permissao/RLS. Crie uma policy de insert para anon ou ajuste as regras da tabela memories.';
+  }
+
+  if (lower.includes('invalid api key') || lower.includes('jwt') || lower.includes('401')) {
+    return 'A anon key parece invalida ou de outro projeto Supabase. Confira VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY na Vercel.';
+  }
+
+  return 'Erro nao classificado. Verifique schema, tabela memories, policy de insert e se a chave anon pertence ao mesmo projeto.';
+}
+
 export async function saveIdeaCapture(rawText: string): Promise<SaveCaptureResult> {
   if (!rawText.trim()) {
     return { ok: false, message: 'Nada para salvar.' };
@@ -34,7 +52,7 @@ export async function saveIdeaCapture(rawText: string): Promise<SaveCaptureResul
   });
 
   if (error) {
-    return { ok: false, message: 'Erro ao salvar no Supabase: ' + error.message };
+    return { ok: false, message: 'Erro ao salvar no Supabase: ' + error.message + ' | Diagnostico: ' + explainSupabaseError(error.message) };
   }
 
   return { ok: true, message: 'Ideia salva no Cofre Sol.IA como ' + (is3amCapture ? 'capture_3am' : 'idea_capture') + '.' };

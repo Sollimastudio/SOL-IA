@@ -3,6 +3,7 @@ import { classifyInput, buildInternalPrompt } from './core/router';
 import { DIRECTIVE } from './core/directive';
 import { startVoiceCapture, isVoiceCaptureSupported } from './core/voiceCapture';
 import { saveIdeaCapture } from './services/memoryRepository';
+import { supabaseDiagnostics, isSupabaseConfigured } from './services/supabaseClient';
 import { skillRegistry, runSkillSnapshot, SkillId } from './skills/skillRegistry';
 
 function buildResult(rawText: string, activeSkill: SkillId): string {
@@ -86,9 +87,16 @@ export function App() {
   return (
     <main style={{ minHeight: '100vh', background: '#050406', color: '#f6ead7', padding: 24, fontFamily: 'Georgia, serif' }}>
       <section style={{ maxWidth: 1180, margin: '0 auto' }}>
-        <p style={{ color: '#b781ff', letterSpacing: 4, fontSize: 12 }}>SOL.IA v0.3 — SKILL REGISTRY</p>
+        <p style={{ color: '#b781ff', letterSpacing: 4, fontSize: 12 }}>SOL.IA v0.4 — SUPABASE DIAGNOSTICS</p>
         <h1 style={{ margin: 0, fontSize: 40 }}>Sol.IA — Eu Nao Desapareco</h1>
         <p>Neural Console em evolucao: skills oficiais, guardiao juridico, vida diaria, voz e cofre.</p>
+
+        <div style={{ background: '#120b17', border: '1px solid #392449', borderRadius: 12, padding: 12, margin: '16px 0' }}>
+          <strong>Diagnostico Supabase:</strong>
+          <p>Status: <strong>{isSupabaseConfigured ? 'CONFIGURADO' : 'NAO CONFIGURADO'}</strong></p>
+          <p>URL presente: <strong>{supabaseDiagnostics.hasUrl ? 'SIM' : 'NAO'}</strong> — {supabaseDiagnostics.urlPreview}</p>
+          <p>Anon key presente: <strong>{supabaseDiagnostics.hasAnonKey ? 'SIM' : 'NAO'}</strong> — {supabaseDiagnostics.anonKeyPreview}</p>
+        </div>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '18px 0' }}>
           {skillRegistry.map((skill) => (

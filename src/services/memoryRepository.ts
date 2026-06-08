@@ -7,6 +7,10 @@ export type SaveCaptureResult = {
   message: string;
 };
 
+type InsertResult = {
+  error: { message: string } | null;
+};
+
 function explainSupabaseError(message: string): string {
   const lower = message.toLowerCase();
 
@@ -52,7 +56,7 @@ export async function saveIdeaCapture(rawText: string): Promise<SaveCaptureResul
     const vision = evaluateVisionaryPotential(rawText);
     const is3amCapture = /3 da manha|madrugada|perdi o sono|insonia|sono/.test(rawText.toLowerCase());
 
-    const insertPromise = supabase.from('memories').insert({
+    const insertRequest = supabase.from('memories').insert({
       type: is3amCapture ? 'capture_3am' : 'idea_capture',
       title: 'Captura Sol.IA — ' + box,
       content: rawText,
@@ -65,7 +69,7 @@ export async function saveIdeaCapture(rawText: string): Promise<SaveCaptureResul
       }
     });
 
-    const { error } = await withTimeout(insertPromise);
+    const { error } = await withTimeout(Promise.resolve(insertRequest) as Promise<InsertResult>);
 
     if (error) {
       return { ok: false, message: 'Erro ao salvar no Supabase: ' + error.message + ' | Diagnostico: ' + explainSupabaseError(error.message) };

@@ -17,6 +17,8 @@ type InsertResult = {
   error: { message: string } | null;
 };
 
+const MEMORY_TABLE = 'solia_memories';
+
 function explainSupabaseError(message: string): string {
   const lower = message.toLowerCase();
 
@@ -86,7 +88,7 @@ export async function saveIdeaCapture(rawText: string): Promise<RepositoryResult
     const is3amCapture = /3 da manha|madrugada|perdi o sono|insonia|sono/.test(rawText.toLowerCase());
 
     const insertRequest = supabase
-      .from('memories')
+      .from(MEMORY_TABLE)
       .insert({
         type: is3amCapture ? 'capture_3am' : 'idea_capture',
         title: 'Captura Sol.IA — ' + box,
@@ -136,7 +138,7 @@ export async function listMemories(query: MemoryQuery = {}): Promise<RepositoryR
 
     const limit = Math.min(Math.max(query.limit ?? 12, 1), 50);
     let request = supabase
-      .from('memories')
+      .from(MEMORY_TABLE)
       .select('id, owner_id, project_id, type, title, content, tags, origin, created_at, updated_at, metadata')
       .order('created_at', { ascending: false })
       .limit(limit);

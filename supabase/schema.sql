@@ -254,7 +254,16 @@ begin
 
   if audit_owner is not null then
     insert into public.memory_audit_logs (owner_id, memory_id, action, changes)
-    values (audit_owner, audit_memory, lower(tg_op), audit_changes);
+    values (
+      audit_owner,
+      audit_memory,
+      case tg_op
+        when 'INSERT' then 'create'
+        when 'UPDATE' then 'update'
+        when 'DELETE' then 'delete'
+      end,
+      audit_changes
+    );
   end if;
 
   if tg_op = 'DELETE' then return old; end if;

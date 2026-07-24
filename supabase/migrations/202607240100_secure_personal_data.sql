@@ -222,7 +222,11 @@ begin
     values (
       audit_owner,
       audit_memory,
-      lower(tg_op),
+      case tg_op
+        when 'INSERT' then 'create'
+        when 'UPDATE' then 'update'
+        when 'DELETE' then 'delete'
+      end,
       audit_changes
     );
   end if;

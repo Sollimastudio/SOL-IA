@@ -50,6 +50,16 @@
       ]
     },
     {
+      "id": "mentor_posicionamento",
+      "purpose": "Run guided mentoring, assessment and Posicione-se methodology flows.",
+      "status": "migration_required",
+      "sourceRepositories": [
+        "Sollimastudio/Sol-IA-Mentor",
+        "Sollimastudio/posicione-se-sistema",
+        "Sollimastudio/Supera-ia-ecossistema"
+      ]
+    },
+    {
       "id": "motion_video",
       "purpose": "Consult video knowledge to plan, script, caption and specify audiovisual exports.",
       "status": "read_only_catalog_active",
@@ -103,5 +113,19 @@
     "directApiAvailableToAdvertisers": false,
     "integrationPath": "Use supported Meta Marketing API Insights surfaces and controlled experimentation.",
     "guardrail": "No agent can inspect, control or reverse-engineer Andromeda directly."
-  }
+  },
+  "externalReferences": [
+    {
+      "repository": "facebook/facebook-nodejs-business-sdk",
+      "role": "Official Node.js SDK for Meta Marketing APIs.",
+      "adoption": "reference_for_supported_api_behavior",
+      "url": "https://github.com/facebook/facebook-nodejs-business-sdk"
+    },
+    {
+      "repository": "openai/openai-agents-js",
+      "role": "Official TypeScript framework candidate for supervised multi-agent orchestration.",
+      "adoption": "evaluate_after_server_boundary",
+      "url": "https://github.com/openai/openai-agents-js"
+    }
+  ]
 }

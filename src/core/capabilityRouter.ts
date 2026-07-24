@@ -75,6 +75,14 @@ const routeRules: RouteRule[] = [
     reason: 'Pedido relacionado a estrategia, criativo, medicao ou operacao de midia paga.'
   },
   {
+    intent: 'vsl',
+    primarySpecialist: 'chronoscribe_content',
+    supportingSpecialists: ['publisher_editorial', 'meta_ads_strategist'],
+    signals: ['vsl', 'video de vendas', 'carta de vendas', 'script de vendas', 'roteiro de vendas'],
+    sourceRepositories: ['Narrativas-Chronoscribe', 'universal-legacy-content-engine'],
+    reason: 'Pedido de narrativa de venda longa, estruturada e orientada a conversao.'
+  },
+  {
     intent: 'video',
     primarySpecialist: 'motion_video',
     supportingSpecialists: ['chronoscribe_content'],
@@ -94,14 +102,6 @@ const routeRules: RouteRule[] = [
     ],
     sourceRepositories: ['videoup_app', 'maestro-viral-lab', 'motion-hacker'],
     reason: 'Pedido que exige planejamento, roteiro, edicao ou processamento audiovisual.'
-  },
-  {
-    intent: 'vsl',
-    primarySpecialist: 'chronoscribe_content',
-    supportingSpecialists: ['publisher_editorial', 'meta_ads_strategist'],
-    signals: ['vsl', 'video de vendas', 'carta de vendas', 'script de vendas', 'roteiro de vendas'],
-    sourceRepositories: ['Narrativas-Chronoscribe', 'universal-legacy-content-engine'],
-    reason: 'Pedido de narrativa de venda longa, estruturada e orientada a conversao.'
   },
   {
     intent: 'mentoring',
@@ -190,23 +190,11 @@ const routeRules: RouteRule[] = [
   }
 ];
 
-const paidMediaWriteSignals = [
-  'criar campanha',
-  'publicar campanha',
-  'ativar campanha',
-  'pausar campanha',
-  'duplicar campanha',
-  'editar campanha',
-  'alterar orcamento',
-  'aumentar orcamento',
-  'reduzir orcamento',
-  'mudar orcamento',
-  'excluir campanha',
-  'subir anuncio',
-  'publicar anuncio',
-  'pausar anuncio',
-  'ativar anuncio'
-];
+const paidMediaWriteActionPattern =
+  /\b(criar|crie|publicar|publique|ativar|ative|pausar|pause|duplicar|duplique|editar|edite|alterar|altere|aumentar|aumente|reduzir|reduza|mudar|mude|excluir|exclua|subir|lancar|lance|executar|execute|configurar|configure)\b/;
+
+const paidMediaObjectPattern =
+  /\b(campanha|campanhas|anuncio|anuncios|conjunto de anuncios|orcamento|budget|pixel|capi|publico|publicos|segmentacao)\b/;
 
 function normalize(input: string): string {
   return input
@@ -221,6 +209,10 @@ function matchSignals(text: string, signals: string[]): string[] {
   return signals.filter((signal) => text.includes(normalize(signal)));
 }
 
+function requestsPaidMediaWrite(text: string): boolean {
+  return paidMediaWriteActionPattern.test(text) && paidMediaObjectPattern.test(text);
+}
+
 export function routeCapability(input: string): RouteDecision {
   const text = normalize(input);
 
@@ -230,7 +222,7 @@ export function routeCapability(input: string): RouteDecision {
 
     const requiresApproval =
       rule.intent === 'meta_ads' &&
-      paidMediaWriteSignals.some((signal) => text.includes(signal));
+      requestsPaidMediaWrite(text);
 
     return {
       intent: rule.intent,

@@ -8,6 +8,10 @@ export type SkillId =
   | 'visionaria'
   | 'lex_vanguard'
   | 'publisher'
+  | 'content_studio'
+  | 'mentor'
+  | 'motion_video'
+  | 'meta_ads'
   | 'vida_diaria'
   | 'performance';
 
@@ -46,7 +50,31 @@ export const skillRegistry: SkillDefinition[] = [
   {
     id: 'publisher',
     label: 'Publisher',
-    description: 'Escrita, revisao, organizacao editorial e exportacao de documentos.',
+    description: 'Livros, ebooks, revisao, organizacao editorial e exportacao de documentos.',
+    publicSafe: false
+  },
+  {
+    id: 'content_studio',
+    label: 'Conteudo',
+    description: 'Carrosseis, stories, artigos, copy, VSL e reutilizacao multiformato.',
+    publicSafe: true
+  },
+  {
+    id: 'mentor',
+    label: 'Mentoria',
+    description: 'Anamnese, Metodo Posicione-se, diagnostico e acompanhamento guiado.',
+    publicSafe: false
+  },
+  {
+    id: 'motion_video',
+    label: 'Motion / Video',
+    description: 'Roteiro visual, cortes, legendas, edicao, FFmpeg e publicacao preparada.',
+    publicSafe: true
+  },
+  {
+    id: 'meta_ads',
+    label: 'Meta Ads',
+    description: 'Estrategia, criativos, compliance, campanhas e metricas; qualquer alteracao externa exige aprovacao.',
     publicSafe: false
   },
   {

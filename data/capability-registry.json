@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-24",
+  "canonicalCore": "Sollimastudio/SOL-IA",
+  "operatingModel": "one-front-door-many-specialists",
+  "principle": "Absorb capabilities and knowledge into SOL-IA; do not create another competing assistant.",
+  "capabilities": [
+    {
+      "id": "jarvis_executive",
+      "purpose": "Understand the real request, choose priorities and coordinate specialists.",
+      "status": "active_foundation",
+      "sourceRepositories": [
+        "Sollimastudio/SOL-IA",
+        "Sollimastudio/Tronco-ia"
+      ]
+    },
+    {
+      "id": "vault_memory",
+      "purpose": "Persist conversations, facts, projects, preferences, decisions and book context.",
+      "status": "migration_required",
+      "sourceRepositories": [
+        "Sollimastudio/JARVIS-SOL",
+        "Sollimastudio/SOL-IA"
+      ]
+    },
+    {
+      "id": "publisher_editorial",
+      "purpose": "Create, review, organize and export books, ebooks, workbooks and documents.",
+      "status": "migration_required",
+      "sourceRepositories": [
+        "Sollimastudio/Narrativas-Chronoscribe",
+        "Sollimastudio/Tronco-ia",
+        "Sollimastudio/sistema-escrita-elite",
+        "Sollimastudio/ecossistema-editorial-inteligente"
+      ]
+    },
+    {
+      "id": "chronoscribe_content",
+      "purpose": "Create content, carousels, VSLs, sales narratives and reusable variations.",
+      "status": "migration_required",
+      "sourceRepositories": [
+        "Sollimastudio/Narrativas-Chronoscribe",
+        "Sollimastudio/universal-legacy-content-engine",
+        "Sollimastudio/viralgenix-pro"
+      ]
+    },
+    {
+      "id": "mentor_posicionamento",
+      "purpose": "Run guided mentoring, assessment and Posicione-se methodology flows.",
+      "status": "migration_required",
+      "sourceRepositories": [
+        "Sollimastudio/Sol-IA-Mentor",
+        "Sollimastudio/posicione-se-sistema",
+        "Sollimastudio/Supera-ia-ecossistema"
+      ]
+    },
+    {
+      "id": "motion_video",
+      "purpose": "Plan, script, process, caption and export video for social platforms.",
+      "status": "migration_required",
+      "sourceRepositories": [
+        "Sollimastudio/videoup_app",
+        "Sollimastudio/maestro-viral-lab",
+        "Sollimastudio/motion-hacker"
+      ]
+    },
+    {
+      "id": "meta_ads_strategist",
+      "purpose": "Analyze offers, generate creative hypotheses, plan campaigns, read metrics and recommend controlled optimizations.",
+      "status": "foundation_only",
+      "sourceRepositories": [
+        "Sollimastudio/adscript-ai",
+        "Sollimastudio/sol-lima-neuromarketing-agent",
+        "Sollimastudio/Sistema-de-Gest-o-de-Campanhas-de-Marketing-Digital-Avan-ado"
+      ],
+      "specialists": [
+        "offer_researcher",
+        "creative_strategist",
+        "copywriter",
+        "policy_reviewer",
+        "campaign_planner",
+        "measurement_analyst",
+        "budget_optimizer",
+        "executive_reporter"
+      ]
+    }
+  ],
+  "metaAdsPolicy": {
+    "readOnlyByDefault": true,
+    "externalWritesRequireApproval": true,
+    "budgetChangesRequireApproval": true,
+    "campaignLaunchRequiresApproval": true,
+    "campaignPauseRequiresApproval": true,
+    "auditLogRequired": true,
+    "neverClaimAutomaticApproval": true,
+    "neverGuaranteeRoas": true,
+    "separateRecommendationFromExecution": true
+  },
+  "andromeda": {
+    "meaning": "Meta's internal personalized ad retrieval engine.",
+    "directApiAvailableToAdvertisers": false,
+    "integrationPath": "Use supported Meta Marketing API surfaces, accurate conversion data, creative diversity, measurement and controlled experimentation.",
+    "guardrail": "No agent can inspect, control or reverse-engineer Andromeda directly."
+  },
+  "externalReferences": [
+    {
+      "repository": "facebook/facebook-nodejs-business-sdk",
+      "role": "Official Node.js SDK for Meta Marketing APIs.",
+      "adoption": "evaluate_for_backend_integration",
+      "url": "https://github.com/facebook/facebook-nodejs-business-sdk"
+    },
+    {
+      "repository": "openai/openai-agents-js",
+      "role": "Official TypeScript framework candidate for supervised multi-agent orchestration.",
+      "adoption": "evaluate_after_server_boundary",
+      "url": "https://github.com/openai/openai-agents-js"
+    },
+    {
+      "repository": "itallstartedwithaidea/advertising-hub",
+      "role": "Reference architecture for a paid-media division and specialist agent taxonomy.",
+      "adoption": "reference_only_until_code_and_security_review",
+      "url": "https://github.com/itallstartedwithaidea/advertising-hub"
+    }
+  ]
+}

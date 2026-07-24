@@ -18,7 +18,8 @@ dados pessoais antes de o banco aplicar isolamento por usuario.
 6. Copie o UUID desse usuario em Authentication > Users.
 7. Substitua o UUID zero e execute `supabase/claim_existing_data.sql`.
 8. Confirme que o relatorio final mostra `rows_without_owner = 0` em todas as tabelas.
-9. Somente agora defina `VITE_SECURE_MEMORY_ENABLED=true` na Vercel e faca um novo deploy.
+9. Configure `META_ALLOWED_USER_IDS` com o mesmo UUID antes de conectar Meta Ads.
+10. Somente agora defina `VITE_SECURE_MEMORY_ENABLED=true` na Vercel e faca um novo deploy.
 
 ## Testes obrigatorios antes da producao
 

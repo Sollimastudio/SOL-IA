@@ -29,6 +29,8 @@ Variaveis exclusivas do servidor:
   `ads_read`;
 - `META_AD_ACCOUNT_ID`: identificador numerico da conta;
 - `META_GRAPH_API_VERSION`: versao explicita suportada no momento da ativacao.
+- `META_ALLOWED_USER_IDS`: UUID do usuario Supabase autorizado. Para mais de
+  um usuario, use uma lista separada por virgulas.
 
 Nenhuma variavel Meta pode usar o prefixo `VITE_`.
 

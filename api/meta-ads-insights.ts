@@ -27,6 +27,7 @@ type Environment = {
   META_ACCESS_TOKEN?: string;
   META_AD_ACCOUNT_ID?: string;
   META_GRAPH_API_VERSION?: string;
+  META_ALLOWED_USER_IDS?: string;
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
   VITE_SUPABASE_URL?: string;
@@ -53,7 +54,7 @@ async function verifySupabaseUser(
   authorization: string,
   supabaseUrl: string,
   supabaseAnonKey: string
-): Promise<boolean> {
+): Promise<{ id: string } | null> {
   try {
     const response = await fetch(`${supabaseUrl.replace(/\/$/, '')}/auth/v1/user`, {
       method: 'GET',
@@ -64,9 +65,12 @@ async function verifySupabaseUser(
       cache: 'no-store',
       signal: AbortSignal.timeout(8000)
     });
-    return response.ok;
+    if (!response.ok) return null;
+
+    const user = (await response.json()) as { id?: unknown };
+    return typeof user.id === 'string' ? { id: user.id } : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -80,14 +84,20 @@ export async function GET(request: Request): Promise<Response> {
     return json({ error: 'unauthorized', message: 'Sessao segura obrigatoria.' }, 401);
   }
 
-  if (!(await verifySupabaseUser(authorization, supabaseUrl, supabaseAnonKey))) {
+  const verifiedUser = await verifySupabaseUser(
+    authorization,
+    supabaseUrl,
+    supabaseAnonKey
+  );
+  if (!verifiedUser) {
     return json({ error: 'unauthorized', message: 'Sessao expirada ou invalida.' }, 401);
   }
 
   const missing = [
     !env.META_ACCESS_TOKEN && 'META_ACCESS_TOKEN',
     !env.META_AD_ACCOUNT_ID && 'META_AD_ACCOUNT_ID',
-    !env.META_GRAPH_API_VERSION && 'META_GRAPH_API_VERSION'
+    !env.META_GRAPH_API_VERSION && 'META_GRAPH_API_VERSION',
+    !env.META_ALLOWED_USER_IDS && 'META_ALLOWED_USER_IDS'
   ].filter(Boolean);
 
   if (missing.length > 0) {
@@ -97,6 +107,20 @@ export async function GET(request: Request): Promise<Response> {
         message: `Leitura Meta Ads aguardando configuracao no servidor: ${missing.join(', ')}.`
       },
       503
+    );
+  }
+
+  const allowedUserIds = (env.META_ALLOWED_USER_IDS as string)
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (!allowedUserIds.includes(verifiedUser.id)) {
+    return json(
+      {
+        error: 'forbidden',
+        message: 'Esta identidade nao esta autorizada a consultar a conta Meta.'
+      },
+      403
     );
   }
 

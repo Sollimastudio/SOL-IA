@@ -77,7 +77,8 @@
         "Authenticated secure vault",
         "Server-only META_ACCESS_TOKEN with ads_read",
         "META_AD_ACCOUNT_ID",
-        "Explicit META_GRAPH_API_VERSION"
+        "Explicit META_GRAPH_API_VERSION",
+        "META_ALLOWED_USER_IDS allowlist"
       ],
       "sourceRepositories": [
         "Sollimastudio/adscript-ai",

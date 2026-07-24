@@ -15,6 +15,7 @@ const checks = [
   ['Meta endpoint exposes no mutation handler', !/export async function (POST|PUT|PATCH|DELETE)/.test(api)],
   ['Meta token is never a VITE variable', !/VITE_META_ACCESS_TOKEN/.test(api + envExample)],
   ['Meta token stays in Authorization header', /Authorization: `Bearer \$\{env\.META_ACCESS_TOKEN/.test(api)],
+  ['Meta account is restricted by user allowlist', /META_ALLOWED_USER_IDS/.test(api) && /allowedUserIds\.includes\(verifiedUser\.id\)/.test(api)],
   ['RLS is enabled for memories', /alter table public\.memories enable row level security/i.test(migration)],
   ['RLS checks authenticated owner', /auth\.uid\(\) is not null and auth\.uid\(\) = owner_id/i.test(migration)],
   ['Anonymous memory policy is absent', !/to anon/i.test(migration)],

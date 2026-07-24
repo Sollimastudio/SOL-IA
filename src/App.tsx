@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { classifyInput, buildInternalPrompt } from './core/router';
+import { routeCapability } from './core/capabilityRouter';
 import { DIRECTIVE } from './core/directive';
 import { startVoiceCapture, isVoiceCaptureSupported } from './core/voiceCapture';
 import { saveIdeaCapture } from './services/memoryRepository';
@@ -9,14 +10,26 @@ import { skillRegistry, runSkillSnapshot, SkillId } from './skills/skillRegistry
 function buildResult(rawText: string, activeSkill: SkillId): string {
   const box = classifyInput(rawText);
   const prompt = buildInternalPrompt(rawText);
+  const route = routeCapability(rawText);
   const snapshot = runSkillSnapshot(rawText);
   const vision = snapshot.visionaria;
   const lex = snapshot.lexVanguard;
   const daily = snapshot.vidaDiaria;
 
   return [
-    'Skill ativa: ' + activeSkill,
+    'Skill escolhida manualmente: ' + activeSkill,
     'Caixa detectada: ' + box,
+    '',
+    'Roteamento Jarvis automatico:',
+    '- Intencao: ' + route.intent,
+    '- Especialista principal: ' + route.primarySpecialist,
+    '- Especialistas de apoio: ' + route.supportingSpecialists.join(', '),
+    '- Confianca: ' + Math.round(route.confidence * 100) + '%',
+    '- Sinais encontrados: ' + (route.matchedSignals.join(', ') || 'nenhum sinal especializado'),
+    '- Fontes tecnicas: ' + route.sourceRepositories.join(', '),
+    '- Modo de execucao: ' + route.executionMode,
+    '- Aprovacao necessaria: ' + (route.requiresApproval ? 'SIM' : 'NAO'),
+    '- Motivo: ' + route.reason,
     '',
     'Pedido real:',
     'Transformar a entrada bruta da Sol em direcao executavel, sem exigir prompt perfeito.',
@@ -49,7 +62,9 @@ function buildResult(rawText: string, activeSkill: SkillId): string {
 export function App() {
   const [text, setText] = useState('');
   const [activeSkill, setActiveSkill] = useState<SkillId>('imperatriz');
-  const [result, setResult] = useState('Sol.IA ativa. Eu Nao Desapareco. Escolha uma skill ou despeje uma ideia bruta.');
+  const [result, setResult] = useState(
+    'Sol.IA ativa. Eu Nao Desapareco. Despeje uma ideia: Jarvis identificara o especialista certo automaticamente.'
+  );
   const [voiceStatus, setVoiceStatus] = useState('Voz ainda nao iniciada.');
   const [memoryStatus, setMemoryStatus] = useState('Cofre ainda nao acionado.');
 
@@ -87,9 +102,9 @@ export function App() {
   return (
     <main style={{ minHeight: '100vh', background: '#050406', color: '#f6ead7', padding: 24, fontFamily: 'Georgia, serif' }}>
       <section style={{ maxWidth: 1180, margin: '0 auto' }}>
-        <p style={{ color: '#b781ff', letterSpacing: 4, fontSize: 12 }}>SOL.IA v0.5 — MEMORY SAVE DEBUG</p>
+        <p style={{ color: '#b781ff', letterSpacing: 4, fontSize: 12 }}>SOL.IA v0.6 — JARVIS ROUTER</p>
         <h1 style={{ margin: 0, fontSize: 40 }}>Sol.IA — Eu Nao Desapareco</h1>
-        <p>Neural Console em evolucao: skills oficiais, guardiao juridico, vida diaria, voz e cofre.</p>
+        <p>Uma entrada, memoria continua e especialistas para obra, conteudo, VSL, mentoria, video e Meta Ads.</p>
 
         <div style={{ background: '#120b17', border: '1px solid #392449', borderRadius: 12, padding: 12, margin: '16px 0' }}>
           <strong>Diagnostico Supabase:</strong>
@@ -121,6 +136,7 @@ export function App() {
         <p>Skill ativa: <strong>{activeSkillDefinition?.label}</strong></p>
         <p>{activeSkillDefinition?.description}</p>
         <p>Modo publico seguro: <strong>{activeSkillDefinition?.publicSafe ? 'SIM' : 'NAO'}</strong></p>
+        <p>Jarvis tambem escolhe automaticamente o especialista conforme o pedido.</p>
         <p>Caixas: OBRA | METODO | OFERTA | MAQUINA | ESTACIONAMENTO</p>
 
         <textarea
@@ -131,7 +147,7 @@ export function App() {
           placeholder="Despeje aqui seu pensamento bruto"
         />
         <br />
-        <button onClick={() => run()} style={{ marginTop: 12, padding: 12, borderRadius: 12 }}>Transmutar / avaliar / salvar</button>
+        <button onClick={() => run()} style={{ marginTop: 12, padding: 12, borderRadius: 12 }}>Jarvis, resolver</button>
         <button onClick={captureVoice} style={{ marginTop: 12, marginLeft: 8, padding: 12, borderRadius: 12 }}>Capturar por voz</button>
         <p>{voiceStatus}</p>
         <p>{memoryStatus}</p>

@@ -32,7 +32,7 @@ export const skillRegistry: SkillDefinition[] = [
   {
     id: 'vault',
     label: 'Vault',
-    description: 'Cofre de memoria, fatos intocaveis, capitulos, decisoes e documentos.',
+    description: 'Cofre privado de memoria, fatos intocaveis, capitulos, decisoes e documentos.',
     publicSafe: false
   },
   {
@@ -55,7 +55,7 @@ export const skillRegistry: SkillDefinition[] = [
   },
   {
     id: 'content_studio',
-    label: 'Conteudo',
+    label: 'Narrativas',
     description: 'Carrosseis, stories, artigos, copy, VSL e reutilizacao multiformato.',
     publicSafe: true
   },
@@ -74,7 +74,7 @@ export const skillRegistry: SkillDefinition[] = [
   {
     id: 'meta_ads',
     label: 'Meta Ads',
-    description: 'Estrategia, criativos, compliance, campanhas e metricas; qualquer alteracao externa exige aprovacao.',
+    description: 'Leitura de metricas e recomendacoes. Nao cria, pausa nem altera campanhas.',
     publicSafe: false
   },
   {

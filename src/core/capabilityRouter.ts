@@ -50,22 +50,9 @@ const routeRules: RouteRule[] = [
     primarySpecialist: 'meta_ads_strategist',
     supportingSpecialists: ['chronoscribe_content', 'lex_vanguard'],
     signals: [
-      'meta ads',
-      'facebook ads',
-      'instagram ads',
-      'andromeda',
-      'advantage+',
-      'gerenciador de anuncios',
-      'campanha',
-      'conjunto de anuncios',
-      'anuncio',
-      'criativo',
-      'pixel',
-      'capi',
-      'ctr',
-      'cpm',
-      'cpa',
-      'roas'
+      'meta ads', 'facebook ads', 'instagram ads', 'andromeda', 'advantage+',
+      'gerenciador de anuncios', 'campanha', 'conjunto de anuncios', 'anuncio',
+      'criativo', 'pixel', 'capi', 'ctr', 'cpm', 'cpa', 'roas'
     ],
     sourceRepositories: [
       'adscript-ai',
@@ -87,18 +74,8 @@ const routeRules: RouteRule[] = [
     primarySpecialist: 'motion_video',
     supportingSpecialists: ['chronoscribe_content'],
     signals: [
-      'video',
-      'reels',
-      'shorts',
-      'tiktok',
-      'editar',
-      'ffmpeg',
-      'whisper',
-      'legenda',
-      'transicao',
-      'animar',
-      'frame',
-      'corte'
+      'video', 'reels', 'shorts', 'tiktok', 'editar', 'ffmpeg', 'whisper',
+      'legenda', 'transicao', 'animar', 'frame', 'corte'
     ],
     sourceRepositories: ['videoup_app', 'maestro-viral-lab', 'motion-hacker'],
     reason: 'Pedido que exige planejamento, roteiro, edicao ou processamento audiovisual.'
@@ -116,16 +93,8 @@ const routeRules: RouteRule[] = [
     primarySpecialist: 'publisher_editorial',
     supportingSpecialists: ['chronoscribe_content', 'vault_memory'],
     signals: [
-      'livro',
-      'manuscrito',
-      'capitulo',
-      'ebook',
-      'workbook',
-      'diagramar',
-      'revisao editorial',
-      'kindle',
-      'docx',
-      'pdf'
+      'livro', 'manuscrito', 'capitulo', 'ebook', 'workbook', 'diagramar',
+      'revisao editorial', 'kindle', 'docx', 'pdf'
     ],
     sourceRepositories: [
       'Narrativas-Chronoscribe',
@@ -139,19 +108,7 @@ const routeRules: RouteRule[] = [
     intent: 'content',
     primarySpecialist: 'chronoscribe_content',
     supportingSpecialists: ['jarvis_executive'],
-    signals: [
-      'conteudo',
-      'carrossel',
-      'story',
-      'stories',
-      'post',
-      'legenda',
-      'artigo',
-      'seo',
-      'copy',
-      'gancho',
-      'viral'
-    ],
+    signals: ['conteudo', 'carrossel', 'story', 'stories', 'post', 'legenda', 'artigo', 'seo', 'copy', 'gancho', 'viral'],
     sourceRepositories: ['Narrativas-Chronoscribe', 'universal-legacy-content-engine', 'viralgenix-pro'],
     reason: 'Pedido de conteudo organico, persuasivo ou reutilizavel em diferentes formatos.'
   },
@@ -167,16 +124,7 @@ const routeRules: RouteRule[] = [
     intent: 'legal',
     primarySpecialist: 'lex_vanguard',
     supportingSpecialists: ['jarvis_executive'],
-    signals: [
-      'contrato',
-      'processo',
-      'advogado',
-      'lgpd',
-      'direito autoral',
-      'marca registrada',
-      'reembolso',
-      'garantia legal'
-    ],
+    signals: ['contrato', 'processo', 'advogado', 'lgpd', 'direito autoral', 'marca registrada', 'reembolso', 'garantia legal'],
     sourceRepositories: ['SOL-IA'],
     reason: 'Pedido contem risco juridico, de privacidade, promessa ou exposicao.'
   },
@@ -220,9 +168,7 @@ export function routeCapability(input: string): RouteDecision {
     const matchedSignals = matchSignals(text, rule.signals);
     if (matchedSignals.length === 0) continue;
 
-    const requiresApproval =
-      rule.intent === 'meta_ads' &&
-      requestsPaidMediaWrite(text);
+    const requiresApproval = rule.intent === 'meta_ads' && requestsPaidMediaWrite(text);
 
     return {
       intent: rule.intent,

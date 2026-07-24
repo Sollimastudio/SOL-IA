@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedAt": "2026-07-24",
   "canonicalCore": "Sollimastudio/SOL-IA",
   "operatingModel": "one-front-door-many-specialists",
@@ -16,8 +16,13 @@
     },
     {
       "id": "vault_memory",
-      "purpose": "Persist conversations, facts, projects, preferences, decisions and book context.",
-      "status": "migration_required",
+      "purpose": "Persist and retrieve conversations, facts, projects, preferences, decisions and book context per authenticated user.",
+      "status": "implementation_ready_activation_blocked",
+      "activationRequires": [
+        "Apply Supabase secure migration",
+        "Claim legacy rows for the correct auth user",
+        "Set VITE_SECURE_MEMORY_ENABLED=true"
+      ],
       "sourceRepositories": [
         "Sollimastudio/JARVIS-SOL",
         "Sollimastudio/SOL-IA"
@@ -25,8 +30,8 @@
     },
     {
       "id": "publisher_editorial",
-      "purpose": "Create, review, organize and export books, ebooks, workbooks and documents.",
-      "status": "migration_required",
+      "purpose": "Consult editorial knowledge to create, review and organize books, ebooks, workbooks and documents.",
+      "status": "read_only_catalog_active",
       "sourceRepositories": [
         "Sollimastudio/Narrativas-Chronoscribe",
         "Sollimastudio/Tronco-ia",
@@ -36,8 +41,8 @@
     },
     {
       "id": "chronoscribe_content",
-      "purpose": "Create content, carousels, VSLs, sales narratives and reusable variations.",
-      "status": "migration_required",
+      "purpose": "Consult narrative knowledge for content, carousels, VSLs, sales narratives and reusable variations.",
+      "status": "read_only_catalog_active",
       "sourceRepositories": [
         "Sollimastudio/Narrativas-Chronoscribe",
         "Sollimastudio/universal-legacy-content-engine",
@@ -56,8 +61,8 @@
     },
     {
       "id": "motion_video",
-      "purpose": "Plan, script, process, caption and export video for social platforms.",
-      "status": "migration_required",
+      "purpose": "Consult video knowledge to plan, script, caption and specify audiovisual exports.",
+      "status": "read_only_catalog_active",
       "sourceRepositories": [
         "Sollimastudio/videoup_app",
         "Sollimastudio/maestro-viral-lab",
@@ -66,8 +71,15 @@
     },
     {
       "id": "meta_ads_strategist",
-      "purpose": "Analyze offers, generate creative hypotheses, plan campaigns, read metrics and recommend controlled optimizations.",
-      "status": "foundation_only",
+      "purpose": "Read authorized performance metrics and recommend controlled optimizations without external writes.",
+      "status": "read_only_backend_ready_activation_blocked",
+      "activationRequires": [
+        "Authenticated secure vault",
+        "Server-only META_ACCESS_TOKEN with ads_read",
+        "META_AD_ACCOUNT_ID",
+        "Explicit META_GRAPH_API_VERSION",
+        "META_ALLOWED_USER_IDS allowlist"
+      ],
       "sourceRepositories": [
         "Sollimastudio/adscript-ai",
         "Sollimastudio/sol-lima-neuromarketing-agent",
@@ -86,12 +98,13 @@
     }
   ],
   "metaAdsPolicy": {
-    "readOnlyByDefault": true,
-    "externalWritesRequireApproval": true,
-    "budgetChangesRequireApproval": true,
-    "campaignLaunchRequiresApproval": true,
-    "campaignPauseRequiresApproval": true,
-    "auditLogRequired": true,
+    "transport": "server_only",
+    "httpMethodsImplemented": ["GET"],
+    "readOnly": true,
+    "externalWritesImplemented": false,
+    "budgetChangesImplemented": false,
+    "campaignLaunchImplemented": false,
+    "campaignPauseImplemented": false,
     "neverClaimAutomaticApproval": true,
     "neverGuaranteeRoas": true,
     "separateRecommendationFromExecution": true
@@ -99,14 +112,14 @@
   "andromeda": {
     "meaning": "Meta's internal personalized ad retrieval engine.",
     "directApiAvailableToAdvertisers": false,
-    "integrationPath": "Use supported Meta Marketing API surfaces, accurate conversion data, creative diversity, measurement and controlled experimentation.",
+    "integrationPath": "Use supported Meta Marketing API Insights surfaces and controlled experimentation.",
     "guardrail": "No agent can inspect, control or reverse-engineer Andromeda directly."
   },
   "externalReferences": [
     {
       "repository": "facebook/facebook-nodejs-business-sdk",
       "role": "Official Node.js SDK for Meta Marketing APIs.",
-      "adoption": "evaluate_for_backend_integration",
+      "adoption": "reference_for_supported_api_behavior",
       "url": "https://github.com/facebook/facebook-nodejs-business-sdk"
     },
     {
@@ -114,12 +127,6 @@
       "role": "Official TypeScript framework candidate for supervised multi-agent orchestration.",
       "adoption": "evaluate_after_server_boundary",
       "url": "https://github.com/openai/openai-agents-js"
-    },
-    {
-      "repository": "itallstartedwithaidea/advertising-hub",
-      "role": "Reference architecture for a paid-media division and specialist agent taxonomy.",
-      "adoption": "reference_only_until_code_and_security_review",
-      "url": "https://github.com/itallstartedwithaidea/advertising-hub"
     }
   ]
 }

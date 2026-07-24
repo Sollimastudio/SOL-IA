@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
-import { classifyInput, buildInternalPrompt } from './core/router';
+import { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { AuthPanel } from './components/AuthPanel';
+import { MemoryVault } from './components/MemoryVault';
+import { MetaAdsPanel } from './components/MetaAdsPanel';
+import { ReadOnlySources } from './components/ReadOnlySources';
 import { routeCapability } from './core/capabilityRouter';
 import { DIRECTIVE } from './core/directive';
+import { classifyInput, buildInternalPrompt } from './core/router';
 import { startVoiceCapture, isVoiceCaptureSupported } from './core/voiceCapture';
+import { getCurrentSession, subscribeToAuth } from './services/authService';
 import { saveIdeaCapture } from './services/memoryRepository';
-import { supabaseDiagnostics, isSupabaseConfigured } from './services/supabaseClient';
+import { supabaseDiagnostics } from './services/supabaseClient';
 import { skillRegistry, runSkillSnapshot, SkillId } from './skills/skillRegistry';
 
 function buildResult(rawText: string, activeSkill: SkillId): string {
@@ -62,11 +68,20 @@ function buildResult(rawText: string, activeSkill: SkillId): string {
 export function App() {
   const [text, setText] = useState('');
   const [activeSkill, setActiveSkill] = useState<SkillId>('imperatriz');
+  const [session, setSession] = useState<Session | null>(null);
   const [result, setResult] = useState(
-    'Sol.IA ativa. Eu Nao Desapareco. Despeje uma ideia: Jarvis identificara o especialista certo automaticamente.'
+    'Sol.IA ativa. Despeje uma ideia: Jarvis identificara o especialista certo automaticamente.'
   );
   const [voiceStatus, setVoiceStatus] = useState('Voz ainda nao iniciada.');
   const [memoryStatus, setMemoryStatus] = useState('Cofre ainda nao acionado.');
+  const [memoryRefreshKey, setMemoryRefreshKey] = useState(0);
+
+  useEffect(() => {
+    void getCurrentSession()
+      .then(setSession)
+      .catch(() => setSession(null));
+    return subscribeToAuth(setSession);
+  }, []);
 
   async function run(input = text) {
     const clean = input.trim();
@@ -78,6 +93,7 @@ export function App() {
     setResult(buildResult(clean, activeSkill));
     const saveResult = await saveIdeaCapture(clean);
     setMemoryStatus(saveResult.message);
+    if (saveResult.ok) setMemoryRefreshKey((value) => value + 1);
   }
 
   function captureVoice() {
@@ -91,7 +107,7 @@ export function App() {
       (transcript) => {
         setText(transcript);
         setVoiceStatus('Capturado: ' + transcript);
-        run(transcript);
+        void run(transcript);
       },
       (error) => setVoiceStatus('Erro na voz: ' + error)
     );
@@ -100,62 +116,85 @@ export function App() {
   const activeSkillDefinition = skillRegistry.find((skill) => skill.id === activeSkill);
 
   return (
-    <main style={{ minHeight: '100vh', background: '#050406', color: '#f6ead7', padding: 24, fontFamily: 'Georgia, serif' }}>
-      <section style={{ maxWidth: 1180, margin: '0 auto' }}>
-        <p style={{ color: '#b781ff', letterSpacing: 4, fontSize: 12 }}>SOL.IA v0.6 — JARVIS ROUTER</p>
-        <h1 style={{ margin: 0, fontSize: 40 }}>Sol.IA — Eu Nao Desapareco</h1>
-        <p>Uma entrada, memoria continua e especialistas para obra, conteudo, VSL, mentoria, video e Meta Ads.</p>
+    <main>
+      <section className="shell">
+        <header className="hero">
+          <div>
+            <p className="eyebrow">SOL.IA v0.7 — COFRE SEGURO</p>
+            <h1>Eu Nao Desapareco</h1>
+            <p className="hero-copy">
+              Uma entrada, memoria privada e especialistas para obra, narrativas,
+              VSL, mentoria, video e Meta Ads.
+            </p>
+          </div>
+          <div className="security-summary">
+            <span className={supabaseDiagnostics.secureMemoryEnabled ? 'light safe' : 'light'} />
+            <div>
+              <strong>
+                {supabaseDiagnostics.secureMemoryEnabled ? 'Cofre ativado' : 'Ativacao protegida'}
+              </strong>
+              <small>
+                {supabaseDiagnostics.hasUrl && supabaseDiagnostics.hasAnonKey
+                  ? 'Conexao Supabase presente'
+                  : 'Conexao Supabase pendente'}
+              </small>
+            </div>
+          </div>
+        </header>
 
-        <div style={{ background: '#120b17', border: '1px solid #392449', borderRadius: 12, padding: 12, margin: '16px 0' }}>
-          <strong>Diagnostico Supabase:</strong>
-          <p>Status: <strong>{isSupabaseConfigured ? 'CONFIGURADO' : 'NAO CONFIGURADO'}</strong></p>
-          <p>URL presente: <strong>{supabaseDiagnostics.hasUrl ? 'SIM' : 'NAO'}</strong> — {supabaseDiagnostics.urlPreview}</p>
-          <p>Anon key presente: <strong>{supabaseDiagnostics.hasAnonKey ? 'SIM' : 'NAO'}</strong> — {supabaseDiagnostics.anonKeyPreview}</p>
-        </div>
+        <AuthPanel session={session} />
 
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '18px 0' }}>
-          {skillRegistry.map((skill) => (
-            <button
-              key={skill.id}
-              onClick={() => setActiveSkill(skill.id)}
-              title={skill.description}
-              style={{
-                padding: '10px 14px',
-                borderRadius: 999,
-                border: activeSkill === skill.id ? '1px solid #b781ff' : '1px solid #392449',
-                background: activeSkill === skill.id ? '#4b167b' : '#120b17',
-                color: '#f6ead7',
-                fontWeight: 700
-              }}
-            >
-              {skill.label}
-            </button>
-          ))}
-        </div>
+        <section className="panel command-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="eyebrow">PORTA UNICA</span>
+              <h2>Jarvis, resolver</h2>
+            </div>
+            <span className="status-badge">ROTEAMENTO AUTOMATICO</span>
+          </div>
 
-        <p>Skill ativa: <strong>{activeSkillDefinition?.label}</strong></p>
-        <p>{activeSkillDefinition?.description}</p>
-        <p>Modo publico seguro: <strong>{activeSkillDefinition?.publicSafe ? 'SIM' : 'NAO'}</strong></p>
-        <p>Jarvis tambem escolhe automaticamente o especialista conforme o pedido.</p>
-        <p>Caixas: OBRA | METODO | OFERTA | MAQUINA | ESTACIONAMENTO</p>
+          <div className="skill-row">
+            {skillRegistry.map((skill) => (
+              <button
+                className={`skill-button ${activeSkill === skill.id ? 'active' : ''}`}
+                key={skill.id}
+                onClick={() => setActiveSkill(skill.id)}
+                title={skill.description}
+              >
+                {skill.label}
+              </button>
+            ))}
+          </div>
 
-        <textarea
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          rows={6}
-          style={{ width: '100%', maxWidth: 980, padding: 16, borderRadius: 12, background: '#f6ead7', color: '#120b17' }}
-          placeholder="Despeje aqui seu pensamento bruto"
-        />
-        <br />
-        <button onClick={() => run()} style={{ marginTop: 12, padding: 12, borderRadius: 12 }}>Jarvis, resolver</button>
-        <button onClick={captureVoice} style={{ marginTop: 12, marginLeft: 8, padding: 12, borderRadius: 12 }}>Capturar por voz</button>
-        <p>{voiceStatus}</p>
-        <p>{memoryStatus}</p>
-        <pre style={{ whiteSpace: 'pre-wrap', marginTop: 24, background: '#160d18', padding: 16, borderRadius: 12 }}>{result}</pre>
-        <details>
-          <summary>Diretiva</summary>
-          <pre style={{ whiteSpace: 'pre-wrap' }}>{DIRECTIVE}</pre>
-        </details>
+          <div className="active-skill">
+            <strong>{activeSkillDefinition?.label}</strong>
+            <span>{activeSkillDefinition?.description}</span>
+          </div>
+
+          <label className="sr-only" htmlFor="jarvis-input">Pedido para o Jarvis</label>
+          <textarea
+            id="jarvis-input"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            rows={6}
+            placeholder="Despeje aqui seu pensamento bruto"
+          />
+          <div className="button-row">
+            <button className="button" onClick={() => void run()}>Jarvis, resolver</button>
+            <button className="button button-secondary" onClick={captureVoice}>Capturar por voz</button>
+          </div>
+          <p className="status-text">{voiceStatus}</p>
+          <p className="status-text">{memoryStatus}</p>
+          <pre className="result">{result}</pre>
+          <details>
+            <summary>Diretiva do sistema</summary>
+            <pre className="directive">{DIRECTIVE}</pre>
+          </details>
+        </section>
+
+        <MemoryVault session={session} refreshKey={memoryRefreshKey} />
+        <ReadOnlySources />
+        <MetaAdsPanel session={session} />
       </section>
     </main>
   );

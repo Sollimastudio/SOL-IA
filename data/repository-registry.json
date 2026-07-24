@@ -1,0 +1,510 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-23",
+  "owner": "Sollimastudio",
+  "canonicalRepository": "SOL-IA",
+  "productName": "Sol.IA",
+  "operationalRole": "Jarvis",
+  "policy": {
+    "singleFrontDoor": true,
+    "noNewRepositoryWithoutRegistry": true,
+    "noDeletionWithoutFinalConfirmation": true,
+    "externalWritesRequireApproval": true,
+    "paidMediaChangesRequireApproval": true
+  },
+  "actionDefinitions": {
+    "keep": "Permanece ativo como fonte oficial, site ou ativo necessário.",
+    "absorb_then_archive": "Migrar capacidades e conhecimento; depois tornar somente leitura.",
+    "absorb_then_delete": "Migrar skill ou especificação pequena; excluir somente após validação e confirmação.",
+    "archive": "Versão superada; preservar histórico sem continuar desenvolvimento.",
+    "delete_after_confirmation": "Vazio ou sem conteúdo útil; aguarda confirmação final.",
+    "audit_before_decision": "Verificar domínio, checkout, tráfego e ativos antes de decidir.",
+    "copy_then_delete": "Copiar conteúdo único e depois excluir com confirmação.",
+    "reconcile_then_archive": "Comparar fontes canônicas conflitantes antes de arquivar."
+  },
+  "repositories": [
+    {
+      "name": "Sollimastudio",
+      "category": "profile",
+      "action": "keep",
+      "canonical": false,
+      "role": "Repositório especial do perfil GitHub; preparar README institucional."
+    },
+    {
+      "name": "studio-relacione-se",
+      "category": "legacy_site",
+      "action": "archive",
+      "canonical": false,
+      "role": "Versão antiga e mínima do site Relacione-se."
+    },
+    {
+      "name": "studio-relacione-se-clean",
+      "category": "legacy_site",
+      "action": "archive",
+      "canonical": false,
+      "role": "Versão antiga de deploy; migrar verificação e SEO antes de arquivar."
+    },
+    {
+      "name": "motion-hacker",
+      "category": "video_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Planejamento e renderização local de vídeo com FFmpeg."
+    },
+    {
+      "name": "sollima-cockpit",
+      "category": "legacy_assistant",
+      "action": "archive",
+      "canonical": false,
+      "role": "Protótipo antigo de assistente pessoal."
+    },
+    {
+      "name": "SUPERA-AI",
+      "category": "empty",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Repositório vazio, sem histórico útil."
+    },
+    {
+      "name": "SolSysten",
+      "category": "concept",
+      "action": "copy_then_delete",
+      "canonical": false,
+      "role": "Preservar conceito DISC/SEO no registro de skills antes de excluir."
+    },
+    {
+      "name": "viralgenix",
+      "category": "legacy_content_app",
+      "action": "archive",
+      "canonical": false,
+      "role": "Protótipo antigo, superado por viralgenix-pro."
+    },
+    {
+      "name": "Sol.IA",
+      "category": "content_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Laboratório de Realidade para estratégia e pacotes de conteúdo."
+    },
+    {
+      "name": "solia",
+      "category": "legacy_assistant",
+      "action": "archive",
+      "canonical": false,
+      "role": "Protótipo antigo da Sol.IA."
+    },
+    {
+      "name": "viralgenix-pro",
+      "category": "content_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Imagem, carrossel, artigo SEO e geração de conteúdo."
+    },
+    {
+      "name": "Narrativas-Chronoscribe",
+      "category": "content_factory",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Fábrica aprofundada de livro, e-book, carrossel, VSL e mentoria."
+    },
+    {
+      "name": "Narrativas-Chronoscribe1",
+      "category": "empty",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Duplicata vazia, sem commits."
+    },
+    {
+      "name": "Tronco-ia",
+      "category": "orchestration_core",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Melhor base de orquestração, Publisher e agentes de vídeo."
+    },
+    {
+      "name": "projeto-extensao-livro",
+      "category": "editorial_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Editor MDX e pipeline editorial."
+    },
+    {
+      "name": "Sol-IA-Mentor",
+      "category": "mentor_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Agente de mentoria; auditar branches exclusivas."
+    },
+    {
+      "name": "SUPERA.IA",
+      "category": "empty",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Repositório vazio, sem histórico útil."
+    },
+    {
+      "name": "Supera-ia-ecossistema",
+      "category": "mentor_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Main duplica Sol-IA-Mentor, mas possui branch exclusiva."
+    },
+    {
+      "name": "SOL-IA",
+      "category": "canonical_core",
+      "action": "keep",
+      "canonical": true,
+      "role": "Cérebro oficial e privado da Sol.IA."
+    },
+    {
+      "name": "sistema-escrita-elite",
+      "category": "editorial_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Editor, escrita, ilustração e exportação; remover acoplamento Manus."
+    },
+    {
+      "name": "Mulheres10Xatraentes",
+      "category": "empty",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Repositório vazio, sem histórico útil."
+    },
+    {
+      "name": "Homens10xATRAENTES",
+      "category": "empty",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Repositório vazio, sem histórico útil."
+    },
+    {
+      "name": "carrosseis-stories",
+      "category": "empty",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Repositório vazio, sem histórico útil."
+    },
+    {
+      "name": "Jarvis-Sol.IA",
+      "category": "cognitive_prototype",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Aproveitar modelo cognitivo e interface; remover acoplamento Manus."
+    },
+    {
+      "name": "Videoup_app---Criador-de-V-deos-Virais",
+      "category": "legacy_video_app",
+      "action": "archive",
+      "canonical": false,
+      "role": "Versão pública anterior; a versão privada é superset."
+    },
+    {
+      "name": "videoup_app",
+      "category": "video_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Versão mais nova com FFmpeg, Whisper e processamento por IA."
+    },
+    {
+      "name": "JARVIS-SOL",
+      "category": "assistant_infrastructure",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Memória, voz, OpenRouter, anexos, CLI e PWA."
+    },
+    {
+      "name": "protocolo-alto-status",
+      "category": "commercial_funnel",
+      "action": "audit_before_decision",
+      "canonical": false,
+      "role": "Confirmar domínio, checkout e tráfego antes de decidir."
+    },
+    {
+      "name": "diagnostico-presenca-masculina",
+      "category": "commercial_funnel",
+      "action": "audit_before_decision",
+      "canonical": false,
+      "role": "Confirmar publicação e integração com funil masculino."
+    },
+    {
+      "name": "editorial",
+      "category": "empty_placeholders",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Arquivos existentes estão vazios."
+    },
+    {
+      "name": "presenca-feminina",
+      "category": "commercial_funnel",
+      "action": "audit_before_decision",
+      "canonical": false,
+      "role": "Confirmar publicação e conteúdo exclusivo."
+    },
+    {
+      "name": "sol-lima-bio",
+      "category": "brand_source",
+      "action": "keep",
+      "canonical": true,
+      "role": "Bíblia da marca, glossário, história e arquitetura Relacione-se."
+    },
+    {
+      "name": "o-Maestro-ViralLab",
+      "category": "legacy_media_app",
+      "action": "archive",
+      "canonical": false,
+      "role": "Protótipo inicial, superado por maestro-viral-lab."
+    },
+    {
+      "name": "maestro-viral-lab",
+      "category": "media_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Planejamento de vídeo, áudio, melodia e roteiro."
+    },
+    {
+      "name": "posicione-se",
+      "category": "empty",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Repositório vazio, sem histórico útil."
+    },
+    {
+      "name": "posicione-se-sistema",
+      "category": "method_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Infraestrutura do Método Posicione-se."
+    },
+    {
+      "name": "oraculo-magnetico",
+      "category": "strategy_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Fluxo estratégico de coprodução digital."
+    },
+    {
+      "name": "universal-legacy-content-engine",
+      "category": "content_agents",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Agentes de narrativa, viralidade, scripts e revisão."
+    },
+    {
+      "name": "lex-vanguard-app",
+      "category": "empty",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Repositório vazio, sem histórico útil."
+    },
+    {
+      "name": "content-gap-analyzer",
+      "category": "skill",
+      "action": "absorb_then_delete",
+      "canonical": false,
+      "role": "Migrar SKILL.md e referências para o registro interno."
+    },
+    {
+      "name": "escritor-impacto",
+      "category": "skill",
+      "action": "absorb_then_delete",
+      "canonical": false,
+      "role": "Migrar skill de escrita e storytelling."
+    },
+    {
+      "name": "alquimia-de-ouro",
+      "category": "skill",
+      "action": "absorb_then_delete",
+      "canonical": false,
+      "role": "Migrar skill de monetização e oportunidades."
+    },
+    {
+      "name": "skill-revisao-best-seller",
+      "category": "skill",
+      "action": "absorb_then_delete",
+      "canonical": false,
+      "role": "Migrar protocolo de revisão editorial."
+    },
+    {
+      "name": "soberania-feminina-lp",
+      "category": "commercial_funnel",
+      "action": "audit_before_decision",
+      "canonical": false,
+      "role": "Confirmar domínio, checkout e uso atual."
+    },
+    {
+      "name": "protocolo-presenca",
+      "category": "commercial_funnel",
+      "action": "audit_before_decision",
+      "canonical": false,
+      "role": "Confirmar domínio, checkout e uso atual."
+    },
+    {
+      "name": "showdown-feminino",
+      "category": "commercial_funnel",
+      "action": "audit_before_decision",
+      "canonical": false,
+      "role": "Confirmar domínio, checkout e uso atual."
+    },
+    {
+      "name": "adscript-ai",
+      "category": "ads_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Gerador e pré-avaliador de copy de anúncios."
+    },
+    {
+      "name": "magnetus-sales-page-feminino-",
+      "category": "canonical_site",
+      "action": "keep",
+      "canonical": true,
+      "role": "Página feminina oficial, pública e independente."
+    },
+    {
+      "name": "magnetus-landing-page-professional",
+      "category": "legacy_site",
+      "action": "archive",
+      "canonical": false,
+      "role": "Landing antiga do Magnetus feminino."
+    },
+    {
+      "name": "magnetus-landing-page",
+      "category": "legacy_site",
+      "action": "archive",
+      "canonical": false,
+      "role": "Landing antiga do Magnetus feminino."
+    },
+    {
+      "name": "MAGNETUS-protocolo-masculino",
+      "category": "legacy_site",
+      "action": "archive",
+      "canonical": false,
+      "role": "Versão masculina anterior; comparar ativos antes de arquivar."
+    },
+    {
+      "name": "Magnetos-protocolo-homens",
+      "category": "legacy_site",
+      "action": "archive",
+      "canonical": false,
+      "role": "Versão masculina anterior."
+    },
+    {
+      "name": "Magnetus-homens",
+      "category": "canonical_site",
+      "action": "keep",
+      "canonical": true,
+      "role": "Página masculina oficial, pública e independente."
+    },
+    {
+      "name": "magnetus-iii-ugc",
+      "category": "media_asset",
+      "action": "keep",
+      "canonical": false,
+      "role": "Ativos UGC e seletor com mudanças recentes."
+    },
+    {
+      "name": "architect-of-virality",
+      "category": "skill",
+      "action": "absorb_then_delete",
+      "canonical": false,
+      "role": "Migrar agente de viralidade e V-SCORE."
+    },
+    {
+      "name": "sol-lima-neuromarketing-agent",
+      "category": "ads_knowledge",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Migrar prompt, análise e referências privadas para Meta Ads."
+    },
+    {
+      "name": "relacionese-website",
+      "category": "canonical_site",
+      "action": "keep",
+      "canonical": true,
+      "role": "Portal central do ecossistema Relacione-se."
+    },
+    {
+      "name": "nci-viral-agent",
+      "category": "content_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Extrair lógica viral; remover acoplamento Manus."
+    },
+    {
+      "name": "sol-ia-publisher",
+      "category": "editorial_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Publisher separado, já parcialmente consolidado no Tronco."
+    },
+    {
+      "name": "morte-em-vida-repo-editorial",
+      "category": "canonical_book",
+      "action": "keep",
+      "canonical": true,
+      "role": "Fonte editorial ativa e privada de Morte em Vida."
+    },
+    {
+      "name": "reposicionese-livro-v12",
+      "category": "canonical_book",
+      "action": "keep",
+      "canonical": true,
+      "role": "Fonte editorial ativa e privada de Reposicione-se."
+    },
+    {
+      "name": "ecossistema-editorial-inteligente",
+      "category": "editorial_module",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Migrar skills, scripts e mapas editoriais."
+    },
+    {
+      "name": "sistema-editorial-morte-em-vida.",
+      "category": "empty",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Repositório vazio, sem histórico útil."
+    },
+    {
+      "name": "Sistema-de-Gest-o-de-Campanhas-de-Marketing-Digital-Avan-ado",
+      "category": "ads_spec",
+      "action": "absorb_then_delete",
+      "canonical": false,
+      "role": "Migrar especificação para o roadmap do departamento Meta Ads."
+    },
+    {
+      "name": "Reposicione-se-OFICIAL",
+      "category": "empty",
+      "action": "delete_after_confirmation",
+      "canonical": false,
+      "role": "Repositório vazio, sem histórico útil."
+    },
+    {
+      "name": "diagnostico-homens-magnetus",
+      "category": "commercial_funnel",
+      "action": "audit_before_decision",
+      "canonical": false,
+      "role": "Confirmar checkout e publicação antes de decidir."
+    },
+    {
+      "name": "dor-de-cotovelo",
+      "category": "project_spec",
+      "action": "absorb_then_archive",
+      "canonical": false,
+      "role": "Registrar projeto e estratégia no estacionamento oficial."
+    },
+    {
+      "name": "mapa-da-suspeita",
+      "category": "active_mvp",
+      "action": "keep",
+      "canonical": false,
+      "role": "MVP implementado do funil Mapa da Suspeita."
+    },
+    {
+      "name": "repo-canonico",
+      "category": "editorial_legacy",
+      "action": "reconcile_then_archive",
+      "canonical": false,
+      "role": "Comparar com Morte em Vida atual antes de congelar."
+    }
+  ]
+}

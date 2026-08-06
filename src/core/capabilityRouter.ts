@@ -138,6 +138,23 @@ const routeRules: RouteRule[] = [
   }
 ];
 
+const lowEnergySignals = [
+  'estou me sentindo mal',
+  'estou mal',
+  'nao estou bem',
+  'passando mal',
+  'sem energia',
+  'muito cansada',
+  'exausta',
+  'nao consigo fazer',
+  'nao dou conta agora',
+  'preciso deitar',
+  'preciso descansar',
+  'estou tonta',
+  'estou enjoada',
+  'estou fraca'
+];
+
 const paidMediaWriteActionPattern =
   /\b(criar|crie|publicar|publique|ativar|ative|pausar|pause|duplicar|duplique|editar|edite|alterar|altere|aumentar|aumente|reduzir|reduza|mudar|mude|excluir|exclua|subir|lancar|lance|executar|execute|configurar|configure)\b/;
 
@@ -163,6 +180,21 @@ function requestsPaidMediaWrite(text: string): boolean {
 
 export function routeCapability(input: string): RouteDecision {
   const text = normalize(input);
+  const lowEnergyMatches = matchSignals(text, lowEnergySignals);
+
+  if (lowEnergyMatches.length > 0) {
+    return {
+      intent: 'daily',
+      primarySpecialist: 'daily_guardian',
+      supportingSpecialists: ['jarvis_executive'],
+      confidence: Math.min(0.98, 0.82 + lowEnergyMatches.length * 0.04),
+      matchedSignals: lowEnergyMatches,
+      sourceRepositories: ['SOL-IA'],
+      executionMode: 'draft',
+      requiresApproval: false,
+      reason: 'Mal-estar ou energia muito baixa devem reduzir a carga antes de qualquer tarefa, decisao ou configuracao.'
+    };
+  }
 
   for (const rule of routeRules) {
     const matchedSignals = matchSignals(text, rule.signals);

@@ -22,6 +22,27 @@ function buildResult(rawText: string, activeSkill: SkillId): string {
   const lex = snapshot.lexVanguard;
   const daily = snapshot.vidaDiaria;
 
+  if (daily.mode === 'baixa_energia') {
+    return [
+      'Modo cuidado ativado.',
+      '',
+      'O que eu entendi:',
+      'Voce nao esta bem para executar tarefas agora.',
+      '',
+      'O que a Sol.IA faz:',
+      '- interrompe configuracoes, exercicios e decisoes;',
+      '- preserva o assunto para que ele nao desapareca;',
+      '- deixa a retomada preparada para quando voce disser "voltei".',
+      '',
+      'Preciso de voce agora:',
+      'Nada. Descanse.',
+      '',
+      'Assunto preservado:',
+      '- Caixa: ' + box,
+      '- Rota futura: ' + route.reason
+    ].join('\n');
+  }
+
   return [
     'Skill escolhida manualmente: ' + activeSkill,
     'Caixa detectada: ' + box,

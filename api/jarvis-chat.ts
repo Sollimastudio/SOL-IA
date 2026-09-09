@@ -1,10 +1,43 @@
-import { createJarvisHandler } from '../server/jarvis-chat.mjs';
+import { analyzeConversation } from '../server/anti-fatigue.mjs';
 import { withAntiFatigue } from '../server/anti-fatigue-handler.mjs';
+import { createJarvisHandler } from '../server/jarvis-chat.mjs';
 import { routeCapability } from '../src/core/capabilityRouter.js';
 
-// Existing router reused server-side. No API key is imported by the browser.
-const secureChat = createJarvisHandler({ env: process.env, routeInput: routeCapability });
+async function readOrientation(request: Request) {
+  try {
+    const clone = request.clone();
+    if (clone.method !== 'POST' || !clone.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return null;
+    const body = await clone.json();
+    if (body?.mode === 'public' || typeof body?.message !== 'string' || !Array.isArray(body?.history)) return null;
+    return analyzeConversation(body.history, body.message);
+  } catch {
+    return null;
+  }
+}
+
+function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null): typeof fetch {
+  return (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    if (orientation && url.startsWith('https://openrouter.ai/') && typeof init?.body === 'string') {
+      try {
+        const payload = JSON.parse(init.body);
+        const first = payload?.messages?.[0];
+        if (first?.role === 'system' && typeof first.content === 'string') {
+          first.content += `\nORIENTACAO_ANTI_FADIGA_JSON=${JSON.stringify(orientation)}\nUse essa orientação silenciosamente. Não diga quantas vezes a usuária repetiu algo. Preserve o fio principal, responda ao que mudou e trate galhos como galhos, sem diagnosticar a pessoa.`;
+          return globalThis.fetch(input, { ...init, body: JSON.stringify(payload) });
+        }
+      } catch {
+        // A falha da orientação nunca pode corromper o transporte normal do chat.
+      }
+    }
+    return globalThis.fetch(input, init);
+  }) as typeof fetch;
+}
 
 export default {
-  fetch: withAntiFatigue(secureChat)
+  async fetch(request: Request) {
+    const orientation = await readOrientation(request);
+    const secureChat = createJarvisHandler({ env: process.env, routeInput: routeCapability, fetchImpl: guidedFetch(orientation) });
+    return withAntiFatigue(secureChat)(request);
+  }
 };

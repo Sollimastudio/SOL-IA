@@ -4,13 +4,20 @@ export type VoiceCaptureResult = {
   error?: string;
 };
 
+// Complete shared browser contract: both the legacy capture and the new
+// conversational session need end/abort and final-result metadata.
 type SpeechRecognitionConstructor = new () => {
   lang: string;
   interimResults: boolean;
   continuous: boolean;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onerror: ((event: { error?: string }) => void) | null;
+  onresult: ((event: {
+    resultIndex: number;
+    results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
+  }) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
   start: () => void;
+  abort: () => void;
 };
 
 declare global {

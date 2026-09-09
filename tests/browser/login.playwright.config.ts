@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { fileURLToPath } from 'node:url';
 export default defineConfig({
   testDir: '.', testMatch: 'login.spec.ts', timeout: 20000,
   fullyParallel: true, workers: 2, retries: 0,
@@ -9,6 +10,7 @@ export default defineConfig({
     { name: 'mobile-layout', use: { browserName: 'chromium', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } }
   ],
   webServer: {
+    cwd: fileURLToPath(new URL('../../', import.meta.url)),
     command: 'npx vite --config tests/browser/login.vite.config.mjs',
     url: 'http://127.0.0.1:4179', reuseExistingServer: false, timeout: 30000
   }

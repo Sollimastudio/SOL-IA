@@ -1,0 +1,46 @@
+name: Jarvis source library and database isolation
+on:
+  push:
+    branches: ['work/jarvis-neural-conversa-segura-20260908']
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  knowledge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: jarvis_test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: jarvis_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Regression and source contracts without API keys
+        run: node --test tests/*.test.mjs
+      - name: Prepare isolated auth schema (never a production URL)
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/knowledge-setup.sql
+      - name: Apply additive migration twice
+        run: |
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609090310_knowledge_sources.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609090310_knowledge_sources.sql
+      - name: Verify real versions, quotas, locators and RLS
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/knowledge-assertions.sql
+      - name: Test simultaneous revisions with two database connections
+        run: node tests/database-concurrency.mjs

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { AuthPanel } from './components/AuthPanel';
 import { JarvisConversation } from './components/JarvisConversation';
+import { KnowledgeLibrary } from './components/KnowledgeLibrary';
 import { MemoryVault } from './components/MemoryVault';
 import { MetaAdsPanel } from './components/MetaAdsPanel';
 import { ReadOnlySources } from './components/ReadOnlySources';
@@ -13,8 +14,15 @@ export function App() {
   const [memoryRefreshKey, setMemoryRefreshKey] = useState(0);
   useEffect(() => {
     let mounted = true;
-    void getCurrentSession().then(value => { if (mounted) setSession(value); }).catch(() => { if (mounted) setSession(null); });
-    const unsubscribe = subscribeToAuth(setSession);
+    let authEventReceived = false;
+    const unsubscribe = subscribeToAuth(value => {
+      authEventReceived = true;
+      if (mounted) setSession(value);
+    });
+    // A late initial session must not overwrite a newer login/logout event.
+    void getCurrentSession().then(value => {
+      if (mounted && !authEventReceived) setSession(value);
+    }).catch(() => { if (mounted && !authEventReceived) setSession(null); });
     return () => { mounted = false; unsubscribe(); };
   }, []);
   useEffect(() => { setMode('private'); }, [session?.user.id]);
@@ -28,8 +36,9 @@ export function App() {
     <JarvisConversation key={session?.user.id ?? 'signed-out'} session={session} onModeChange={setMode}
       onSaved={() => setMemoryRefreshKey(value => value + 1)} />
     {mode === 'private' && <>
-      <MemoryVault session={session} refreshKey={memoryRefreshKey} />
-      <details className="panel"><summary>Departamentos e integrações existentes</summary><ReadOnlySources /><MetaAdsPanel session={session} /></details>
+      <KnowledgeLibrary key={session?.user.id ?? 'no-user'} session={session} />
+      <MemoryVault key={session?.user.id ?? 'no-user'} session={session} refreshKey={memoryRefreshKey} />
+      <details className="panel"><summary>Departamentos e integrações existentes</summary><ReadOnlySources /><MetaAdsPanel key={session?.user.id ?? 'no-user'} session={session} /></details>
     </>}
   </section></main>;
 }

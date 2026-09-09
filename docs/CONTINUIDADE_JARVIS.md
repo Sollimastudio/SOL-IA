@@ -12,9 +12,12 @@ Assessor pessoal por voz e vídeo, porta única para especialistas (apoio juríd
 
 A interface principal deve permanecer simples: conversar com Jarvis. A complexidade dos agentes, fontes, memória, tarefas e integrações fica nos bastidores ou em uma central secundária. A usuária não deve precisar escolher agente para tarefas comuns.
 
-## Novo requisito central — Anti-Fadiga Adaptativa
+## Arquiteturas obrigatórias
 
-Documento de arquitetura obrigatório: `docs/ARQUITETURA_ANTIFADIGA_ADAPTATIVA.md`.
+- `docs/ARQUITETURA_ANTIFADIGA_ADAPTATIVA.md`: pensamento em árvore, repetição/novidade, loops abertos, relatórios sob demanda e autocorreção supervisionada.
+- `docs/ARQUITETURA_CEREBRO_CRESCENTE_SOCIAL.md`: cérebro por modelos substituíveis, OpenAI dentro do Jarvis via API, radar de novidades, inteligência social, audiência e aprendizagem por resultados.
+
+## Novo requisito central — Anti-Fadiga Adaptativa
 
 O Jarvis deve resolver o problema de organização, não apenas acumular contexto. Deve acompanhar fala ramificada e repetitiva sem repreender a usuária, preservar o assunto-raiz quando surgirem galhos, extrair somente o que mudou, identificar loops abertos, contradições e decisões não consolidadas e devolver direção.
 
@@ -25,11 +28,26 @@ Princípios obrigatórios:
 - manter mapa raiz → galhos → pendências → decisões → tarefas;
 - quando houver desvio, preservar o fio principal e estacionar/relacionar o novo galho;
 - separar fato relatado, decisão aprovada, hipótese, sugestão de IA e material importado;
-- gerar relatórios de progresso operacional (iniciados/concluídos, loops reabertos, decisões consolidadas, ativos produzidos), sem diagnosticar regressão clínica;
+- gerar relatórios de progresso operacional sem diagnosticar regressão clínica;
 - aprender dialeto, jargões, sarcasmo, voz pública/privada/editorial/comercial por exemplos e correções versionadas;
 - tornar a adaptação multiusuário configurável, sem copiar a configuração da Sol nem inferir diagnósticos;
-- “autocorretivo” significa detectar bugs, reproduzir em sandbox, propor patch, testar, comparar e abrir PR; não editar produção sozinho;
-- monitorar inconsistências do próprio sistema, inclusive respostas que alegam ações não executadas e aumento de repetição causado pelo próprio Jarvis.
+- “autocorretivo” significa detectar bugs, reproduzir em sandbox, propor patch, testar, comparar e abrir PR; não editar produção sozinho.
+
+## Cérebro crescente e autoatualização
+
+O Jarvis deve manter memória, perfil, projetos e permissões próprios. O app ChatGPT não é embutido como sessão. Modelos OpenAI podem ser usados via API como cérebro principal ou especialista, junto com web search, file search, funções próprias, MCP e outras ferramentas disponíveis e autorizadas.
+
+Criar `Capability Radar` periódico para acompanhar changelogs/documentação dos fornecedores usados, novos modelos, ferramentas, limites, preços, depreciações, SDKs e vulnerabilidades. Novidade não vira mudança automática: coletar → avaliar impacto → prototipar em branch/sandbox → testar → comparar → PR → promover por gates.
+
+A inteligência cresce por memória corrigida, resultados observados, benchmarks, preferências, decisões consolidadas e ferramentas melhores; não por tratar qualquer inferência como verdade.
+
+## Inteligência social e audiência
+
+Conectar, mediante autorização, múltiplas contas profissionais do Instagram, Facebook Pages e TikTok. Começar em modo somente leitura: coletar métricas/insights permitidos, normalizar desempenho e aprender padrões de formato, tema, gancho, duração, CTA, horário e objetivo.
+
+A usuária define o público desejado em termos estratégicos. O sistema traduz isso para critérios operacionais permitidos pelas plataformas, sem classificar indivíduos por inteligência, pobreza ou outras características sensíveis. Publicação e alterações de campanha entram depois, com escopos oficiais e aprovação adequada.
+
+Relatórios pessoais e de organização ficam sob demanda por padrão. O Jarvis só interrompe com parecer espontâneo quando houver motivo operacional relevante, curto e justificável.
 
 ## Entrega de 9 de setembro — biblioteca de fontes e versões
 
@@ -59,25 +77,19 @@ Se a biblioteca estiver desligada, o chat anterior não muda. Se ligada e indisp
 
 ## Próxima entrega delimitada
 
-1. Implementar o primeiro núcleo Anti-Fadiga: tópico-raiz, galhos, repetição/novidade, loops abertos e delta de decisão, com armazenamento isolado e testes.
-2. Simplificar ainda mais a tela principal: conversa + estado real + voz/encerrar; agentes, fontes e detalhes vão para central secundária.
-3. Apresentar os trechos e versões de `knowledgeSources` na mensagem do chat e acrescentar testes de navegador para troca público/privado/conta.
-4. Validar biblioteca + conversa com contas reais de TESTE e autenticação Supabase; não remover proteção para passar no teste.
-5. Implementar importação DOCX/PDF com pré-visualização, extração rastreável e confirmação de versão; depois busca semântica se necessária.
-6. Consolidar decisões e tarefas com estado durável e aprovadores. Agentes ainda são perfis de resposta, não operadores autônomos.
-7. Criar observabilidade/autocorreção segura: detecção → reprodução → branch → testes → PR → preview → aprovação/rollback.
+1. Simplificar a tela principal para conversa + estado real + voz/encerrar; mover departamentos/fontes/integrações para Central secundária.
+2. Implementar o primeiro núcleo Anti-Fadiga: tópico-raiz, galhos, repetição/novidade, loops abertos e delta de decisão, com armazenamento isolado e testes.
+3. Criar `Model Router` e adaptador opcional para OpenAI Responses API, mantendo fallback atual e sem expor chave no navegador.
+4. Apresentar `knowledgeSources` na mensagem do chat e acrescentar testes de navegador para troca público/privado/conta.
+5. Criar o primeiro `Capability Radar` somente leitura, com registro de novidades e nenhuma autoimplantação.
+6. Criar Social Intelligence Hub somente leitura começando por uma conta de teste/escopo por vez; depois expandir para múltiplas contas.
+7. Validar biblioteca + conversa com contas reais de TESTE e autenticação Supabase; não remover proteção para passar no teste.
+8. Implementar importação DOCX/PDF com pré-visualização e extração rastreável.
+9. Consolidar decisões e tarefas com estado durável e aprovadores. Agentes ainda são perfis de resposta, não operadores autônomos.
+10. Criar observabilidade/autocorreção segura: detecção → reprodução → branch → testes → PR → preview → aprovação/rollback.
 
 ## Exigências grandes ainda abertas
 
 Wake word local/tela bloqueada, identificação de voz, interrupção natural, conversa audiovisual, live no mesmo telefone, tarefas 24h, ferramentas executoras, revisão clínica/jurídica adequada, clone autorizado e cobrança multiusuário. Não declarar concluídas por existir interface ou um teste simulado.
 
 A arquitetura de voz futura pode usar detector local de wake word em cliente compatível e voz em tempo real; a solução exata só deve ser escolhida após prova no iPhone e análise de privacidade. Clone de voz/avatar fica em fase posterior com consentimento e biblioteca de identidade separada da memória íntima.
-
-## Referências técnicas usadas
-
-- https://supabase.com/docs/guides/database/full-text-search
-- https://www.postgresql.org/docs/current/sql-createfunction.html
-- https://picovoice.ai/docs/porcupine/
-- https://openai.com/pt-BR/index/advancing-voice-intelligence-with-new-models-in-the-api/
-- https://developers.heygen.com/
-- https://elevenlabs.io/docs/overview/capabilities/voice-changer

@@ -3,12 +3,33 @@
 ## Ponto único de trabalho
 
 Repositório: `Sollimastudio/SOL-IA`. Proposta ativa: PR #6, branch `work/jarvis-neural-conversa-segura-20260908`.
-Esta etapa parte do commit `546806e9180ce620db2009be71e729bed937c577` e preserva a interface Neural. Não criar outro Jarvis. Não sobrescrever `main`, aplicar migrações reais ou habilitar custos automaticamente.
+Esta etapa preserva a interface Neural e o núcleo seguro. Não criar outro Jarvis. Não sobrescrever `main`, aplicar migrações reais ou habilitar custos automaticamente.
 Antes da continuação, ler este registro, a PR e seu HEAD real; comparar alterações concorrentes.
 
 ## Objetivo que não pode ser perdido
 
 Assessor pessoal por voz e vídeo, porta única para especialistas (apoio jurídico, autorreflexão, conteúdo/copy, tráfego, editorial, audiovisual, tecnologia e negócios). Captura da cama por palavra de ativação com privacidade; memória corrigível; acompanhamento de fontes autorizadas; live em modo público; identidade/clone autorizados; futura venda com dados isolados por cliente. Livros são parte do assessor, não substituem o produto.
+
+A interface principal deve permanecer simples: conversar com Jarvis. A complexidade dos agentes, fontes, memória, tarefas e integrações fica nos bastidores ou em uma central secundária. A usuária não deve precisar escolher agente para tarefas comuns.
+
+## Novo requisito central — Anti-Fadiga Adaptativa
+
+Documento de arquitetura obrigatório: `docs/ARQUITETURA_ANTIFADIGA_ADAPTATIVA.md`.
+
+O Jarvis deve resolver o problema de organização, não apenas acumular contexto. Deve acompanhar fala ramificada e repetitiva sem repreender a usuária, preservar o assunto-raiz quando surgirem galhos, extrair somente o que mudou, identificar loops abertos, contradições e decisões não consolidadas e devolver direção.
+
+Princípios obrigatórios:
+
+- repetição vira sinal interno de saliência/loop, não bronca;
+- nunca dizer automaticamente “você já falou isso” ou expor contagem de repetição sem solicitação;
+- manter mapa raiz → galhos → pendências → decisões → tarefas;
+- quando houver desvio, preservar o fio principal e estacionar/relacionar o novo galho;
+- separar fato relatado, decisão aprovada, hipótese, sugestão de IA e material importado;
+- gerar relatórios de progresso operacional (iniciados/concluídos, loops reabertos, decisões consolidadas, ativos produzidos), sem diagnosticar regressão clínica;
+- aprender dialeto, jargões, sarcasmo, voz pública/privada/editorial/comercial por exemplos e correções versionadas;
+- tornar a adaptação multiusuário configurável, sem copiar a configuração da Sol nem inferir diagnósticos;
+- “autocorretivo” significa detectar bugs, reproduzir em sandbox, propor patch, testar, comparar e abrir PR; não editar produção sozinho;
+- monitorar inconsistências do próprio sistema, inclusive respostas que alegam ações não executadas e aumento de repetição causado pelo próprio Jarvis.
 
 ## Entrega de 9 de setembro — biblioteca de fontes e versões
 
@@ -38,16 +59,25 @@ Se a biblioteca estiver desligada, o chat anterior não muda. Se ligada e indisp
 
 ## Próxima entrega delimitada
 
-1. Apresentar os trechos e versões de `knowledgeSources` na mensagem do chat e acrescentar testes de navegador para troca público/privado/conta.
-2. Validar biblioteca + conversa com contas reais de TESTE e autenticação Supabase; não remover proteção para passar no teste.
-3. Implementar importação DOCX/PDF com pré-visualização, extração rastreável e confirmação de versão; depois busca semântica se necessária.
-4. Consolidar decisões e tarefas com estado durável e aprovadores. Agentes ainda são perfis de resposta, não operadores autônomos.
+1. Implementar o primeiro núcleo Anti-Fadiga: tópico-raiz, galhos, repetição/novidade, loops abertos e delta de decisão, com armazenamento isolado e testes.
+2. Simplificar ainda mais a tela principal: conversa + estado real + voz/encerrar; agentes, fontes e detalhes vão para central secundária.
+3. Apresentar os trechos e versões de `knowledgeSources` na mensagem do chat e acrescentar testes de navegador para troca público/privado/conta.
+4. Validar biblioteca + conversa com contas reais de TESTE e autenticação Supabase; não remover proteção para passar no teste.
+5. Implementar importação DOCX/PDF com pré-visualização, extração rastreável e confirmação de versão; depois busca semântica se necessária.
+6. Consolidar decisões e tarefas com estado durável e aprovadores. Agentes ainda são perfis de resposta, não operadores autônomos.
+7. Criar observabilidade/autocorreção segura: detecção → reprodução → branch → testes → PR → preview → aprovação/rollback.
 
 ## Exigências grandes ainda abertas
 
 Wake word local/tela bloqueada, identificação de voz, interrupção natural, conversa audiovisual, live no mesmo telefone, tarefas 24h, ferramentas executoras, revisão clínica/jurídica adequada, clone autorizado e cobrança multiusuário. Não declarar concluídas por existir interface ou um teste simulado.
 
+A arquitetura de voz futura pode usar detector local de wake word em cliente compatível e voz em tempo real; a solução exata só deve ser escolhida após prova no iPhone e análise de privacidade. Clone de voz/avatar fica em fase posterior com consentimento e biblioteca de identidade separada da memória íntima.
+
 ## Referências técnicas usadas
 
 - https://supabase.com/docs/guides/database/full-text-search
 - https://www.postgresql.org/docs/current/sql-createfunction.html
+- https://picovoice.ai/docs/porcupine/
+- https://openai.com/pt-BR/index/advancing-voice-intelligence-with-new-models-in-the-api/
+- https://developers.heygen.com/
+- https://elevenlabs.io/docs/overview/capabilities/voice-changer

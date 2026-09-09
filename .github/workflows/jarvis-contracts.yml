@@ -16,4 +16,4 @@ jobs:
         with:
           node-version: 22
       - name: Test without keys or paid API calls
-        run: node --test tests/jarvis-chat.test.mjs tests/voice-session.test.mjs
+        run: node --test tests/jarvis-chat.test.mjs tests/voice-session.test.mjs tests/anti-fatigue.test.mjs

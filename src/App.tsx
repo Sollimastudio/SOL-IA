@@ -19,26 +19,32 @@ export function App() {
       authEventReceived = true;
       if (mounted) setSession(value);
     });
-    // A late initial session must not overwrite a newer login/logout event.
     void getCurrentSession().then(value => {
       if (mounted && !authEventReceived) setSession(value);
     }).catch(() => { if (mounted && !authEventReceived) setSession(null); });
     return () => { mounted = false; unsubscribe(); };
   }, []);
   useEffect(() => { setMode('private'); }, [session?.user.id]);
+
   return <main><section className="shell">
     <header className="hero"><div>
-      <p className="eyebrow">JARVIS / SOL.IA · CONVERSA EM ATIVAÇÃO</p>
-      <h1>Seu assessor. Seu contexto.</h1>
-      <p className="hero-copy">Conversa, memória e especialistas. Uma evolução do Sistema Neural, sem recomeçar sua história.</p>
-    </div><div className="security-summary"><strong>{mode === 'public' ? 'Modo público · cofre fora da conversa' : 'Modo privado'}</strong></div></header>
-    {mode === 'private' && <AuthPanel session={session} />}
+      <p className="eyebrow">JARVIS / SOL.IA</p>
+      <h1>Fale comigo.</h1>
+      <p className="hero-copy">Você fala do seu jeito. O Jarvis organiza o contexto e coordena os bastidores.</p>
+    </div><div className="security-summary"><strong>{mode === 'public' ? 'Performance pública' : session ? 'Privado · conectado' : 'Privado · entre para continuar'}</strong></div></header>
+
+    {!session && mode === 'private' && <AuthPanel session={session} />}
+
     <JarvisConversation key={session?.user.id ?? 'signed-out'} session={session} onModeChange={setMode}
       onSaved={() => setMemoryRefreshKey(value => value + 1)} />
-    {mode === 'private' && <>
-      <KnowledgeLibrary key={session?.user.id ?? 'no-user'} session={session} />
-      <MemoryVault key={session?.user.id ?? 'no-user'} session={session} refreshKey={memoryRefreshKey} />
-      <details className="panel"><summary>Departamentos e integrações existentes</summary><ReadOnlySources /><MetaAdsPanel key={session?.user.id ?? 'no-user'} session={session} /></details>
-    </>}
+
+    {mode === 'private' && session && <details className="panel">
+      <summary>Central do Jarvis · projetos, memória e integrações</summary>
+      <p className="status-text">Esta área existe para consulta e configuração. Você não precisa usá-la para conversar com o Jarvis.</p>
+      <AuthPanel session={session} />
+      <KnowledgeLibrary key={session.user.id} session={session} />
+      <MemoryVault key={session.user.id} session={session} refreshKey={memoryRefreshKey} />
+      <details><summary>Integrações e departamentos técnicos</summary><ReadOnlySources /><MetaAdsPanel key={session.user.id} session={session} /></details>
+    </details>}
   </section></main>;
 }

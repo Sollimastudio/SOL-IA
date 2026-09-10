@@ -8,6 +8,8 @@ test('missing configuration is represented without fabricated activation', () =>
   const r = auditEnvironment({});
   assert.equal(r.frontend.project, 'missing'); assert.equal(r.frontend.accessCodeConditionsSatisfied, false);
   assert.equal(r.server.sameProjectAsFrontend, null); assert.equal(r.server.chatEnabled, false);
+  assert.equal(r.server.providerEnvCredentialPresent, false);
+  assert.equal(r.server.runtimeOidcHelperChecked, false);
 });
 test('known projects are classified without returning URLs', () => {
   const r = auditEnvironment({ VITE_SUPABASE_URL: a, VITE_SUPABASE_ANON_KEY: 'sb_publishable_TEST', SUPABASE_URL: b });
@@ -37,10 +39,22 @@ test('all arbitrary input values, key names, IDs and malformed URLs remain redac
   const r = auditEnvironment({
     VITE_SUPABASE_URL: 'https://user:' + secret + '@rkkpbmzrucaghrojujvb.supabase.co',
     VITE_SUPABASE_ANON_KEY: secret, SUPABASE_URL: secret, SUPABASE_ANON_KEY: secret,
-    OPENROUTER_API_KEY: secret, OPENAI_API_KEY: secret,
-    JARVIS_MODEL: secret, JARVIS_ALLOWED_USER_IDS: secret, [secret]: secret
+    OPENROUTER_API_KEY: secret, OPENAI_API_KEY: secret, AI_GATEWAY_API_KEY: secret,
+    VERCEL_OIDC_TOKEN: secret, JARVIS_MODEL: secret, JARVIS_ALLOWED_USER_IDS: secret, [secret]: secret
   });
   assert.equal(r.frontend.project, 'unrecognized_url'); assert.ok(!JSON.stringify(r).includes(secret));
+  assert.equal(r.server.openRouterKeyPresent, true);
+  assert.equal(r.server.gatewayKeyPresent, true);
+  assert.equal(r.server.gatewayEnvOidcPresent, true);
+  assert.equal(r.server.providerEnvCredentialPresent, true);
+});
+test('AI Gateway env presence is distinguished from runtime OIDC helper availability', () => {
+  const r = auditEnvironment({ AI_GATEWAY_API_KEY: 'gateway-test' });
+  assert.equal(r.server.gatewayKeyPresent, true);
+  assert.equal(r.server.gatewayEnvOidcPresent, false);
+  assert.equal(r.server.providerEnvCredentialPresent, true);
+  assert.equal(r.server.runtimeOidcHelperChecked, false);
+  assert.match(r.disclaimer, /runtime OIDC/i);
 });
 test('build frontend and runtime backend configurations are distinguished', () => {
   const r = auditEnvironment({}, { VITE_SUPABASE_URL: a, VITE_SUPABASE_ANON_KEY: 'sb_publishable_TEST', VITE_SECURE_MEMORY_ENABLED: 'true' });

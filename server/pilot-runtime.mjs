@@ -1,3 +1,5 @@
+import { getVercelOidcToken } from '@vercel/oidc';
+
 const DEFAULT_SUPABASE_URL = 'https://rkkpbmzrucaghrojujvb.supabase.co';
 const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_XhsUjBPVRtC-0DBfMNDQTA_FaK8XFj8';
 const DEFAULT_MODEL = 'openai/gpt-5.6-sol';
@@ -6,6 +8,19 @@ const VERCEL_GATEWAY_CHAT_URL = 'https://ai-gateway.vercel.sh/v1/chat/completion
 
 function first(value, fallback) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
+}
+
+async function resolveGatewayCredential(baseEnv = {}) {
+  const configured = first(baseEnv.AI_GATEWAY_API_KEY || baseEnv.VERCEL_OIDC_TOKEN, '');
+  if (configured) return { credential: configured, source: 'env' };
+
+  try {
+    const oidc = await getVercelOidcToken();
+    const credential = first(oidc, '');
+    return { credential, source: credential ? 'oidc_helper' : 'none' };
+  } catch {
+    return { credential: '', source: 'none' };
+  }
 }
 
 export async function resolvePilotRuntime(request, baseEnv = {}, fetchImpl = globalThis.fetch) {
@@ -46,7 +61,10 @@ export async function resolvePilotRuntime(request, baseEnv = {}, fetchImpl = glo
   }
 
   const explicitOpenRouter = first(baseEnv.OPENROUTER_API_KEY, '');
-  const gatewayCredential = first(baseEnv.AI_GATEWAY_API_KEY || baseEnv.VERCEL_OIDC_TOKEN, '');
+  const gateway = explicitOpenRouter
+    ? { credential: '', source: 'none' }
+    : await resolveGatewayCredential(baseEnv);
+  const gatewayCredential = gateway.credential;
   const useGateway = !explicitOpenRouter && Boolean(gatewayCredential);
   const providerCredential = explicitOpenRouter || gatewayCredential;
   const pilotVerified = allowedUser !== '__pilot_not_verified__';
@@ -79,6 +97,7 @@ export async function resolvePilotRuntime(request, baseEnv = {}, fetchImpl = glo
       canUseAi,
       providerCredentialPresent,
       gatewayCredentialPresent: Boolean(gatewayCredential),
+      gatewayCredentialSource: gateway.source,
       explicitOpenRouterPresent: Boolean(explicitOpenRouter),
       readinessReason
     }

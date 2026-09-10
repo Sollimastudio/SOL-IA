@@ -14,14 +14,14 @@ export async function requestEmailCode(_email: string) {
   if (new URLSearchParams(location.search).get('case') === 'failure' && attempts === 1) {
     throw new Error('Synthetic network failure');
   }
-  return { ok: true, message: 'Código enviado. Digite aqui os 6 números recebidos no e-mail.' };
+  return { ok: true, message: 'Código enviado. Digite aqui o código numérico recebido no e-mail.' };
 }
 export const sendMagicLink = requestEmailCode;
 export async function verifyEmailCode(_email: string, code: string) {
   verifications += 1;
   (window as unknown as { __authVerifications: number }).__authVerifications = verifications;
   await new Promise(resolve => setTimeout(resolve, 50));
-  if (code !== '123456') return { ok: false, message: 'Código inválido ou expirado. Solicite um novo código.' };
+  if (code !== '12345678') return { ok: false, message: 'Código inválido ou expirado. Solicite um novo código.' };
   return { ok: true, message: 'Acesso confirmado. Entrando no Jarvis…' };
 }
 export async function signOut() { return { ok: true, message: 'Sessão encerrada.' }; }

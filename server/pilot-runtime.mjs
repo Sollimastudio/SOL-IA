@@ -10,12 +10,12 @@ function first(value, fallback) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
-async function resolveGatewayCredential(baseEnv = {}) {
+async function resolveGatewayCredential(baseEnv = {}, oidcResolver = getVercelOidcToken) {
   const configured = first(baseEnv.AI_GATEWAY_API_KEY || baseEnv.VERCEL_OIDC_TOKEN, '');
   if (configured) return { credential: configured, source: 'env' };
 
   try {
-    const oidc = await getVercelOidcToken();
+    const oidc = await oidcResolver();
     const credential = first(oidc, '');
     return { credential, source: credential ? 'oidc_helper' : 'none' };
   } catch {
@@ -23,7 +23,12 @@ async function resolveGatewayCredential(baseEnv = {}) {
   }
 }
 
-export async function resolvePilotRuntime(request, baseEnv = {}, fetchImpl = globalThis.fetch) {
+export async function resolvePilotRuntime(
+  request,
+  baseEnv = {},
+  fetchImpl = globalThis.fetch,
+  oidcResolver = getVercelOidcToken
+) {
   const supabaseUrl = first(baseEnv.SUPABASE_URL || baseEnv.VITE_SUPABASE_URL, DEFAULT_SUPABASE_URL);
   const supabaseKey = first(baseEnv.SUPABASE_ANON_KEY || baseEnv.VITE_SUPABASE_ANON_KEY, DEFAULT_SUPABASE_PUBLISHABLE_KEY);
   const authorization = request.headers.get('authorization') || '';
@@ -63,7 +68,7 @@ export async function resolvePilotRuntime(request, baseEnv = {}, fetchImpl = glo
   const explicitOpenRouter = first(baseEnv.OPENROUTER_API_KEY, '');
   const gateway = explicitOpenRouter
     ? { credential: '', source: 'none' }
-    : await resolveGatewayCredential(baseEnv);
+    : await resolveGatewayCredential(baseEnv, oidcResolver);
   const gatewayCredential = gateway.credential;
   const useGateway = !explicitOpenRouter && Boolean(gatewayCredential);
   const providerCredential = explicitOpenRouter || gatewayCredential;

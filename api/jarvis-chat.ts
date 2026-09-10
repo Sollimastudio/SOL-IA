@@ -66,6 +66,7 @@ export default {
       canUseAi: runtime.diagnostics.canUseAi,
       providerCredentialPresent: runtime.diagnostics.providerCredentialPresent,
       gatewayCredentialPresent: runtime.diagnostics.gatewayCredentialPresent,
+      gatewayCredentialSource: runtime.diagnostics.gatewayCredentialSource,
       explicitOpenRouterPresent: runtime.diagnostics.explicitOpenRouterPresent,
       chatFlagEnabled,
       blockReason

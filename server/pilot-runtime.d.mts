@@ -1,4 +1,9 @@
-export function resolvePilotRuntime(request: Request, baseEnv?: Record<string, string | undefined>, fetchImpl?: typeof fetch): Promise<{
+export function resolvePilotRuntime(
+  request: Request,
+  baseEnv?: Record<string, string | undefined>,
+  fetchImpl?: typeof fetch,
+  oidcResolver?: () => string | undefined | Promise<string | undefined>
+): Promise<{
   env: Record<string, string | undefined>;
   useGateway: boolean;
   gatewayCredential: string;

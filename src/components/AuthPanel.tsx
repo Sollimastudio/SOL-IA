@@ -1,27 +1,52 @@
 import { FormEvent, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { sendMagicLink, signOut } from '../services/authService';
+import { requestEmailCode, signOut, verifyEmailCode } from '../services/authService';
 import { isSecureMemoryEnabled, isSupabaseConfigured } from '../services/supabaseClient';
 
 type AuthPanelProps = { session: Session | null };
 
 export function AuthPanel({ session }: AuthPanelProps) {
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [codeRequested, setCodeRequested] = useState(false);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
 
-  async function handleLogin(event: FormEvent) {
+  async function handleRequestCode(event: FormEvent) {
     event.preventDefault();
     if (pending.current || !isSecureMemoryEnabled || !isSupabaseConfigured) return;
     pending.current = true;
     setBusy(true);
     setStatus('');
     try {
-      const result = await sendMagicLink(email);
+      const result = await requestEmailCode(email);
       setStatus(result.message);
+      if (result.ok) {
+        setCodeRequested(true);
+        setCode('');
+      }
     } catch {
-      setStatus('Não foi possível enviar o acesso. Tente novamente.');
+      setStatus('Não foi possível enviar o código. Tente novamente.');
+    } finally {
+      pending.current = false;
+      setBusy(false);
+    }
+  }
+
+  async function handleVerifyCode(event: FormEvent) {
+    event.preventDefault();
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setStatus('Verificando código…');
+    try {
+      const result = await verifyEmailCode(email, code);
+      setStatus(result.message);
+      if (!result.ok) setBusy(false);
+    } catch {
+      setStatus('Não foi possível confirmar o código. Tente novamente.');
+      setBusy(false);
     } finally {
       pending.current = false;
       setBusy(false);
@@ -70,17 +95,36 @@ export function AuthPanel({ session }: AuthPanelProps) {
 
   return <section id="jarvis-access" className="panel" aria-labelledby="jarvis-access-title">
     <h2 id="jarvis-access-title">Entrar no Jarvis</h2>
-    <p>Use seu e-mail para receber um link de acesso. Não precisa de senha.</p>
-    <form onSubmit={handleLogin} aria-busy={busy}>
-      <label htmlFor="auth-email">Seu e-mail</label>
-      <input id="auth-email" type="email" autoComplete="email" inputMode="email"
-        autoCapitalize="none" spellCheck={false} value={email}
-        onChange={event => setEmail(event.target.value)} placeholder="seu@email.com"
-        required disabled={busy} style={{ display: 'block', width: '100%', marginTop: 8, fontSize: '1rem' }} />
-      <button className="button" disabled={busy} type="submit" style={{ width: '100%', marginTop: 14 }}>
-        {busy ? 'Enviando…' : 'Enviar link de acesso'}
+    {!codeRequested ? <>
+      <p>Digite seu e-mail. O Jarvis vai enviar um código de 6 números para você entrar sem senha e sem sair desta tela.</p>
+      <form onSubmit={handleRequestCode} aria-busy={busy}>
+        <label htmlFor="auth-email">Seu e-mail</label>
+        <input id="auth-email" type="email" autoComplete="email" inputMode="email"
+          autoCapitalize="none" spellCheck={false} value={email}
+          onChange={event => setEmail(event.target.value)} placeholder="seu@email.com"
+          required disabled={busy} style={{ display: 'block', width: '100%', marginTop: 8, fontSize: '1rem' }} />
+        <button className="button" disabled={busy} type="submit" style={{ width: '100%', marginTop: 14 }}>
+          {busy ? 'Enviando…' : 'Enviar código'}
+        </button>
+      </form>
+    </> : <>
+      <p>Enviamos um código para <strong>{email}</strong>. Volte aqui e digite os 6 números; não clique em link de login.</p>
+      <form onSubmit={handleVerifyCode} aria-busy={busy}>
+        <label htmlFor="auth-code">Código de acesso</label>
+        <input id="auth-code" type="text" inputMode="numeric" autoComplete="one-time-code"
+          pattern="[0-9]{6}" maxLength={6} value={code}
+          onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+          placeholder="000000" required disabled={busy}
+          style={{ display: 'block', width: '100%', marginTop: 8, fontSize: '1.3rem', letterSpacing: '0.2em' }} />
+        <button className="button" disabled={busy || code.length !== 6} type="submit" style={{ width: '100%', marginTop: 14 }}>
+          {busy ? 'Verificando…' : 'Entrar no Jarvis'}
+        </button>
+      </form>
+      <button className="button button-secondary" type="button" disabled={busy}
+        onClick={() => { setCodeRequested(false); setCode(''); setStatus(''); }} style={{ width: '100%', marginTop: 10 }}>
+        Usar outro e-mail ou pedir novo código
       </button>
-    </form>
+    </>}
     <p className="status-text" role="status" aria-live="polite">{status}</p>
   </section>;
 }

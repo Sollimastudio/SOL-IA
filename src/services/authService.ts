@@ -58,7 +58,7 @@ export async function requestEmailCode(email: string): Promise<AuthResult> {
 
   return {
     ok: true,
-    message: 'Codigo enviado. Digite aqui os 6 numeros recebidos no email.'
+    message: 'Codigo enviado. Digite aqui o codigo numerico recebido no email.'
   };
 }
 
@@ -70,7 +70,9 @@ export async function verifyEmailCode(email: string, code: string): Promise<Auth
   const cleanEmail = normalizeEmail(email);
   const cleanCode = code.replace(/\D/g, '');
   if (!cleanEmail) return { ok: false, message: 'Digite um email valido.' };
-  if (!/^\d{6}$/.test(cleanCode)) return { ok: false, message: 'Digite o codigo de 6 numeros.' };
+  if (!/^\d{6,10}$/.test(cleanCode)) {
+    return { ok: false, message: 'Digite o codigo numerico completo recebido no email.' };
+  }
 
   const { data, error } = await supabase.auth.verifyOtp({
     email: cleanEmail,

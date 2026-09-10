@@ -30,6 +30,25 @@ async function readOrientation(request: Request) {
   }
 }
 
+async function safeProviderCategory(response: Response): Promise<string | null> {
+  if (response.ok) return null;
+  try {
+    const data = await response.clone().json();
+    const type = typeof data?.error?.type === 'string' ? data.error.type : typeof data?.type === 'string' ? data.type : '';
+    const message = typeof data?.error?.message === 'string' ? data.error.message : typeof data?.error === 'string' ? data.error : '';
+    if (type === 'quota_for_entity_exceeded' || response.status === 402) return 'budget_or_credit';
+    if (/restricted access to this model/i.test(message)) return 'model_restricted';
+    if (/restricted access to this provider/i.test(message)) return 'provider_restricted';
+    if (type === 'no_providers_available') return 'no_providers_available';
+    if (response.status === 403) return 'forbidden';
+    if (response.status === 401) return 'provider_authentication';
+    if (response.status === 429) return 'provider_rate_limit';
+  } catch {
+    // Provider body is intentionally not logged. Only safe categories are returned.
+  }
+  return null;
+}
+
 function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null, baseFetch: typeof fetch): typeof fetch {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -57,14 +76,16 @@ function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null,
       console.info('[JARVIS_PROVIDER_SAFE]', JSON.stringify({
         stage: 'chat_completion',
         status: response.status,
-        ok: response.ok
+        ok: response.ok,
+        category: await safeProviderCategory(response)
       }));
       return response;
     } catch {
       console.info('[JARVIS_PROVIDER_SAFE]', JSON.stringify({
         stage: 'chat_completion_transport',
         status: null,
-        ok: false
+        ok: false,
+        category: 'transport'
       }));
       throw new Error('provider_transport');
     }

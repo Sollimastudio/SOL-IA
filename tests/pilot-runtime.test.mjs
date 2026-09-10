@@ -6,6 +6,7 @@ const owner = '11111111-1111-4111-8111-111111111111';
 const request = (token = '') => new Request('https://preview.invalid/api/jarvis-chat', {
   method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}
 });
+const noOidc = async () => '';
 
 function fakeFetch({ canUseAi = false, model = 'openai/gpt-5.6-sol', member = true } = {}) {
   return async (url) => {
@@ -17,39 +18,64 @@ function fakeFetch({ canUseAi = false, model = 'openai/gpt-5.6-sol', member = tr
 }
 
 test('fallback public Supabase config is available without Vercel env vars', async () => {
-  const runtime = await resolvePilotRuntime(request(), {}, fakeFetch());
+  const runtime = await resolvePilotRuntime(request(), {}, fakeFetch(), noOidc);
   assert.match(runtime.env.SUPABASE_URL, /^https:\/\/rkkpbmzrucaghrojujvb\.supabase\.co$/);
   assert.match(runtime.env.SUPABASE_ANON_KEY, /^sb_publishable_/);
   assert.equal(runtime.env.JARVIS_KNOWLEDGE_ENABLED, 'true');
   assert.equal(runtime.env.JARVIS_CHAT_ENABLED, 'false');
   assert.equal(runtime.useGateway, false);
+  assert.equal(runtime.diagnostics.gatewayCredentialSource, 'none');
 });
 
 test('authenticated pilot membership replaces a manual user-id allowlist', async () => {
-  const runtime = await resolvePilotRuntime(request('session'), {}, fakeFetch({ model: 'openai/test-model' }));
+  const runtime = await resolvePilotRuntime(request('session'), {}, fakeFetch({ model: 'openai/test-model' }), noOidc);
   assert.equal(runtime.env.JARVIS_ALLOWED_USER_IDS, owner);
   assert.equal(runtime.env.JARVIS_MODEL, 'openai/test-model');
   assert.equal(runtime.env.JARVIS_CHAT_ENABLED, 'false');
 });
 
 test('AI stays disabled for an authenticated non-member', async () => {
-  const runtime = await resolvePilotRuntime(request('session'), { VERCEL_OIDC_TOKEN: 'oidc-test' }, fakeFetch({ member: false, canUseAi: true }));
+  const runtime = await resolvePilotRuntime(request('session'), { VERCEL_OIDC_TOKEN: 'oidc-test' }, fakeFetch({ member: false, canUseAi: true }), noOidc);
   assert.notEqual(runtime.env.JARVIS_ALLOWED_USER_IDS, owner);
   assert.equal(runtime.env.JARVIS_CHAT_ENABLED, 'false');
 });
 
-test('Vercel OIDC activates Gateway only after database approval', async () => {
-  const runtime = await resolvePilotRuntime(request('session'), { VERCEL_OIDC_TOKEN: 'oidc-test' }, fakeFetch({ canUseAi: true }));
+test('Vercel OIDC env activates Gateway only after database approval', async () => {
+  const runtime = await resolvePilotRuntime(request('session'), { VERCEL_OIDC_TOKEN: 'oidc-test' }, fakeFetch({ canUseAi: true }), noOidc);
   assert.equal(runtime.env.JARVIS_ALLOWED_USER_IDS, owner);
   assert.equal(runtime.env.JARVIS_CHAT_ENABLED, 'true');
   assert.equal(runtime.useGateway, true);
   assert.equal(runtime.gatewayCredential, 'oidc-test');
+  assert.equal(runtime.diagnostics.gatewayCredentialSource, 'env');
+});
+
+test('official Vercel OIDC helper activates Gateway when env credential is absent', async () => {
+  const runtime = await resolvePilotRuntime(
+    request('session'),
+    {},
+    fakeFetch({ canUseAi: true }),
+    async () => 'oidc-from-helper'
+  );
+  assert.equal(runtime.env.JARVIS_ALLOWED_USER_IDS, owner);
+  assert.equal(runtime.env.JARVIS_CHAT_ENABLED, 'true');
+  assert.equal(runtime.useGateway, true);
+  assert.equal(runtime.gatewayCredential, 'oidc-from-helper');
+  assert.equal(runtime.diagnostics.providerCredentialPresent, true);
+  assert.equal(runtime.diagnostics.gatewayCredentialSource, 'oidc_helper');
+  assert.equal(runtime.diagnostics.readinessReason, 'ready');
 });
 
 test('explicit OpenRouter configuration wins over Gateway OIDC', async () => {
-  const runtime = await resolvePilotRuntime(request('session'), { OPENROUTER_API_KEY: 'or-test', VERCEL_OIDC_TOKEN: 'oidc-test' }, fakeFetch({ canUseAi: true }));
+  let oidcCalls = 0;
+  const runtime = await resolvePilotRuntime(
+    request('session'),
+    { OPENROUTER_API_KEY: 'or-test', VERCEL_OIDC_TOKEN: 'oidc-test' },
+    fakeFetch({ canUseAi: true }),
+    async () => { oidcCalls += 1; return 'should-not-be-used'; }
+  );
   assert.equal(runtime.useGateway, false);
   assert.equal(runtime.env.OPENROUTER_API_KEY, 'or-test');
+  assert.equal(oidcCalls, 0);
 });
 
 test('provider-aware transport rewrites only the model provider call', async () => {

@@ -1,5 +1,3 @@
-import { getVercelOidcToken } from '@vercel/oidc';
-
 const DEFAULT_SUPABASE_URL = 'https://rkkpbmzrucaghrojujvb.supabase.co';
 const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_XhsUjBPVRtC-0DBfMNDQTA_FaK8XFj8';
 const DEFAULT_MODEL = 'openai/gpt-5.6-sol';
@@ -10,7 +8,12 @@ function first(value, fallback) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
-async function resolveGatewayCredential(baseEnv = {}, oidcResolver = getVercelOidcToken) {
+async function defaultOidcResolver() {
+  const { getVercelOidcToken } = await import('@vercel/oidc');
+  return getVercelOidcToken();
+}
+
+async function resolveGatewayCredential(baseEnv = {}, oidcResolver = defaultOidcResolver) {
   const configured = first(baseEnv.AI_GATEWAY_API_KEY || baseEnv.VERCEL_OIDC_TOKEN, '');
   if (configured) return { credential: configured, source: 'env' };
 
@@ -27,7 +30,7 @@ export async function resolvePilotRuntime(
   request,
   baseEnv = {},
   fetchImpl = globalThis.fetch,
-  oidcResolver = getVercelOidcToken
+  oidcResolver = defaultOidcResolver
 ) {
   const supabaseUrl = first(baseEnv.SUPABASE_URL || baseEnv.VITE_SUPABASE_URL, DEFAULT_SUPABASE_URL);
   const supabaseKey = first(baseEnv.SUPABASE_ANON_KEY || baseEnv.VITE_SUPABASE_ANON_KEY, DEFAULT_SUPABASE_PUBLISHABLE_KEY);

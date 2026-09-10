@@ -1,18 +1,42 @@
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { requestEmailCode, signOut, verifyEmailCode } from '../services/authService';
 import { isSecureMemoryEnabled, isSupabaseConfigured } from '../services/supabaseClient';
 
 type AuthPanelProps = { session: Session | null };
+const PENDING_EMAIL_KEY = 'jarvis.pendingOtpEmail';
+
+function readPendingEmail(): string {
+  if (typeof window === 'undefined') return '';
+  try { return window.localStorage.getItem(PENDING_EMAIL_KEY) || ''; }
+  catch { return ''; }
+}
+
+function rememberPendingEmail(email: string) {
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.setItem(PENDING_EMAIL_KEY, email.trim().toLowerCase()); }
+  catch { /* Login still works without local persistence. */ }
+}
+
+function clearPendingEmail() {
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.removeItem(PENDING_EMAIL_KEY); }
+  catch { /* Best-effort local cleanup only. */ }
+}
 
 export function AuthPanel({ session }: AuthPanelProps) {
-  const [email, setEmail] = useState('');
+  const pendingEmail = readPendingEmail();
+  const [email, setEmail] = useState(pendingEmail);
   const [code, setCode] = useState('');
-  const [codeRequested, setCodeRequested] = useState(false);
+  const [codeRequested, setCodeRequested] = useState(Boolean(pendingEmail));
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
   const codeLengthValid = code.length >= 6 && code.length <= 10;
+
+  useEffect(() => {
+    if (session?.user) clearPendingEmail();
+  }, [session?.user]);
 
   async function handleRequestCode(event: FormEvent) {
     event.preventDefault();
@@ -24,6 +48,7 @@ export function AuthPanel({ session }: AuthPanelProps) {
       const result = await requestEmailCode(email);
       setStatus(result.message);
       if (result.ok) {
+        rememberPendingEmail(email);
         setCodeRequested(true);
         setCode('');
       }
@@ -44,10 +69,9 @@ export function AuthPanel({ session }: AuthPanelProps) {
     try {
       const result = await verifyEmailCode(email, code);
       setStatus(result.message);
-      if (!result.ok) setBusy(false);
+      if (result.ok) clearPendingEmail();
     } catch {
       setStatus('Não foi possível confirmar o código. Tente novamente.');
-      setBusy(false);
     } finally {
       pending.current = false;
       setBusy(false);
@@ -67,6 +91,26 @@ export function AuthPanel({ session }: AuthPanelProps) {
       pending.current = false;
       setBusy(false);
     }
+  }
+
+  function useExistingCode() {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setStatus('Digite seu e-mail primeiro; não vamos enviar outro código.');
+      return;
+    }
+    rememberPendingEmail(cleanEmail);
+    setEmail(cleanEmail);
+    setCodeRequested(true);
+    setCode('');
+    setStatus('Digite abaixo o código que já chegou ao seu e-mail.');
+  }
+
+  function resetPendingLogin() {
+    clearPendingEmail();
+    setCodeRequested(false);
+    setCode('');
+    setStatus('');
   }
 
   if (!isSecureMemoryEnabled || !isSupabaseConfigured) {
@@ -97,7 +141,7 @@ export function AuthPanel({ session }: AuthPanelProps) {
   return <section id="jarvis-access" className="panel" aria-labelledby="jarvis-access-title">
     <h2 id="jarvis-access-title">Entrar no Jarvis</h2>
     {!codeRequested ? <>
-      <p>Digite seu e-mail. O Jarvis vai enviar um código numérico para você entrar sem senha e sem sair desta tela.</p>
+      <p>Digite seu e-mail. O Jarvis envia um código numérico para você entrar sem senha.</p>
       <form onSubmit={handleRequestCode} aria-busy={busy}>
         <label htmlFor="auth-email">Seu e-mail</label>
         <input id="auth-email" type="email" autoComplete="email" inputMode="email"
@@ -108,8 +152,12 @@ export function AuthPanel({ session }: AuthPanelProps) {
           {busy ? 'Enviando…' : 'Enviar código'}
         </button>
       </form>
+      <button className="button button-secondary" type="button" disabled={busy || !email.trim()}
+        onClick={useExistingCode} style={{ width: '100%', marginTop: 10 }}>
+        Já tenho um código
+      </button>
     </> : <>
-      <p>Enviamos um código para <strong>{email}</strong>. Volte aqui e digite o código numérico completo recebido no e-mail.</p>
+      <p>Digite o código numérico completo enviado para <strong>{email}</strong>. Se esta página recarregar, esta etapa será mantida.</p>
       <form onSubmit={handleVerifyCode} aria-busy={busy}>
         <label htmlFor="auth-code">Código de acesso</label>
         <input id="auth-code" type="text" inputMode="numeric" autoComplete="one-time-code"
@@ -122,8 +170,8 @@ export function AuthPanel({ session }: AuthPanelProps) {
         </button>
       </form>
       <button className="button button-secondary" type="button" disabled={busy}
-        onClick={() => { setCodeRequested(false); setCode(''); setStatus(''); }} style={{ width: '100%', marginTop: 10 }}>
-        Usar outro e-mail ou pedir novo código
+        onClick={resetPendingLogin} style={{ width: '100%', marginTop: 10 }}>
+        Trocar e-mail ou pedir outro código
       </button>
     </>}
     <p className="status-text" role="status" aria-live="polite">{status}</p>

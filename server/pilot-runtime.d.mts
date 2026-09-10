@@ -7,6 +7,7 @@ export function resolvePilotRuntime(request: Request, baseEnv?: Record<string, s
     canUseAi: boolean;
     providerCredentialPresent: boolean;
     gatewayCredentialPresent: boolean;
+    gatewayCredentialSource: 'env' | 'oidc_helper' | 'none';
     explicitOpenRouterPresent: boolean;
     readinessReason: 'pilot_not_verified' | 'ai_not_authorized' | 'provider_credential_missing' | 'ready';
   };

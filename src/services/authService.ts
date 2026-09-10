@@ -8,7 +8,7 @@ export type AuthResult = {
 
 function authUnavailableMessage(): string {
   if (!isSecureMemoryEnabled) {
-    return 'O cofre seguro ainda nao foi ativado. Primeiro aplique a migracao RLS e habilite VITE_SECURE_MEMORY_ENABLED.';
+    return 'O cofre seguro ainda nao foi ativado.';
   }
   return 'Supabase Auth ainda nao esta configurado.';
 }
@@ -45,7 +45,8 @@ export async function sendMagicLink(email: string): Promise<AuthResult> {
   const { error } = await supabase.auth.signInWithOtp({
     email: cleanEmail,
     options: {
-      emailRedirectTo: window.location.origin
+      emailRedirectTo: window.location.origin,
+      shouldCreateUser: false
     }
   });
 

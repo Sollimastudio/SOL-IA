@@ -12,6 +12,7 @@ export function AuthPanel({ session }: AuthPanelProps) {
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
+  const codeLengthValid = code.length >= 6 && code.length <= 10;
 
   async function handleRequestCode(event: FormEvent) {
     event.preventDefault();
@@ -96,7 +97,7 @@ export function AuthPanel({ session }: AuthPanelProps) {
   return <section id="jarvis-access" className="panel" aria-labelledby="jarvis-access-title">
     <h2 id="jarvis-access-title">Entrar no Jarvis</h2>
     {!codeRequested ? <>
-      <p>Digite seu e-mail. O Jarvis vai enviar um código de 6 números para você entrar sem senha e sem sair desta tela.</p>
+      <p>Digite seu e-mail. O Jarvis vai enviar um código numérico para você entrar sem senha e sem sair desta tela.</p>
       <form onSubmit={handleRequestCode} aria-busy={busy}>
         <label htmlFor="auth-email">Seu e-mail</label>
         <input id="auth-email" type="email" autoComplete="email" inputMode="email"
@@ -108,15 +109,15 @@ export function AuthPanel({ session }: AuthPanelProps) {
         </button>
       </form>
     </> : <>
-      <p>Enviamos um código para <strong>{email}</strong>. Volte aqui e digite os 6 números; não clique em link de login.</p>
+      <p>Enviamos um código para <strong>{email}</strong>. Volte aqui e digite o código numérico completo recebido no e-mail.</p>
       <form onSubmit={handleVerifyCode} aria-busy={busy}>
         <label htmlFor="auth-code">Código de acesso</label>
         <input id="auth-code" type="text" inputMode="numeric" autoComplete="one-time-code"
-          pattern="[0-9]{6}" maxLength={6} value={code}
-          onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-          placeholder="000000" required disabled={busy}
+          pattern="[0-9]{6,10}" minLength={6} maxLength={10} value={code}
+          onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 10))}
+          placeholder="00000000" required disabled={busy}
           style={{ display: 'block', width: '100%', marginTop: 8, fontSize: '1.3rem', letterSpacing: '0.2em' }} />
-        <button className="button" disabled={busy || code.length !== 6} type="submit" style={{ width: '100%', marginTop: 14 }}>
+        <button className="button" disabled={busy || !codeLengthValid} type="submit" style={{ width: '100%', marginTop: 14 }}>
           {busy ? 'Verificando…' : 'Entrar no Jarvis'}
         </button>
       </form>

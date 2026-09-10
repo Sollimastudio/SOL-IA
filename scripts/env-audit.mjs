@@ -1,6 +1,7 @@
 /** Preview-only, allowlisted configuration audit. No network calls or mutations.
  * Never print environment values, URLs, key fragments, emails or user IDs.
  * Frontend values follow Vite's production build; server values are process.env.
+ * Runtime OIDC obtained through @vercel/oidc is intentionally NOT inferred from this build snapshot.
  */
 import { pathToFileURL } from 'node:url';
 
@@ -8,7 +9,8 @@ const presenceKeys = [
   'VITE_SUPABASE_URL', 'VITE_SUPABASE_ANON_KEY', 'VITE_SECURE_MEMORY_ENABLED',
   'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'JARVIS_CHAT_ENABLED',
   'JARVIS_KNOWLEDGE_ENABLED', 'JARVIS_ALLOWED_USER_IDS',
-  'JARVIS_MODEL', 'OPENROUTER_API_KEY', 'OPENAI_API_KEY'
+  'JARVIS_MODEL', 'OPENROUTER_API_KEY', 'OPENAI_API_KEY',
+  'AI_GATEWAY_API_KEY', 'VERCEL_OIDC_TOKEN'
 ];
 const projects = {
   gsrltjndmyiwkmudnpyl: 'cerebro Sol',
@@ -48,9 +50,12 @@ export function auditEnvironment(server = {}, frontend = server) {
   const variables = Object.fromEntries(presenceKeys.map(name => [name, {
     present: present(name.startsWith('VITE_') ? frontend[name] : server[name])
   }]));
+  const openRouterKeyPresent = present(server.OPENROUTER_API_KEY);
+  const gatewayKeyPresent = present(server.AI_GATEWAY_API_KEY);
+  const gatewayEnvOidcPresent = present(server.VERCEL_OIDC_TOKEN);
   // An explicit whitelist prevents arbitrary variable names/values reaching logs.
   return {
-    schema: 'jarvis-env-audit-v1', scope: 'preview_build_snapshot',
+    schema: 'jarvis-env-audit-v2', scope: 'preview_build_snapshot',
     variables,
     frontend: {
       project: label(frontUrl),
@@ -65,11 +70,16 @@ export function auditEnvironment(server = {}, frontend = server) {
       knowledgeEnabled: server.JARVIS_KNOWLEDGE_ENABLED === 'true',
       pilotAllowlistPresent: typeof server.JARVIS_ALLOWED_USER_IDS === 'string' && server.JARVIS_ALLOWED_USER_IDS.split(',').some(present),
       modelConfigured: present(server.JARVIS_MODEL),
-      providerKeyPresent: present(server.OPENROUTER_API_KEY),
+      providerKeyPresent: openRouterKeyPresent,
+      openRouterKeyPresent,
+      gatewayKeyPresent,
+      gatewayEnvOidcPresent,
+      providerEnvCredentialPresent: openRouterKeyPresent || gatewayKeyPresent || gatewayEnvOidcPresent,
+      runtimeOidcHelperChecked: false,
       sameProjectAsFrontend: frontRef && backRef ? frontRef === backRef : null,
       sameKeyAsFrontend: present(serverKey) && present(frontend.VITE_SUPABASE_ANON_KEY) ? serverKey === frontend.VITE_SUPABASE_ANON_KEY : null
     },
-    disclaimer: 'Presence and key shape are not authentication, RLS, model availability or end-to-end validation.'
+    disclaimer: 'Build-time presence is not runtime OIDC, authentication, RLS, model availability or end-to-end validation.'
   };
 }
 

@@ -13,6 +13,11 @@ function authUnavailableMessage(): string {
   return 'Supabase Auth ainda nao esta configurado.';
 }
 
+function normalizeEmail(email: string): string | null {
+  const cleanEmail = email.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) ? cleanEmail : null;
+}
+
 export async function getCurrentSession(): Promise<Session | null> {
   if (!isSecureMemoryEnabled || !supabase) return null;
   const { data, error } = await supabase.auth.getSession();
@@ -32,35 +37,56 @@ export function subscribeToAuth(
   return () => data.subscription.unsubscribe();
 }
 
-export async function sendMagicLink(email: string): Promise<AuthResult> {
+export async function requestEmailCode(email: string): Promise<AuthResult> {
   if (!isSecureMemoryEnabled || !supabase) {
     return { ok: false, message: authUnavailableMessage() };
   }
 
-  const cleanEmail = email.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-    return { ok: false, message: 'Digite um email valido.' };
-  }
+  const cleanEmail = normalizeEmail(email);
+  if (!cleanEmail) return { ok: false, message: 'Digite um email valido.' };
 
   const { error } = await supabase.auth.signInWithOtp({
     email: cleanEmail,
     options: {
-      // Keep the exact protected Preview host so Vercel's temporary access cookie remains valid.
-      // Supabase must allow the narrow project Preview wildcard in Auth > URL Configuration.
-      emailRedirectTo: window.location.origin,
       shouldCreateUser: false
     }
   });
 
   if (error) {
-    return { ok: false, message: 'Nao foi possivel enviar o link: ' + error.message };
+    return { ok: false, message: 'Nao foi possivel enviar o codigo: ' + error.message };
   }
 
   return {
     ok: true,
-    message: 'Link seguro enviado. Abra o email neste mesmo navegador para entrar.'
+    message: 'Codigo enviado. Digite aqui os 6 numeros recebidos no email.'
   };
 }
+
+export async function verifyEmailCode(email: string, code: string): Promise<AuthResult> {
+  if (!isSecureMemoryEnabled || !supabase) {
+    return { ok: false, message: authUnavailableMessage() };
+  }
+
+  const cleanEmail = normalizeEmail(email);
+  const cleanCode = code.replace(/\D/g, '');
+  if (!cleanEmail) return { ok: false, message: 'Digite um email valido.' };
+  if (!/^\d{6}$/.test(cleanCode)) return { ok: false, message: 'Digite o codigo de 6 numeros.' };
+
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: cleanEmail,
+    token: cleanCode,
+    type: 'email'
+  });
+
+  if (error || !data.session) {
+    return { ok: false, message: 'Codigo invalido ou expirado. Solicite um novo codigo.' };
+  }
+
+  return { ok: true, message: 'Acesso confirmado. Entrando no Jarvis…' };
+}
+
+// Backward-compatible export for older tests/integrations. New UI uses requestEmailCode.
+export const sendMagicLink = requestEmailCode;
 
 export async function signOut(): Promise<AuthResult> {
   if (!supabase) return { ok: false, message: authUnavailableMessage() };

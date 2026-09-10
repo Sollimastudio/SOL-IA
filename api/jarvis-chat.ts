@@ -11,6 +11,13 @@ const JARVIS_PERSONA = [
   'A personalidade deve soar masculina e sofisticada no texto, mas nunca alegue ter uma voz, identidade humana ou emoção que o sistema não possua.'
 ].join(' ');
 
+const readinessMessages: Record<string, string> = {
+  pilot_not_verified: 'Sua sessão chegou ao servidor, mas a conta piloto não pôde ser confirmada. Não peça outro código; a autenticação precisa ser revisada no servidor.',
+  ai_not_authorized: 'Sua conta está autenticada, mas a autorização de IA ainda não foi reconhecida pelo servidor.',
+  provider_credential_missing: 'Sua conta está autorizada, mas o servidor ainda não recebeu uma credencial válida do AI Gateway. Nenhuma chamada de IA foi realizada.',
+  chat_flag_disabled: 'Sua conta e o provedor estão prontos, mas uma configuração antiga da Vercel ainda mantém o chat desligado.'
+};
+
 async function readOrientation(request: Request) {
   try {
     const clone = request.clone();
@@ -49,6 +56,28 @@ export default {
   async fetch(request: Request) {
     const orientation = await readOrientation(request);
     const runtime = await resolvePilotRuntime(request, process.env);
+    const chatFlagEnabled = runtime.env.JARVIS_CHAT_ENABLED === 'true';
+    const blockReason = runtime.diagnostics.readinessReason === 'ready' && !chatFlagEnabled
+      ? 'chat_flag_disabled'
+      : runtime.diagnostics.readinessReason;
+
+    console.info('[JARVIS_RUNTIME_SAFE]', JSON.stringify({
+      pilotVerified: runtime.diagnostics.pilotVerified,
+      canUseAi: runtime.diagnostics.canUseAi,
+      providerCredentialPresent: runtime.diagnostics.providerCredentialPresent,
+      gatewayCredentialPresent: runtime.diagnostics.gatewayCredentialPresent,
+      explicitOpenRouterPresent: runtime.diagnostics.explicitOpenRouterPresent,
+      chatFlagEnabled,
+      blockReason
+    }));
+
+    if (blockReason !== 'ready') {
+      return Response.json({ ok: false, error: readinessMessages[blockReason] ?? 'Ativação incompleta no servidor.' }, {
+        status: 503,
+        headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }
+      });
+    }
+
     const providerFetch = createProviderAwareFetch(runtime, globalThis.fetch);
     const secureChat = createJarvisHandler({
       env: runtime.env,

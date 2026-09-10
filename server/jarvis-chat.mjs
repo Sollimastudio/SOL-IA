@@ -1,6 +1,7 @@
 import { trustedExcerpts } from './knowledge-contract.mjs';
 /** Private pilot runtime. No external actions, ambient recording or service-role key. */
 const MAX_BYTES = 32768;
+const FALLBACK_MODELS = ['openai/gpt-5.6-luna', 'google/gemini-3.6-flash'];
 const reply = (status, payload) => Response.json(payload, {
   status, headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }
 });
@@ -51,6 +52,10 @@ function parseInput(body) {
   if (historyLength > 12000) throw new Error('input');
   return { message: message.trim(), mode, remember: mode === 'private' && remember,
     history: history.map(({ role, content }) => ({ role, content })) };
+}
+
+function modelCandidates(primary) {
+  return [...new Set([primary, ...FALLBACK_MODELS].filter(value => typeof value === 'string' && value.trim()))];
 }
 
 export function selectMemories(rows, query, ownerId) {
@@ -163,24 +168,39 @@ export function createJarvisHandler({ env = {}, fetchImpl = globalThis.fetch,
       'Uma busca vazia não prova ausência no livro: diga que não recuperou o trecho. Nunca diga que leu um livro inteiro por receber excertos.',
       `FONTES_IMPORTADAS_JSON=${JSON.stringify(knowledge)}`
     ].join('\n');
+
+    if (request.signal.aborted) return reply(499, { ok: false, error: 'Conversa encerrada.', persisted, memoryId, warnings });
+
+    let lastStatus = null;
+    let modelUsed = null;
     try {
-      if (request.signal.aborted) throw new Error('cancelled');
-      const generated = await call('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST', headers: { Authorization: `Bearer ${env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: env.JARVIS_MODEL, max_tokens: input.mode === 'public' ? 300 : 900,
-          messages: [{ role: 'system', content: system }, ...input.history, { role: 'user', content: input.message }] })
-      }, 25000);
-      if (!generated.ok) throw new Error('provider');
-      const data = await generated.json();
-      const answer = data?.choices?.[0]?.message?.content;
-      if (typeof answer !== 'string' || !answer.trim() || answer.length > 16000) throw new Error('provider');
-      return reply(200, { ok: true, answer, specialist, mode: input.mode, persisted, memoryId,
-        memorySources: memories.map(({ id, title, created_at }) => ({ id, title, created_at })),
-        knowledgeSources: knowledge, warnings, execution: 'conversation_and_draft_only' });
+      for (const candidate of modelCandidates(env.JARVIS_MODEL)) {
+        const generated = await call('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST', headers: { Authorization: `Bearer ${env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: candidate, max_tokens: input.mode === 'public' ? 300 : 900,
+            messages: [{ role: 'system', content: system }, ...input.history, { role: 'user', content: input.message }] })
+        }, 25000);
+        lastStatus = generated.status;
+        if (!generated.ok) {
+          if ([403, 404].includes(generated.status)) continue;
+          throw new Error('provider');
+        }
+        const data = await generated.json();
+        const answer = data?.choices?.[0]?.message?.content;
+        if (typeof answer !== 'string' || !answer.trim() || answer.length > 16000) throw new Error('provider');
+        modelUsed = candidate;
+        return reply(200, { ok: true, answer, specialist, mode: input.mode, persisted, memoryId, modelUsed,
+          memorySources: memories.map(({ id, title, created_at }) => ({ id, title, created_at })),
+          knowledgeSources: knowledge, warnings, execution: 'conversation_and_draft_only' });
+      }
+
+      return reply(502, { ok: false,
+        error: 'O AI Gateway recusou o acesso aos modelos disponíveis. Sua conta está autenticada; a permissão do Gateway precisa ser ajustada na Vercel.',
+        providerStatus: lastStatus, persisted, memoryId, warnings });
     } catch {
       return reply(request.signal.aborted ? 499 : 502, { ok: false,
-        error: request.signal.aborted ? 'Conversa encerrada.' : 'A IA não respondeu. Não foi fabricada uma resposta de sucesso.',
-        persisted, memoryId, warnings });
+        error: request.signal.aborted ? 'Conversa encerrada.' : 'A IA não respondeu. O servidor recebeu a mensagem, mas o provedor não concluiu a geração.',
+        providerStatus: lastStatus, persisted, memoryId, warnings });
     }
   };
 }

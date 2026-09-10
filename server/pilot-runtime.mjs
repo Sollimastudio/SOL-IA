@@ -49,6 +49,16 @@ export async function resolvePilotRuntime(request, baseEnv = {}, fetchImpl = glo
   const gatewayCredential = first(baseEnv.AI_GATEWAY_API_KEY || baseEnv.VERCEL_OIDC_TOKEN, '');
   const useGateway = !explicitOpenRouter && Boolean(gatewayCredential);
   const providerCredential = explicitOpenRouter || gatewayCredential;
+  const pilotVerified = allowedUser !== '__pilot_not_verified__';
+  const providerCredentialPresent = Boolean(providerCredential);
+  const readinessReason = !pilotVerified
+    ? 'pilot_not_verified'
+    : !canUseAi
+      ? 'ai_not_authorized'
+      : !providerCredentialPresent
+        ? 'provider_credential_missing'
+        : 'ready';
+  const chatEnabled = readinessReason === 'ready';
 
   return {
     env: {
@@ -58,11 +68,20 @@ export async function resolvePilotRuntime(request, baseEnv = {}, fetchImpl = glo
       JARVIS_ALLOWED_USER_IDS: first(baseEnv.JARVIS_ALLOWED_USER_IDS, allowedUser),
       JARVIS_KNOWLEDGE_ENABLED: first(baseEnv.JARVIS_KNOWLEDGE_ENABLED, 'true'),
       JARVIS_MODEL: model,
-      JARVIS_CHAT_ENABLED: first(baseEnv.JARVIS_CHAT_ENABLED, canUseAi && providerCredential ? 'true' : 'false'),
+      JARVIS_CHAT_ENABLED: first(baseEnv.JARVIS_CHAT_ENABLED, chatEnabled ? 'true' : 'false'),
+      JARVIS_RUNTIME_REASON: readinessReason,
       OPENROUTER_API_KEY: first(baseEnv.OPENROUTER_API_KEY, providerCredential)
     },
     useGateway,
-    gatewayCredential
+    gatewayCredential,
+    diagnostics: {
+      pilotVerified,
+      canUseAi,
+      providerCredentialPresent,
+      gatewayCredentialPresent: Boolean(gatewayCredential),
+      explicitOpenRouterPresent: Boolean(explicitOpenRouter),
+      readinessReason
+    }
   };
 }
 

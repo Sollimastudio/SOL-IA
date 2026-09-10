@@ -33,7 +33,10 @@ async function readOrientation(request: Request) {
 function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null, baseFetch: typeof fetch): typeof fetch {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    if (url.startsWith('https://openrouter.ai/') && typeof init?.body === 'string') {
+    if (!url.startsWith('https://openrouter.ai/')) return baseFetch(input, init);
+
+    let nextInit = init;
+    if (typeof init?.body === 'string') {
       try {
         const payload = JSON.parse(init.body);
         const first = payload?.messages?.[0];
@@ -42,13 +45,29 @@ function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null,
           if (orientation) {
             first.content += `\nORIENTACAO_ANTI_FADIGA_JSON=${JSON.stringify(orientation)}\nUse essa orientação silenciosamente. Não diga quantas vezes a usuária repetiu algo. Preserve o fio principal, responda ao que mudou e trate galhos como galhos, sem diagnosticar a pessoa.`;
           }
-          return baseFetch(input, { ...init, body: JSON.stringify(payload) });
+          nextInit = { ...init, body: JSON.stringify(payload) };
         }
       } catch {
         // A falha de enriquecimento nunca pode corromper o transporte normal do chat.
       }
     }
-    return baseFetch(input, init);
+
+    try {
+      const response = await baseFetch(input, nextInit);
+      console.info('[JARVIS_PROVIDER_SAFE]', JSON.stringify({
+        stage: 'chat_completion',
+        status: response.status,
+        ok: response.ok
+      }));
+      return response;
+    } catch {
+      console.info('[JARVIS_PROVIDER_SAFE]', JSON.stringify({
+        stage: 'chat_completion_transport',
+        status: null,
+        ok: false
+      }));
+      throw new Error('provider_transport');
+    }
   }) as typeof fetch;
 }
 

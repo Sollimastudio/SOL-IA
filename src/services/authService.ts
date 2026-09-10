@@ -6,11 +6,28 @@ export type AuthResult = {
   message: string;
 };
 
+const JARVIS_PREVIEW_ORIGIN =
+  'https://sol-ia-i5wy-git-work-jarvis-neural-co-13a334-sol-limas-projects.vercel.app';
+
 function authUnavailableMessage(): string {
   if (!isSecureMemoryEnabled) {
     return 'O cofre seguro ainda nao foi ativado.';
   }
   return 'Supabase Auth ainda nao esta configurado.';
+}
+
+function getAuthRedirectOrigin(): string {
+  if (typeof window === 'undefined') return JARVIS_PREVIEW_ORIGIN;
+
+  const hostname = window.location.hostname.toLowerCase();
+  const isJarvisVercelPreview =
+    hostname.endsWith('.vercel.app') &&
+    hostname.startsWith('sol-ia-i5wy-') &&
+    !hostname.includes('-git-main-') &&
+    hostname !== 'sol-ia-i5wy.vercel.app' &&
+    hostname !== 'sol-ia-i5wy-sol-limas-projects.vercel.app';
+
+  return isJarvisVercelPreview ? JARVIS_PREVIEW_ORIGIN : window.location.origin;
 }
 
 export async function getCurrentSession(): Promise<Session | null> {
@@ -45,7 +62,7 @@ export async function sendMagicLink(email: string): Promise<AuthResult> {
   const { error } = await supabase.auth.signInWithOtp({
     email: cleanEmail,
     options: {
-      emailRedirectTo: window.location.origin,
+      emailRedirectTo: getAuthRedirectOrigin(),
       shouldCreateUser: false
     }
   });

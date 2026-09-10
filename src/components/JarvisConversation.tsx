@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { createVoiceSession } from '../core/voiceSession.mjs';
+import { prepareJarvisSpeech } from '../core/jarvisSpeech';
 
 type Mode = 'private' | 'public';
 type Turn = { role: 'user' | 'assistant'; content: string; specialist?: string };
@@ -105,7 +106,11 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       }
       const decision = gate.current.accept(fragments.join(' '));
       if (decision.kind === 'stop') { endSession(); return; }
-      if (decision.kind === 'message') { armIdleTimeout(); sendRef.current(decision.text); }
+      if (decision.kind === 'message') { armIdleTimeout(); sendRef.current(decision.text); return; }
+      if (gate.current.isEngaged()) {
+        armIdleTimeout();
+        setStatus('Jarvis ativado. Pode falar; diga “Jarvis, encerrar” para desligar.');
+      }
     };
     rec.onerror = event => {
       if (!gate.current.isCurrent(ticket)) return;
@@ -116,7 +121,13 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       if (recognition.current === rec) recognition.current = null;
       if (gate.current.isCurrent(ticket) && !busyRef.current) restart.current = setTimeout(captureNext, 250);
     };
-    try { rec.start(); setListening(true); setStatus('Ouvindo nesta sessão. Diga “Jarvis, encerrar” para desligar.'); }
+    try {
+      rec.start();
+      setListening(true);
+      setStatus(gate.current.isEngaged()
+        ? 'Jarvis ativado. Pode falar; diga “Jarvis, encerrar” para desligar.'
+        : 'Sessão de voz em primeiro plano. Diga “Jarvis” para ativar; “Jarvis, encerrar” desliga.');
+    }
     catch { endSession(); setStatus('O microfone não pôde iniciar. Nenhuma escuta foi mantida.'); }
   }
 
@@ -155,7 +166,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       const warnings = Array.isArray(data.warnings) ? data.warnings.filter((item: unknown) => typeof item === 'string').join(' ') : '';
       setStatus(`${savedMessage} ${warnings} ${specialistLabels[specialist] ?? 'ASSESSORIA'} respondeu. Nenhuma ação externa foi declarada sem execução.`);
       if (voiceReply && 'speechSynthesis' in window) {
-        const speech = new SpeechSynthesisUtterance(data.answer); speech.lang = 'pt-BR';
+        const speech = prepareJarvisSpeech(new SpeechSynthesisUtterance(data.answer));
         speechResume.current = resume; speech.onend = resume; speech.onerror = resume;
         window.speechSynthesis.speak(speech);
       } else resume();
@@ -232,7 +243,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
         </div>
       </form>
       <p className="neural-status" role="status">{status}</p>
-      <details className="neural-disclosure"><summary>Limites desta etapa</summary><p>A voz desta versão funciona apenas em primeiro plano e com consentimento. Ainda não é wake word local com tela bloqueada, biometria de voz ou videochamada. O modo público não consulta o cofre privado.</p></details>
+      <details className="neural-disclosure"><summary>Limites desta etapa</summary><p>“Jarvis” funciona como gatilho somente dentro de uma sessão de voz autorizada e com a página em primeiro plano. Ainda não é wake word de sistema com tela bloqueada, biometria de voz ou videochamada. O modo público não consulta o cofre privado.</p></details>
     </div>
   </section>;
 }

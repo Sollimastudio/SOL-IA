@@ -1,9 +1,8 @@
-import { getVercelOidcToken } from '@vercel/oidc';
-
 export default {
   async fetch() {
     let helperOidcPresent = false;
     try {
+      const { getVercelOidcToken } = await import('@vercel/oidc');
       helperOidcPresent = Boolean(await getVercelOidcToken());
     } catch {
       helperOidcPresent = false;

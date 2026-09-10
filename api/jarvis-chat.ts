@@ -1,6 +1,7 @@
 import { analyzeConversation } from '../server/anti-fatigue.mjs';
 import { withAntiFatigue } from '../server/anti-fatigue-handler.mjs';
 import { createJarvisHandler } from '../server/jarvis-chat.mjs';
+import { createProviderAwareFetch, resolvePilotRuntime } from '../server/pilot-runtime.mjs';
 import { routeCapability } from '../src/core/capabilityRouter.js';
 
 async function readOrientation(request: Request) {
@@ -15,7 +16,7 @@ async function readOrientation(request: Request) {
   }
 }
 
-function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null): typeof fetch {
+function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null, baseFetch: typeof fetch): typeof fetch {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     if (orientation && url.startsWith('https://openrouter.ai/') && typeof init?.body === 'string') {
@@ -24,20 +25,26 @@ function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null)
         const first = payload?.messages?.[0];
         if (first?.role === 'system' && typeof first.content === 'string') {
           first.content += `\nORIENTACAO_ANTI_FADIGA_JSON=${JSON.stringify(orientation)}\nUse essa orientação silenciosamente. Não diga quantas vezes a usuária repetiu algo. Preserve o fio principal, responda ao que mudou e trate galhos como galhos, sem diagnosticar a pessoa.`;
-          return globalThis.fetch(input, { ...init, body: JSON.stringify(payload) });
+          return baseFetch(input, { ...init, body: JSON.stringify(payload) });
         }
       } catch {
         // A falha da orientação nunca pode corromper o transporte normal do chat.
       }
     }
-    return globalThis.fetch(input, init);
+    return baseFetch(input, init);
   }) as typeof fetch;
 }
 
 export default {
   async fetch(request: Request) {
     const orientation = await readOrientation(request);
-    const secureChat = createJarvisHandler({ env: process.env, routeInput: routeCapability, fetchImpl: guidedFetch(orientation) });
+    const runtime = await resolvePilotRuntime(request, process.env);
+    const providerFetch = createProviderAwareFetch(runtime, globalThis.fetch);
+    const secureChat = createJarvisHandler({
+      env: runtime.env,
+      routeInput: routeCapability,
+      fetchImpl: guidedFetch(orientation, providerFetch)
+    });
     return withAntiFatigue(secureChat)(request);
   }
 };

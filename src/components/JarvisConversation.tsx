@@ -172,8 +172,11 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       } else resume();
     } catch (error) {
       if (requestEpoch.current !== id || controller.signal.aborted) return;
+      const errorMessage = error instanceof Error ? error.message : 'Falha na conversa. Verifique a gravação no cofre antes de considerar a ideia salva.';
+      setActiveSpecialist('jarvis_executive');
+      setTurns([...turnsRef.current, { role: 'assistant', content: errorMessage, specialist: 'jarvis_executive' }]);
       endSession();
-      setStatus(error instanceof Error ? error.message : 'Falha na conversa. Verifique a gravação no cofre antes de considerar a ideia salva.');
+      setStatus(errorMessage);
     }
   }
   sendRef.current = message => { void send(message); };

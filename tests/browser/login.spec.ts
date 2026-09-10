@@ -13,6 +13,7 @@ test.afterEach(async ({ page }, info) => {
 });
 
 test('anonymous visitor requests and verifies an eight-digit code without leaving the page', async ({ page }) => {
+  // The hosted ACESSORA-SOL.IA project currently emits 8 digits; the UI accepts 6-10 so it remains configuration-tolerant.
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/?case=ready');

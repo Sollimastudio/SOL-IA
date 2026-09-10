@@ -13,7 +13,6 @@ test.afterEach(async ({ page }, info) => {
 });
 
 test('anonymous visitor requests and verifies an eight-digit code without leaving the page', async ({ page }) => {
-  // The hosted ACESSORA-SOL.IA project currently emits 8 digits; the UI accepts 6-10 so it remains configuration-tolerant.
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/?case=ready');
@@ -33,6 +32,27 @@ test('anonymous visitor requests and verifies an eight-digit code without leavin
   expect(errors).toEqual([]);
   const overflows = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflows).toBe(false);
+});
+
+test('pending OTP step survives a mobile-style page reload', async ({ page }) => {
+  await page.goto('/?case=ready');
+  await page.getByLabel('Seu e-mail').fill('teste@example.invalid');
+  await page.getByRole('button', { name: 'Enviar código' }).click();
+  await expect(page.getByLabel('Código de acesso')).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('Código de acesso')).toBeVisible();
+  await expect(page.getByText('teste@example.invalid')).toBeVisible();
+  await page.getByLabel('Código de acesso').fill('12345678');
+  await page.getByRole('button', { name: 'Entrar no Jarvis' }).click();
+  await expect(page.getByRole('status')).toContainText('Acesso confirmado');
+});
+
+test('user who already received a code can open verification without sending another email', async ({ page }) => {
+  await page.goto('/?case=ready');
+  await page.getByLabel('Seu e-mail').fill('teste@example.invalid');
+  await page.getByRole('button', { name: 'Já tenho um código' }).click();
+  await expect(page.getByLabel('Código de acesso')).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__authAttempts ?? 0)).toBe(0);
 });
 
 for (const scenario of ['disabled', 'unconfigured']) {

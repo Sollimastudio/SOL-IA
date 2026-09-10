@@ -12,7 +12,7 @@ test.afterEach(async ({ page }, info) => {
   await page.screenshot({ path: info.outputPath('login.png'), fullPage: true });
 });
 
-test('anonymous visitor requests and verifies a six-digit code without leaving the page', async ({ page }) => {
+test('anonymous visitor requests and verifies an eight-digit code without leaving the page', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/?case=ready');
@@ -25,7 +25,7 @@ test('anonymous visitor requests and verifies a six-digit code without leaving t
   await expect(page.getByRole('status')).toContainText('Código enviado');
   await expect(page.getByLabel('Código de acesso')).toBeVisible();
   expect(await page.evaluate(() => (window as any).__authAttempts)).toBe(1);
-  await page.getByLabel('Código de acesso').fill('123456');
+  await page.getByLabel('Código de acesso').fill('12345678');
   await page.getByRole('button', { name: 'Entrar no Jarvis' }).click();
   await expect(page.getByRole('status')).toContainText('Acesso confirmado');
   expect(await page.evaluate(() => (window as any).__authVerifications)).toBe(1);
@@ -61,7 +61,7 @@ test('invalid code is rejected and user remains on verification step', async ({ 
   await page.goto('/?case=ready');
   await page.getByLabel('Seu e-mail').fill('teste@example.invalid');
   await page.getByRole('button', { name: 'Enviar código' }).click();
-  await page.getByLabel('Código de acesso').fill('000000');
+  await page.getByLabel('Código de acesso').fill('00000000');
   await page.getByRole('button', { name: 'Entrar no Jarvis' }).click();
   await expect(page.getByRole('status')).toContainText('Código inválido');
   await expect(page.getByLabel('Código de acesso')).toBeVisible();

@@ -24,6 +24,14 @@ function fixture(overrides = {}, config = env) {
     ], { status: overrides.memoryStatus || 200 });
     if (url.startsWith('https://openrouter.ai/')) {
       if (overrides.providerThrow) throw new Error('PROVIDER_SECRET_MUST_NOT_LEAK');
+      const model = JSON.parse(options.body).model;
+      const configured = overrides.providerByModel?.[model];
+      if (configured) {
+        return Response.json(
+          configured.content ? { choices: [{ message: { content: configured.content } }] } : { error: { type: 'no_providers_available' } },
+          { status: configured.status }
+        );
+      }
       return Response.json({ choices: [{ message: { content: 'Rascunho para revisar.' } }] }, { status: overrides.providerStatus || 200 });
     }
     throw new Error('Unexpected test network route');
@@ -99,6 +107,27 @@ test('provider failure retains truthful saved state and redacts errors', async (
   const { handle } = fixture({ providerThrow: true }); const res = await handle(request({ remember: true })); const data = await res.json();
   assert.equal(res.status, 502); assert.equal(data.persisted, true); assert.equal(data.ok, false);
   assert.ok(!JSON.stringify(data).includes('PROVIDER_SECRET'));
+});
+test('403 on primary model falls back to Luna before giving up', async () => {
+  const { handle, calls } = fixture({ providerByModel: {
+    'test/model': { status: 403 },
+    'openai/gpt-5.6-luna': { status: 200, content: 'Fallback funcionando.' }
+  } });
+  const res = await handle(request());
+  const data = await res.json();
+  assert.equal(res.status, 200);
+  assert.equal(data.answer, 'Fallback funcionando.');
+  assert.equal(data.modelUsed, 'openai/gpt-5.6-luna');
+  const models = calls.filter(c => c.url.startsWith('https://openrouter.ai/')).map(c => JSON.parse(c.options.body).model);
+  assert.deepEqual(models, ['test/model', 'openai/gpt-5.6-luna']);
+});
+test('all model access refusals return an explicit Gateway error', async () => {
+  const { handle } = fixture({ providerStatus: 403 });
+  const res = await handle(request());
+  const data = await res.json();
+  assert.equal(res.status, 502);
+  assert.match(data.error, /Gateway/);
+  assert.equal(data.providerStatus, 403);
 });
 test('no implicit memory write without explicit remember flag', async () => {
   const { handle, calls } = fixture(); const data = await (await handle(request())).json(); assert.equal(data.persisted, false);

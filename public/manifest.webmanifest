@@ -1,0 +1,20 @@
+{
+  "name": "Jarvis / Sol.IA",
+  "short_name": "Jarvis",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "lang": "pt-BR",
+  "background_color": "#0d0615",
+  "theme_color": "#241039",
+  "description": "Assessor pessoal por conversa. Requer conexão e login autorizado.",
+  "icons": [
+    {
+      "src": "/jarvis-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

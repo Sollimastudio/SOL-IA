@@ -1,6 +1,6 @@
 const DEFAULT_SUPABASE_URL = 'https://rkkpbmzrucaghrojujvb.supabase.co';
 const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_XhsUjBPVRtC-0DBfMNDQTA_FaK8XFj8';
-const DEFAULT_MODEL = 'openai/gpt-5.6-sol';
+const DEFAULT_MODEL = 'alibaba/qwen3.8-flash';
 const OPENROUTER_CHAT_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const VERCEL_GATEWAY_CHAT_URL = 'https://ai-gateway.vercel.sh/v1/chat/completions';
 

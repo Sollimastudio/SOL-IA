@@ -5,6 +5,14 @@ import { isSecureMemoryEnabled, isSupabaseConfigured } from '../services/supabas
 
 type AuthPanelProps = { session: Session | null };
 const PENDING_EMAIL_KEY = 'jarvis.pendingOtpEmail';
+const RESEND_TIME_KEY = 'jarvis.otpResendAfter';
+function resendSeconds(): number {
+  try {
+    const remaining = Number(window.localStorage.getItem(RESEND_TIME_KEY)) - Date.now();
+    return Number.isFinite(remaining) && remaining > 0 && remaining <= 60000 ? Math.ceil(remaining / 1000) : 0;
+  } catch { return 0; }
+}
+
 
 function readPendingEmail(): string {
   if (typeof window === 'undefined') return '';
@@ -32,6 +40,12 @@ export function AuthPanel({ session }: AuthPanelProps) {
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const pending = useRef(false);
+  const [cooldown, setCooldown] = useState(resendSeconds);
+  useEffect(() => {
+    if (!cooldown) return;
+    const timer = setInterval(() => setCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
   const codeLengthValid = code.length >= 6 && code.length <= 10;
 
   useEffect(() => {
@@ -41,6 +55,8 @@ export function AuthPanel({ session }: AuthPanelProps) {
   async function handleRequestCode(event: FormEvent) {
     event.preventDefault();
     if (pending.current || !isSecureMemoryEnabled || !isSupabaseConfigured) return;
+    const remaining = Math.max(cooldown, resendSeconds());
+    if (remaining > 0) { setCooldown(remaining); setStatus('Aguarde para reenviar. Você pode usar o código que já recebeu.'); return; }
     pending.current = true;
     setBusy(true);
     setStatus('');
@@ -48,6 +64,8 @@ export function AuthPanel({ session }: AuthPanelProps) {
       const result = await requestEmailCode(email);
       setStatus(result.message);
       if (result.ok) {
+        try { window.localStorage.setItem(RESEND_TIME_KEY, String(Date.now() + 60000)); } catch { /* In-memory cooldown remains. */ }
+        setCooldown(60);
         rememberPendingEmail(email);
         setCodeRequested(true);
         setCode('');
@@ -148,8 +166,8 @@ export function AuthPanel({ session }: AuthPanelProps) {
           autoCapitalize="none" spellCheck={false} value={email}
           onChange={event => setEmail(event.target.value)} placeholder="seu@email.com"
           required disabled={busy} style={{ display: 'block', width: '100%', marginTop: 8, fontSize: '1rem' }} />
-        <button className="button" disabled={busy} type="submit" style={{ width: '100%', marginTop: 14 }}>
-          {busy ? 'Enviando…' : 'Enviar código'}
+        <button className="button" disabled={busy || cooldown > 0} type="submit" style={{ width: '100%', marginTop: 14 }}>
+          {busy ? 'Enviando…' : cooldown > 0 ? `Reenviar em ${cooldown}s` : 'Enviar código'}
         </button>
       </form>
       <button className="button button-secondary" type="button" disabled={busy || !email.trim()}

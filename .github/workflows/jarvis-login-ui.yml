@@ -18,7 +18,7 @@ jobs:
           npm install --no-audit --no-fund
           npm install --no-save --package-lock=false @playwright/test@1.57.0
       - name: Install test browser
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
       - name: Test entry flow with synthetic auth (no keys, no emails)
         run: npx playwright test --config tests/browser/login.playwright.config.ts
       - name: Preserve synthetic screenshots and failure traces
@@ -28,3 +28,11 @@ jobs:
           name: jarvis-login-browser
           path: test-results/login
           retention-days: 7
+
+      - name: Preserve generated dependency lock for deterministic follow-up
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jarvis-verified-lock
+          path: package-lock.json
+          retention-days: 1

@@ -87,3 +87,17 @@ test('invalid code is rejected and user remains on verification step', async ({ 
   await expect(page.getByRole('status')).toContainText('Código inválido');
   await expect(page.getByLabel('Código de acesso')).toBeVisible();
 });
+
+
+test('resend cooldown survives reload without hiding the existing-code path',async ({page})=>{
+  await page.goto('/?case=ready');
+  await page.getByLabel('Seu e-mail').fill('teste@example.invalid');
+  await page.getByRole('button',{name:'Enviar código',exact:true}).click();
+  await expect(page.getByLabel('Código de acesso')).toBeVisible();
+  await page.getByRole('button',{name:'Trocar e-mail ou pedir outro código'}).click();
+  await expect(page.getByRole('button',{name:/Reenviar em/})).toBeDisabled();
+  await page.getByRole('button',{name:'Já tenho um código'}).click();
+  await expect(page.getByLabel('Código de acesso')).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('Código de acesso')).toBeVisible();
+});

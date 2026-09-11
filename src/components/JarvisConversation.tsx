@@ -4,7 +4,7 @@ import { createVoiceSession } from '../core/voiceSession.mjs';
 import { prepareJarvisSpeech } from '../core/jarvisSpeech';
 
 type Mode = 'private' | 'public';
-type Turn = { role: 'user' | 'assistant'; content: string; specialist?: string };
+type Turn = { role: 'user' | 'assistant'; content: string; specialist?: string; isError?: boolean; modelUsed?: string };
 type Recognition = {
   lang: string; continuous: boolean; interimResults: boolean;
   onresult: ((event: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;
@@ -29,7 +29,7 @@ const specialistLabels: Record<string, string> = {
 function boundedHistory(turns: Turn[]): Array<{ role: 'user' | 'assistant'; content: string }> {
   const result: Array<{ role: 'user' | 'assistant'; content: string }> = [];
   let size = 0;
-  for (const turn of turns.slice(-10).reverse()) {
+  for (const turn of turns.filter(turn => !turn.isError).slice(-10).reverse()) {
     const content = turn.content.slice(0, 3500);
     if (size + content.length > 10000) break;
     result.unshift({ role: turn.role, content });
@@ -44,7 +44,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   const [mode, setMode] = useState<Mode>('private');
   const [text, setText] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
-  const [status, setStatus] = useState('Microfone desligado. O Jarvis está disponível por texto.');
+  const [status, setStatus] = useState('Conta conectada. Envie uma mensagem para iniciar. Microfone desligado.');
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [consent, setConsent] = useState(false);
@@ -61,13 +61,18 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   const idle = useRef<ReturnType<typeof setTimeout> | undefined>();
   const sendRef = useRef<(message: string) => void>(() => {});
   const speechResume = useRef<(() => void) | null>(null);
+  const speechWatchdog = useRef<ReturnType<typeof setTimeout> | undefined>();
 
-  function stopHardware() {
+  function stopVoiceHardware() {
     clearTimeout(restart.current); clearTimeout(idle.current);
     gate.current.stop();
     const old = recognition.current; recognition.current = null;
     if (old) { old.onresult = null; old.onend = null; old.onerror = null; try { old.abort(); } catch { /* already stopped */ } }
+    clearTimeout(speechWatchdog.current);
     speechResume.current = null; window.speechSynthesis?.cancel();
+  }
+  function stopHardware() {
+    stopVoiceHardware();
     request.current?.abort(); request.current = null;
     requestEpoch.current += 1; busyRef.current = false;
   }
@@ -81,7 +86,14 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   }
   useEffect(() => {
     resetConversation();
-    const onVisibility = () => { if (document.visibilityState !== 'visible') endSession(); };
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') {
+        // Privacy: microphone and speech stop immediately. A text request is not a microphone.
+        const resumeSpeech = speechResume.current;
+        stopVoiceHardware(); setListening(false);
+        resumeSpeech?.();
+      }
+    };
     document.addEventListener('visibilitychange', onVisibility);
     return () => { stopHardware(); document.removeEventListener('visibilitychange', onVisibility); };
   }, [session?.user.id]);
@@ -136,6 +148,10 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     const id = ++requestEpoch.current;
     const controller = new AbortController(); request.current = controller;
     busyRef.current = true; setBusy(true); setListening(false);
+    clearTimeout(speechWatchdog.current);
+    speechResume.current = null;
+    let timedOut = false;
+    const deadline = setTimeout(() => { timedOut = true; controller.abort(); }, 90000);
     const old = recognition.current; recognition.current = null;
     if (old) { old.onend = null; old.onresult = null; old.onerror = null; try { old.abort(); } catch { /* stopped */ } }
     window.speechSynthesis?.cancel();
@@ -143,6 +159,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     turnsRef.current = [...turnsRef.current, { role: 'user', content: message }];
     setTurns(turnsRef.current); setText(''); setStatus('Jarvis analisando e encaminhando ao especialista adequado…');
     const resume = () => {
+      clearTimeout(speechWatchdog.current);
       speechResume.current = null;
       if (requestEpoch.current !== id) return;
       busyRef.current = false; setBusy(false);
@@ -153,7 +170,12 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ message, mode, history, remember: mode === 'private' && remember }), signal: controller.signal
       });
+      if (!response.headers.get('content-type')?.includes('application/json')) {
+        throw new Error('A hospedagem devolveu uma página de acesso em vez da resposta da IA. Não apague sua sessão nem peça vários códigos.');
+      }
       const data = await response.json();
+      clearTimeout(deadline);
+      if (!data || typeof data !== 'object') throw new Error('O servidor devolveu uma resposta inválida. Seu login não foi alterado.');
       if (requestEpoch.current !== id || controller.signal.aborted) return;
       const savedMessage = data.persisted === true ? 'Fala confirmada no cofre.' : 'Fala não salva no cofre.';
       if (data.persisted === true) onSaved();
@@ -162,21 +184,26 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       }
       const specialist = typeof data.specialist === 'string' ? data.specialist : 'jarvis_executive';
       setActiveSpecialist(specialist);
-      turnsRef.current = [...turnsRef.current, { role: 'assistant', content: data.answer, specialist }]; setTurns(turnsRef.current);
+      turnsRef.current = [...turnsRef.current, { role: 'assistant', content: data.answer, specialist, modelUsed: typeof data.modelUsed === 'string' ? data.modelUsed : undefined }]; setTurns(turnsRef.current);
       const warnings = Array.isArray(data.warnings) ? data.warnings.filter((item: unknown) => typeof item === 'string').join(' ') : '';
       setStatus(`${savedMessage} ${warnings} ${specialistLabels[specialist] ?? 'ASSESSORIA'} respondeu. Nenhuma ação externa foi declarada sem execução.`);
-      if (voiceReply && 'speechSynthesis' in window) {
+      if (voiceReply && document.visibilityState === 'visible' && 'speechSynthesis' in window) {
         const speech = prepareJarvisSpeech(new SpeechSynthesisUtterance(data.answer));
         speechResume.current = resume; speech.onend = resume; speech.onerror = resume;
+        // Some mobile engines fail to emit onend/onerror. Never leave the composer locked forever.
+        speechWatchdog.current = setTimeout(() => { window.speechSynthesis.cancel(); resume(); }, 60000);
         window.speechSynthesis.speak(speech);
       } else resume();
     } catch (error) {
-      if (requestEpoch.current !== id || controller.signal.aborted) return;
-      const errorMessage = error instanceof Error ? error.message : 'Falha na conversa. Verifique a gravação no cofre antes de considerar a ideia salva.';
+      if (requestEpoch.current !== id || (controller.signal.aborted && !timedOut)) return;
+      const errorMessage = timedOut ? 'A resposta demorou demais. O envio foi interrompido; confira o cofre antes de reenviar uma ideia. Você continua conectada.' : error instanceof Error ? error.message : 'Falha na conversa. Confira o cofre antes de considerar a ideia salva.';
       setActiveSpecialist('jarvis_executive');
-      setTurns([...turnsRef.current, { role: 'assistant', content: errorMessage, specialist: 'jarvis_executive' }]);
+      turnsRef.current = [...turnsRef.current, { role: 'assistant', content: errorMessage, isError: true }];
+      setTurns(turnsRef.current);
       endSession();
       setStatus(errorMessage);
+    } finally {
+      clearTimeout(deadline);
     }
   }
   sendRef.current = message => { void send(message); };
@@ -186,7 +213,8 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     setStatus(next === 'public' ? 'Modo Performance iniciado. O cofre privado fica fora desta conversa.' : 'Modo privado iniciado. Cofre disponível após autenticação.');
   }
   function startVoice() {
-    if (!session || !gate.current.start(consent)) return;
+    if (!session || !gate.current.start(true)) return;
+    setConsent(true);
     setVoiceReply(true); armIdleTimeout(); captureNext();
   }
 
@@ -220,11 +248,12 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
 
       <div className="neural-chat">
         {!session && <div className="neural-empty"><strong>ASSISTENTE EM ESPERA</strong><p>Entre no cofre seguro acima para habilitar a conversa privada com memória. Nenhuma chave de IA é entregue ao navegador.</p></div>}
-        {session && turns.length === 0 && <div className="neural-empty"><strong>JARVIS ONLINE</strong><p>Fale como você fala. Eu encaminho internamente para o especialista adequado, recupero contexto permitido e respondo por esta única porta.</p><div className="neural-suggestions"><button onClick={() => setText('Jarvis, organize minhas prioridades de hoje.')}>Organizar meu dia</button><button onClick={() => setText('Jarvis, continue meu projeto mais importante do ponto onde paramos.')}>Retomar projeto</button><button onClick={() => setText('Jarvis, tive uma ideia. Analise o potencial e me diga onde ela se encaixa.')}>Guardar uma ideia</button></div></div>}
+        {session && turns.length === 0 && <div className="neural-empty"><strong>CONTA CONECTADA</strong><p>Fale como você fala. Eu encaminho internamente para o especialista adequado, recupero contexto permitido e respondo por esta única porta.</p><div className="neural-suggestions"><button onClick={() => setText('Jarvis, organize minhas prioridades de hoje.')}>Organizar meu dia</button><button onClick={() => setText('Jarvis, continue meu projeto mais importante do ponto onde paramos.')}>Retomar projeto</button><button onClick={() => setText('Jarvis, tive uma ideia. Analise o potencial e me diga onde ela se encaixa.')}>Guardar uma ideia</button></div></div>}
         <div className="neural-log" role="log" aria-label="Conversa" aria-live="polite">
           {turns.map((turn, index) => <article key={index} className={`neural-message ${turn.role}`}>
-            <div className="neural-message-head"><strong>{turn.role === 'user' ? 'SOL' : 'JARVIS'}</strong>{turn.specialist && <span>{specialistLabels[turn.specialist] ?? turn.specialist}</span>}</div>
+            <div className="neural-message-head"><strong>{turn.role === 'user' ? 'SOL' : turn.isError ? 'AVISO DO SISTEMA' : 'JARVIS'}</strong>{turn.specialist && <span>{specialistLabels[turn.specialist] ?? turn.specialist}</span>}</div>
             <p>{turn.content}</p>
+            {turn.modelUsed && <small>Modelo: {turn.modelUsed}</small>}
           </article>)}
           {busy && <article className="neural-message assistant thinking-card"><div className="neural-message-head"><strong>JARVIS</strong><span>ORQUESTRANDO</span></div><p className="neural-thinking"><i /><i /><i /> consultando o núcleo seguro…</p></article>}
         </div>
@@ -234,7 +263,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     <div className="neural-console">
       <form onSubmit={event => { event.preventDefault(); void send(text); }}>
         <div className="neural-input-wrap">
-          <button className={`neural-icon-button ${listening ? 'danger' : ''}`} type="button" disabled={!session || busy || (!consent && !listening)} onClick={listening ? endSession : startVoice} title={listening ? 'Encerrar voz' : 'Iniciar voz'} aria-label={listening ? 'Encerrar voz' : 'Iniciar voz'}>◉</button>
+          <button className={`neural-icon-button ${listening ? 'danger' : ''}`} type="button" disabled={!session || busy} onClick={listening ? endSession : startVoice} title={listening ? 'Encerrar voz' : 'Iniciar voz'} aria-label={listening ? 'Encerrar voz' : 'Iniciar voz'}>◉</button>
           <textarea id="jarvis-message" rows={2} maxLength={8000} value={text} disabled={!session || busy} onChange={event => setText(event.target.value)} placeholder={listening ? 'Ouvindo… diga “Jarvis, encerrar” para parar.' : 'Fale com seu assessor…'} />
           <button className="neural-send" type="submit" disabled={!session || busy || !text.trim()}>{busy ? 'ANALISANDO' : 'ENVIAR'}</button>
         </div>
@@ -246,7 +275,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
         </div>
       </form>
       <p className="neural-status" role="status">{status}</p>
-      <details className="neural-disclosure"><summary>Limites desta etapa</summary><p>“Jarvis” funciona como gatilho somente dentro de uma sessão de voz autorizada e com a página em primeiro plano. Ainda não é wake word de sistema com tela bloqueada, biometria de voz ou videochamada. O modo público não consulta o cofre privado.</p></details>
+      <details className="neural-disclosure"><summary>Limites desta etapa</summary><p>“Jarvis” funciona como gatilho somente dentro de uma sessão de voz autorizada e com a página em primeiro plano. O reconhecimento depende do navegador e pode usar processamento remoto de áudio; não é detecção local garantida. Ainda não há ativação com tela bloqueada, biometria de voz ou videochamada. O modo público não consulta o cofre privado.</p></details>
     </div>
   </section>;
 }

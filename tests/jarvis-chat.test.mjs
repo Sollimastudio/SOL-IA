@@ -108,18 +108,21 @@ test('provider failure retains truthful saved state and redacts errors', async (
   assert.equal(res.status, 502); assert.equal(data.persisted, true); assert.equal(data.ok, false);
   assert.ok(!JSON.stringify(data).includes('PROVIDER_SECRET'));
 });
-test('403 on primary model falls back to Luna before giving up', async () => {
-  const { handle, calls } = fixture({ providerByModel: {
-    'test/model': { status: 403 },
-    'openai/gpt-5.6-luna': { status: 200, content: 'Fallback funcionando.' }
-  } });
-  const res = await handle(request());
-  const data = await res.json();
-  assert.equal(res.status, 200);
-  assert.equal(data.answer, 'Fallback funcionando.');
-  assert.equal(data.modelUsed, 'openai/gpt-5.6-luna');
-  const models = calls.filter(c => c.url.startsWith('https://openrouter.ai/')).map(c => JSON.parse(c.options.body).model);
-  assert.deepEqual(models, ['test/model', 'openai/gpt-5.6-luna']);
+test('403 never blindly retries another model or evades policy; one quota is one provider request', async () => {
+  const { handle, calls } = fixture({ providerStatus: 403 });
+  const res = await handle(request()); const data = await res.json();
+  assert.equal(res.status, 502);
+  assert.equal(data.errorCode, 'provider_forbidden');
+  assert.equal(calls.filter(c => c.url.startsWith('https://openrouter.ai/')).length, 1);
+  assert.equal(calls.filter(c => c.url.includes('reserve_solia_jarvis_turn')).length, 1);
+});
+test('eligible pilot model is selected explicitly and disables supported reasoning for conversational latency', async () => {
+  const { handle, calls } = fixture({}, { ...env, JARVIS_MODEL: 'alibaba/qwen3.8-flash' });
+  const data = await (await handle(request({ message: 'Oi' }))).json();
+  assert.equal(data.modelUsed, 'alibaba/qwen3.8-flash');
+  const body = JSON.parse(calls.find(c => c.url.startsWith('https://openrouter.ai/')).options.body);
+  assert.deepEqual(body.reasoning, { enabled: false });
+  assert.equal(body.max_tokens, 900);
 });
 test('all model access refusals return an explicit Gateway error', async () => {
   const { handle } = fixture({ providerStatus: 403 });

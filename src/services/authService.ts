@@ -80,8 +80,14 @@ export async function verifyEmailCode(email: string, code: string): Promise<Auth
     type: 'email'
   });
 
+  if (error?.status === 429) {
+    return { ok: false, message: 'Aguarde antes de confirmar novamente. O serviço limitou as tentativas; não peça vários códigos.' };
+  }
+  if (error && error.status && error.status >= 500) {
+    return { ok: false, message: 'O serviço de acesso está temporariamente indisponível. Seu código não foi declarado inválido.' };
+  }
   if (error || !data.session) {
-    return { ok: false, message: 'Codigo invalido ou expirado. Solicite um novo codigo.' };
+    return { ok: false, message: 'Código inválido ou expirado. Confira o código completo e o e-mail antes de solicitar outro.' };
   }
 
   return { ok: true, message: 'Acesso confirmado. Entrando no Jarvis…' };
@@ -92,7 +98,7 @@ export const sendMagicLink = requestEmailCode;
 
 export async function signOut(): Promise<AuthResult> {
   if (!supabase) return { ok: false, message: authUnavailableMessage() };
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
   return error
     ? { ok: false, message: 'Nao foi possivel sair: ' + error.message }
     : { ok: true, message: 'Sessao encerrada com seguranca.' };

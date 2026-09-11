@@ -24,7 +24,7 @@ export function prepareJarvisSpeech(utterance: SpeechSynthesisUtterance): Speech
   const voices = window.speechSynthesis.getVoices();
   const ptBr = voices.filter(voice => normalized(voice.lang).replace('_', '-') === 'pt-br');
   const preferred = ptBr.find(voice => preferredMaleNames.some(name => normalized(voice.name).includes(normalized(name))));
-  const masculineHint = ptBr.find(voice => /male|mascul|homem/.test(normalized(voice.name)));
+  const masculineHint = ptBr.find(voice => /\bmale\b|masculino|\bhomem\b/.test(normalized(voice.name)));
   const selected = preferred || masculineHint || ptBr[0];
   if (selected) utterance.voice = selected;
 

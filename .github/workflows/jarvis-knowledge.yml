@@ -40,6 +40,8 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202607240200_install_solia_vault.sql
           psql -v ON_ERROR_STOP=1 -f tests/sql/capture-assertions.sql
+      - name: Verify legacy public tables are locked without deleting data
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/legacy-lockdown-assertions.sql
       - name: Apply additive migration twice
         run: |
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609090310_knowledge_sources.sql

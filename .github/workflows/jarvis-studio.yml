@@ -1,0 +1,35 @@
+name: Jarvis local studio media verification
+on:
+  push:
+    branches: ['work/jarvis-neural-conversa-segura-20260908']
+    paths: ['local_studio/**', 'tests/studio/**', '.github/workflows/jarvis-studio.yml']
+  pull_request:
+    branches: [main]
+    paths: ['local_studio/**', 'tests/studio/**', '.github/workflows/jarvis-studio.yml']
+permissions:
+  contents: read
+jobs:
+  local-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ensure local media tools
+        run: |
+          if ! command -v ffmpeg || ! command -v ffprobe; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+      - name: Real media and isolated synthesis contract tests (no models or APIs)
+        env:
+          JARVIS_STUDIO_TEST_EVIDENCE_DIR: test-results/studio
+        run: python -m unittest discover -s tests/studio -v
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jarvis-studio-synthetic-evidence
+          path: test-results/studio
+          retention-days: 7

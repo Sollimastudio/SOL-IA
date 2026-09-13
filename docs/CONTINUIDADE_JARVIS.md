@@ -6,6 +6,10 @@ Repositório: `Sollimastudio/SOL-IA`. Proposta ativa: PR #6, branch `work/jarvis
 Esta etapa preserva a interface Neural e o núcleo seguro. Não criar outro Jarvis. Não sobrescrever `main`, aplicar migrações reais ou habilitar custos automaticamente.
 Antes da continuação, ler este registro, a PR e seu HEAD real; comparar alterações concorrentes.
 
+## Atualização 13/09/2026 — estúdio com a identidade da Sol
+
+Ler `docs/ESTUDIO_IDENTIDADE_SOL.md` e `local_studio/README.md`. Sol esclareceu que quer ideia falada → roteiro → narração com sua voz → vídeo com seu rosto/expressões/gestos, sem gravar cada conteúdo, usando sua conta paga do ChatGPT e evitando novas despesas. Não reduzir esse objetivo a cofre de notas nem confundir assinatura com crédito API. Há agora código local para preparar referências, adaptar síntese em português e montar prévia estática; clonagem real, animação, gestos e ligação ao iPhone continuam pendentes de evidência. A segurança por dispositivo também permanece pendente; voz clonada não autentica a dona.
+
 ## Atualização 13/09/2026 — orçamento zero e abertura no iPhone
 
 Ler `docs/ORCAMENTO_ZERO_VOZ_E_SEGURANCA.md`. Sol estabeleceu nenhum gasto novo agora. A geração remota fica pausada por padrão; captura e consulta do cofre passam a funcionar sem chamada de IA, com confirmação e ID estável para resolver envio ambíguo. Não confundir este modo com IA generativa local, nem franquia de hospedagem com recurso ilimitado. Voz local de leitura não é clonagem.

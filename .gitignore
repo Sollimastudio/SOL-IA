@@ -6,3 +6,8 @@ dist/
 !.env.example
 *.log
 *.tsbuildinfo
+__pycache__/
+*.pyc
+test-results/
+studio-private/
+studio-models/

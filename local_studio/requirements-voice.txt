@@ -1,0 +1,4 @@
+# Optional. Do not install on Vercel or automatically during app builds.
+# No model weights are downloaded by this requirements file itself.
+# The dependency environment and model weights still require a verified lock before release.
+chatterbox-tts @ git+https://github.com/resemble-ai/chatterbox.git@5de7a54aa4e5e2baadb0182dde554908b48b85c2

@@ -6,6 +6,20 @@ Repositório: `Sollimastudio/SOL-IA`. Proposta ativa: PR #6, branch `work/jarvis
 Esta etapa preserva a interface Neural e o núcleo seguro. Não criar outro Jarvis. Não sobrescrever `main`, aplicar migrações reais ou habilitar custos automaticamente.
 Antes da continuação, ler este registro, a PR e seu HEAD real; comparar alterações concorrentes.
 
+## Atualização — primeira síntese real, evidência de 14/09/2026 UTC
+
+Executada geração real no ambiente de desenvolvimento Linux/CPU usando a referência já recebida da Sol. Resultado: WAV mono/24 kHz, 5,04 s, 74,384 s de execução, pico de memória de 6.964.708 KiB (~6,64 GiB). FFmpeg decodificou sem erro; amostras finitas e sinal não silencioso, sem amostras próximas do limite digital. Original e referência preservados. Áudio e relatório privados ficaram fora do GitHub. Não pedir outra gravação agora.
+
+O modelo é Chatterbox Multilingual V3: código `5de7a54aa4e5e2baadb0182dde554908b48b85c2`, pesos `5bb1f6ee58e50c3b8d408bc82a6d3740c2db6e18`. Perth fixado em `ff1c8ac55a976971245cdd53c18d6131ca00d993`; a chamada de marca de procedência foi preservada. Sem API de geração paga ou contratação de GPU. É inferência com referência, não treinamento de uma tecnologia fundacional própria, nem garantia de serviço gratuito permanente.
+
+Primeira tentativa falhou com download incidental de segmentação chinesa no construtor upstream. Corrigido adaptador para inicializar apenas português, conservando vocabulário/encoder e bloqueio de rede. Dezesseis comparações com o tokenizer real foram idênticas. Instalador explícito de pesos com hashes, revisão fixa, retomada de arquivos íntegros e recusa de arquivo divergente adicionado. 23 testes locais passaram; CI deverá ser registrada na PR junto ao commit desta entrega.
+
+**Prova alcançada:** modelo real produziu mídia nova usando a referência autorizada. **Não aprovado ainda:** semelhança, naturalidade e roteiro pronunciado (escuta/transcrição não realizada); uso contínuo no iPhone; voz em tempo real; avatar/gestos/videochamada; segurança por dispositivo. Não marcar esses itens como concluídos. Não enviar o áudio privado para a PR/CI.
+
+**Próximos passos:** apresentar o WAV para escuta da Sol; manter coleta de feedback vinculada a este ensaio; então definir e validar onde o processamento poderá rodar de forma sustentável e integrar trabalhos autenticados ao aplicativo. A execução de 74 s para 5 s de fala ainda não atende conversa em tempo real. Login persistente, proteção de acesso e memória durável continuam prioridades do núcleo; nenhuma dessas foi certificada pela síntese. A abertura pelo ícone já foi confirmada pela Sol e não deve ser testada novamente por falta de memória do atendimento.
+
+Ler `local_studio/README.md`, `model-lock.json` e `environment-linux-cpu.txt` para reprodução. O inventário fixa versões observadas; não é um lock completo de hashes nem validação do Mac. O ambiente atual permitiu esta prova: não voltar a dizer que nada pode ser tentado só porque as especificações do Mac são desconhecidas.
+
 ## Atualização 13/09/2026 — referência de voz recebida
 
 Sol enviou M4A de aproximadamente 3m45s. Foi decodificado e recebeu análise acústica, candidato de referência e cópia de tratamento leve; arquivo original preservado. Não pedir nova gravação de voz agora. Foi implementada entrada somente de áudio no estúdio. Ler `docs/VOZ_CONTINUA_E_VIDEOCHAMADA.md`: aprender seu jeito em conversas, edições de áudio/vídeo e conversar por chamada de vídeo foram acrescentados ao pedido. Não confundir métricas de áudio com emoções/diagnóstico, prévia de câmera com chamada de IA ou referência preparada com voz clonada. Não houve escuta suportada, treinamento, síntese real ou ligação ao iPhone nesta etapa. O equipamento/modelo continuam pendentes.
@@ -26,7 +40,7 @@ Ler `docs/PROGRAMA_DE_CONSTRUCAO_JARVIS.md` e o [adendo de requisitos](https://g
 
 A correção mais recente permite apontar repetição quando ajudar a reconhecer um ciclo e decidir, sem bronca nem contagem habitual. Relatórios completos permanecem sob demanda. Captura automática durável é objetivo pendente, não capacidade certificada.
 
-O Prompt Autopilot anterior não estava ligado ao chat ativo. A versão `2026-09-13.1` passa a integrar a requisição ao modelo por `server/jarvis-chat.mjs`, com fonte única em `core/prompt-autopilot.mjs`; `promptVersion` identifica a versão na resposta da API. Testes com provedor simulado comprovam integração e limites, não qualidade semântica real. A próxima entrega estrutural é continuidade durável, conforme o procedimento do programa. Login/ícone continuam com pendência de aceite físico; não repetir o teste já recebido da capa azul.
+O Prompt Autopilot anterior não estava ligado ao chat ativo. A versão `2026-09-13.1` passa a integrar a requisição ao modelo por `server/jarvis-chat.mjs`, com fonte única em `core/prompt-autopilot.mjs`; `promptVersion` identifica a versão na resposta da API. Testes com provedor simulado comprovam integração e limites, não qualidade semântica real. A próxima entrega estrutural é continuidade durável, conforme o procedimento do programa. Registro posterior: abertura pelo ícone foi confirmada pela Sol; sessão prolongada e proteção no dispositivo continuam pendentes. Não repetir o teste já recebido da capa azul.
 
 ## Atualização 13/09/2026 — queixas do teste móvel
 

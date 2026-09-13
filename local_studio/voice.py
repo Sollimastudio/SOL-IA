@@ -49,6 +49,26 @@ def deny_network(event, args):
         raise StudioError('Síntese local recusou acesso à rede; prepare as dependências antes.')
 
 
+def portuguese_tokenizer(base, tokenizer_loader):
+    """Keep upstream PT encoding; don't initialize unrelated Chinese downloaders.
+
+    The reviewed upstream constructor loads Chinese assets unconditionally.
+    This worker only generates Portuguese and refuses other language paths.
+    """
+    class PortugueseTokenizer(base):
+        def __init__(self, vocab_file_path):
+            self.tokenizer = tokenizer_loader.from_file(vocab_file_path)
+            self.cangjie_converter = None
+            self.check_vocabset_sot_eot()
+
+        def encode(self, txt, language_id=None, lowercase=True, nfkd_normalize=True):
+            if language_id != 'pt':
+                raise StudioError('Este adaptador local foi validado somente para português.')
+            return super().encode(txt, language_id, lowercase, nfkd_normalize)
+
+    return PortugueseTokenizer
+
+
 def generate_local(text, reference, model_dir, device, output, receipt):
     # HF flags avoid implicit downloads. Audit hook blocks Python socket use as well.
     # This is not an OS sandbox against hostile native extensions: install reviewed dependencies only.
@@ -62,13 +82,19 @@ def generate_local(text, reference, model_dir, device, output, receipt):
     import torch
     import soundfile
     import chatterbox.mtl_tts as module
+    from tokenizers import Tokenizer
     if digest(module.__file__) != receipt['adapter_source_sha256']:
         raise StudioError('A versão instalada do adaptador diverge do manifesto revisado.')
     if device == 'cuda' and not torch.cuda.is_available():
         raise StudioError('CUDA solicitada, mas indisponível neste computador.')
     if device == 'mps' and not torch.backends.mps.is_available():
         raise StudioError('MPS solicitada, mas indisponível neste computador.')
-    model = module.ChatterboxMultilingualTTS.from_local(str(model_dir), device=device, t3_model='v3')
+    original_tokenizer = module.MTLTokenizer
+    module.MTLTokenizer = portuguese_tokenizer(original_tokenizer, Tokenizer)
+    try:
+        model = module.ChatterboxMultilingualTTS.from_local(str(model_dir), device=device, t3_model='v3')
+    finally:
+        module.MTLTokenizer = original_tokenizer
     waveform = model.generate(text, language_id='pt', audio_prompt_path=str(reference))
     # Retain the model's provenance watermark; no voice replacement fallback.
     soundfile.write(str(output), waveform.squeeze(0).detach().cpu().numpy(), model.sr, subtype='PCM_16')

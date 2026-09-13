@@ -38,16 +38,28 @@ Procedências: `recorded`, `generated_external`, `synthetic_test`. São declara�
 
 Fonte de código examinada: [Chatterbox](https://github.com/resemble-ai/chatterbox/tree/5de7a54aa4e5e2baadb0182dde554908b48b85c2), arquivo `src/chatterbox/mtl_tts.py`. O adaptador utiliza `from_local(..., t3_model='v3')` e `generate(..., language_id='pt', audio_prompt_path=...)`.
 
-`requirements-voice.txt` fixa a revisão principal do código. NÃO é lock completo do ambiente: dependências transitivas, pesos e compatibilidade de hardware ainda precisam ser conferidos e fixados antes da instalação no equipamento de Sol. Não instalar automaticamente durante build da aplicação.
+`requirements-voice.txt` fixa a revisão principal do código. `environment-linux-cpu.txt` registra as 110 versões instaladas no ensaio Linux x86_64/Python 3.12, inclusive as revisões de Chatterbox e Perth. Não é um lock de hashes completo nem receita validada para macOS. Não instalar durante build da aplicação.
 
-O comando só carrega pesos já presentes no disco; não chama `from_pretrained` nem inicia download. O operador responsável deve obter os pesos de fonte oficial, revisar suas licenças, fixar uma revisão do modelo e criar `jarvis-model.json` na pasta de pesos:
+Para reproduzir esse ambiente Linux, o operador cria um ambiente virtual, instala `torch==2.6.0` e `torchaudio==2.6.0` a partir de `https://download.pytorch.org/whl/cpu`, depois instala `environment-linux-cpu.txt` com `--no-deps` e executa `pip check`. `--no-deps` evita que a dependência upstream `Perth@master` substitua a revisão fixada; todas as dependências observadas já constam da lista. A versão da ferramenta de construção ainda não está integralmente fixada. Isso não deve ser executado pela Sol nem no navegador: é preparação de desenvolvimento.
+
+O construtor upstream de tokenização inicializava downloads de chinês, inclusive durante síntese em português. O adaptador local conserva o vocabulário e o encoder original, inicializa somente os componentes necessários a português e recusa outros idiomas. O bloqueio de rede continua ativo. Dezesseis comparações com o tokenizer real, incluindo acentos e opções de normalização, produziram tokens idênticos sem rede. A alteração temporária da classe ocorre no processo CLI isolado; não hospedar esse carregamento como serviço concorrente sem isolá-lo por processo.
+
+A síntese só carrega pesos já presentes no disco; não chama `from_pretrained` nem inicia download. A preparação explícita agora usa `model-lock.json`, com revisão oficial, fonte da licença no model card, hash do adaptador e SHA-256 de cada peso. Baixa cerca de 3,2 GB e não recebe nem envia gravações pessoais:
+
+```bash
+python -m local_studio.install_model --destination /caminho/pesos-verificados
+```
+
+Arquivos válidos são reaproveitados após interrupção; arquivo divergente ou outra versão exige pasta nova. Só publica o manifesto após verificar todos os pesos; o download falho nunca é apresentado como modelo pronto. Este instalador não instala dependências Python nem gera voz.
+
+Formato do manifesto (referência, não configuração para copiar sem preencher):
 
 ```json
 {
   "repository": "ResembleAI/chatterbox",
   "code_revision": "5de7a54aa4e5e2baadb0182dde554908b48b85c2",
   "weights_revision": "PREENCHER_COM_COMMIT_REAL_DE_40_HEXADECIMAIS",
-  "license_source": "https://huggingface.co/ResembleAI/chatterbox/blob/REVISAO_REAL/LICENSE",
+  "license_source": "https://huggingface.co/ResembleAI/chatterbox/blob/REVISAO_REAL/README.md",
   "adapter_source_sha256": "SHA256_DO_MTL_TTS_PY_DA_REVISAO_REVISADA",
   "files": {
     "ve.pt": "SHA256_REAL",
@@ -82,7 +94,20 @@ python -m unittest discover -s tests/studio -v
 
 Os testes usam vídeo de cor sólida e tom sintético, extraem mídia de verdade e geram/decodificam MP4 real. Verificam duração, áudio, dimensões, originais, alteração de roteiro, falha, repetição, lock e integridade de pesos. A parte de síntese usa substituto controlado para testar o contrato; não é prova de clonagem, semelhança, naturalidade ou animação.
 
-Próxima prova de produto: referência autorizada da própria Sol + ambiente local verificado + primeira síntese real curta, seguida de escuta e comparação. Só depois incorporar sincronização labial e movimento. Falta também integrar o worker ao Jarvis com autenticação forte e armazenamento privado.
+Prova real executada em Linux x86_64/Python 3.12, CPU: referência autorizada de dez segundos → WAV novo de 5,04 s, gerado em 74,384 s, pico RSS 6.964.708 KiB. Seed 1309 e quatro threads de PyTorch no ensaio. FFmpeg decodificou o resultado, que apresentou sinal finito e não silencioso. Esses números descrevem uma execução, não um benchmark universal ou latência em tempo real. A referência e o original permaneceram intactos. Nenhuma API paga foi usada.
+
+Para reproduzir a configuração do ensaio no ambiente já instalado:
+
+```python
+import torch
+from local_studio.voice import synthesize
+
+torch.set_num_threads(4)
+torch.manual_seed(1309)
+synthesize('/caminho/ID', '/caminho/pesos-verificados', device='cpu')
+```
+
+Semelhança, naturalidade e fidelidade ao roteiro continuam pendentes de escuta; o arquivo não foi ouvido/transcrito pelo agente. Não equivale a treinamento de modelo do zero. Próxima prova de produto: escuta/comparação e integração de trabalhos autenticados ao Jarvis com armazenamento privado. Sincronização labial, movimento e videochamada continuam pendentes.
 
 ## Referência somente de voz e tratamento conservador
 

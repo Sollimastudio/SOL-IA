@@ -73,7 +73,7 @@ Relatórios pessoais e de organização ficam sob demanda por padrão. O Jarvis 
 ### Testes e limites
 
 45 testes Node passaram localmente, incluindo os 24 anteriores e 21 novos. Identidade, rede e modelo são simulados nesses testes. Workflow adicional executa PostgreSQL 16 descartável, aplica a migração duas vezes e testa versões, duplicação, RLS, limites, posições Unicode e duas revisões concorrentes em conexões reais.
-Consultar checks do commit atual para confirmar o resultado de CI; criar teste não significa executá-lo. Não foi usado conteúdo real da Sol nos testes. Nenhum livro foi importado automaticamente. Não foi comprovado uso real em iPhone, geração com conta real, banco Supabase de produção, áudio ou câmera.
+Consultar checks do commit atual para confirmar o resultado de CI; criar teste não significa executá-lo. Não foi usado conteúdo real da Sol nos testes automatizados. Nenhum livro foi importado automaticamente. Na entrega original desta biblioteca não havia comprovação de uso real em iPhone, geração com conta real ou banco Supabase de produção. Evidências posteriores de geração e do marcador fictício no celular estão no registro de 13/09/2026; não certificam a biblioteca completa, áudio ou câmera.
 
 ### Ativação controlada
 
@@ -81,6 +81,8 @@ A nova API fica desligada até `JARVIS_KNOWLEDGE_ENABLED=true` no servidor. Usa 
 Se a biblioteca estiver desligada, o chat anterior não muda. Se ligada e indisponível, o chat emite aviso explícito de contexto incompleto em vez de inventar uma leitura. Não confundir login concluído com provedor ou cofre funcionando.
 
 ## Próxima entrega delimitada
+
+Atualização de prioridade em 13/09/2026: a Sol já enviou o teste fictício e recebeu a recordação correta da capa azul. Não reiniciar esse roteiro. O bloqueio imediato é encontrar o Jarvis sem buscar links na conversa. Esta rodada adiciona acesso visível de instalação, ícones Apple/manifesto e testes, somente na branch do PR #6. Instalação no iPhone e sessão contínua não são comprovadas por CI. Queixas Q6–Q8 e modo de colaboração foram incorporados a `docs/QUEIXAS_E_ACEITE_MOBILE_2026-09-13.md`: o assistente assume a lista e a retomada, sem exigir que a Sol o lembre de lembrar. O mecanismo de tarefas duráveis dentro do produto ainda não está implementado.
 
 1. Simplificar a tela principal para conversa + estado real + voz/encerrar; mover departamentos/fontes/integrações para Central secundária.
 2. Implementar o primeiro núcleo Anti-Fadiga: tópico-raiz, galhos, repetição/novidade, loops abertos e delta de decisão, com armazenamento isolado e testes.

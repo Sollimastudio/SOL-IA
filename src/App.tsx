@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { AuthPanel } from './components/AuthPanel';
+import { InstallJarvis } from './components/InstallJarvis';
 import { JarvisConversation } from './components/JarvisConversation';
 import { KnowledgeLibrary } from './components/KnowledgeLibrary';
 import { MemoryVault } from './components/MemoryVault';
@@ -37,6 +38,7 @@ export function App() {
   // The same gate used by authService is retained; no memory policy is bypassed.
   if (!authResolved || !session || !isSecureMemoryEnabled || !isSupabaseConfigured) {
     return <main><section className="shell" style={{ maxWidth: 520 }}>
+      <InstallJarvis />
       <header className="hero"><div>
         <p className="eyebrow">SOL.IA</p>
         <h1>Jarvis.</h1>
@@ -49,6 +51,7 @@ export function App() {
   }
 
   return <main><section className="shell">
+    <InstallJarvis />
     <header className="hero"><div>
       <p className="eyebrow">JARVIS / SOL.IA</p>
       <h1>Fale comigo.</h1>

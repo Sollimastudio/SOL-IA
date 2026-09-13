@@ -1,4 +1,4 @@
-import { parseSource } from './knowledge-contract.mjs';
+import { parseSource, trustedExcerpts } from './knowledge-contract.mjs';
 const json = (status, body) => Response.json(body, { status,
   headers: { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
 
@@ -35,14 +35,20 @@ export function createKnowledgeHandler({ env = {}, fetchImpl = globalThis.fetch 
     const authorization = request.headers.get('authorization') || '';
     if (!/^Bearer [^\s]+$/.test(authorization)) return json(401, { ok: false, error: 'Entre na conta autorizada.' });
     let source;
+    let searchQuery = null;
     try {
       if (request.method === 'GET') {
-        if (new URL(request.url).searchParams.get('mode') !== 'private') throw new Error('private');
+        const params = new URL(request.url).searchParams;
+        if (params.get('mode') !== 'private') throw new Error('private');
+        if (params.has('q')) {
+          searchQuery = params.get('q')?.trim() ?? '';
+          if (!searchQuery || searchQuery.length > 500 || /\u0000/.test(searchQuery)) throw new Error('search');
+        }
       } else {
         if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return json(415, { ok: false, error: 'Envie JSON.' });
         source = parseSource(await readLimited(request));
       }
-    } catch (error) { return json(error.message === 'private' ? 403 : error.message === 'size' ? 413 : 400, { ok: false, error: 'Fonte inválida, grande demais ou fora de uma sessão privada.' }); }
+    } catch (error) { return json(error.message === 'private' ? 403 : error.message === 'size' ? 413 : 400, { ok: false, error: error.message === 'search' ? 'Busca inválida ou grande demais.' : 'Fonte inválida, grande demais ou fora de uma sessão privada.' }); }
     const headers = { apikey: key, Authorization: authorization, 'Content-Type': 'application/json' };
     const call = (path, options = {}) => fetchImpl(`${base}${path}`, { ...options, headers, cache: 'no-store', redirect: 'error',
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(10000)]) });
@@ -55,6 +61,13 @@ export function createKnowledgeHandler({ env = {}, fetchImpl = globalThis.fetch 
     } catch { return json(503, { ok: false, error: 'Não foi possível verificar sua conta.' }); }
     if (request.signal.aborted) return json(499, { ok: false, error: 'Solicitação cancelada; confirme o estado na biblioteca.' });
     try {
+      if (request.method === 'GET' && searchQuery !== null) {
+        const response = await call('/rest/v1/rpc/search_solia_knowledge', { method: 'POST', body: JSON.stringify({ p_query: searchQuery }) });
+        if (!response.ok) return json(503, { ok: false, error: 'A busca da biblioteca está indisponível.' });
+        const rows = await response.json();
+        const matches = trustedExcerpts(rows, user.id);
+        return json(200, { ok: true, query: searchQuery, matches });
+      }
       if (request.method === 'GET') {
         // All revisions remain visible; this bounded query is complete under the DB's 200-revision quota.
         const query = new URLSearchParams({ owner_id: `eq.${user.id}`, order: 'created_at.desc', limit: '201',

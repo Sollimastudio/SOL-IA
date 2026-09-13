@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 
 type Source = { id: string; project_key: string; source_key: string; title: string; version: number; status: string };
+type Match = { reference: string; id: string; project: string; title: string; version: number; startChar: number; endChar: number; status: string; content: string };
 const projects = [
   ['morte-em-vida', 'Morte em Vida'], ['reposicione-se', 'Reposicione-se'],
   ['fuga-identitaria', 'Fuga Identitária'], ['feminicidio-emocional', 'Feminicídio Emocional'],
@@ -16,6 +17,8 @@ export function KnowledgeLibrary({ session }: { session: Session | null }) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [sources, setSources] = useState<Source[]>([]);
+  const [query, setQuery] = useState('');
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('Biblioteca privada. Carregue a lista antes de importar.');
@@ -26,15 +29,19 @@ export function KnowledgeLibrary({ session }: { session: Session | null }) {
   const identity = session?.user.id;
   useEffect(() => {
     alive.current = true;
+    setMatches([]);
     return () => { alive.current = false; fileEpoch.current += 1; request.current?.abort(); };
   }, [identity]);
 
-  async function call(body?: unknown) {
+  async function call(body?: unknown, search?: string) {
     if (!session?.access_token) throw new Error('Entre na conta autorizada.');
     const controller = new AbortController(); request.current = controller;
     const timer = setTimeout(() => controller.abort(), 20000);
+    const target = body ? '/api/jarvis-knowledge' : search !== undefined
+      ? `/api/jarvis-knowledge?mode=private&q=${encodeURIComponent(search)}`
+      : '/api/jarvis-knowledge?mode=private';
     try {
-      const response = await fetch(body ? '/api/jarvis-knowledge' : '/api/jarvis-knowledge?mode=private', {
+      const response = await fetch(target, {
         method: body ? 'POST' : 'GET',
         headers: { Authorization: `Bearer ${session.access_token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
         body: body ? JSON.stringify(body) : undefined, signal: controller.signal
@@ -57,6 +64,21 @@ export function KnowledgeLibrary({ session }: { session: Session | null }) {
       if (alive.current) { setLoaded(false); setStatus(error instanceof Error ? error.message : 'Biblioteca indisponível.'); }
     } finally { locked.current = false; if (alive.current) setBusy(false); }
   }
+  async function search() {
+    if (locked.current || !query.trim()) return;
+    locked.current = true; setBusy(true);
+    try {
+      const data = await call(undefined, query.trim());
+      if (!alive.current) return;
+      if (!Array.isArray(data.matches)) throw new Error('Resposta inválida da busca.');
+      setMatches(data.matches);
+      setStatus(data.matches.length
+        ? `${data.matches.length} trecho(s) encontrado(s), com origem e versão.`
+        : 'Nenhum trecho encontrado. Isso não prova que a informação nunca existiu; apenas que esta busca não a recuperou.');
+    } catch (error) {
+      if (alive.current) { setMatches([]); setStatus(error instanceof Error ? error.message : 'Busca indisponível.'); }
+    } finally { locked.current = false; if (alive.current) setBusy(false); }
+  }
   async function importSource() {
     if (!loaded || locked.current) return;
     const expectedVersion = Math.max(0, ...sources.filter(s => s.project_key === project && s.source_key === sourceKey).map(s => s.version));
@@ -68,7 +90,7 @@ export function KnowledgeLibrary({ session }: { session: Session | null }) {
         ? `Essa fonte já existe na versão ${data.source.version}. A versão atual continua sendo ${data.source.latestVersion}.`
         : `Fonte salva como versão ${data.source.version}, ainda não validada. Versões anteriores preservadas.`);
       // Keep the text until the user clears it; refresh is required before a subsequent import.
-      setLoaded(false);
+      setLoaded(false); setMatches([]);
     } catch (error) {
       if (alive.current) { setLoaded(false); setStatus(error instanceof Error ? error.message : 'Confirmação indisponível; atualize a lista antes de repetir.'); }
     } finally { locked.current = false; if (alive.current) setBusy(false); }
@@ -91,6 +113,16 @@ export function KnowledgeLibrary({ session }: { session: Session | null }) {
     <summary>Biblioteca dos projetos · fontes e versões</summary>
     <p>O Jarvis consulta trechos das fontes importadas. Importar não aprova fatos nem publica conteúdo. Esta biblioteca não aparece no modo público.</p>
     <button className="button button-secondary" disabled={!session || busy} onClick={() => void load()}>Atualizar lista de fontes</button>
+    <form onSubmit={event => { event.preventDefault(); void search(); }} style={{ marginTop: '1rem' }}>
+      <label htmlFor="knowledge-search">Buscar nas fontes sem chamar IA</label><br />
+      <input id="knowledge-search" maxLength={500} value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex.: fita violeta" />{' '}
+      <button className="button button-secondary" type="submit" disabled={!session || busy || !query.trim()}>Buscar trechos</button>
+    </form>
+    {matches.length > 0 && <div className="memory-list" data-testid="knowledge-search-results">{matches.map(match => <article className="memory-card" key={`${match.id}-${match.startChar}`}>
+      <strong>{match.reference} · {match.title}</strong>
+      <p>{match.content}</p>
+      <small>Projeto {match.project} · versão {match.version} · caracteres {match.startChar}–{match.endChar} · fonte importada, não validada</small>
+    </article>)}</div>}
     <form onSubmit={event => { event.preventDefault(); void importSource(); }}>
       <fieldset disabled={!session || busy} style={{ border: 0, padding: 0, marginTop: '1rem' }}>
         <label htmlFor="knowledge-project">Projeto</label>{' '}

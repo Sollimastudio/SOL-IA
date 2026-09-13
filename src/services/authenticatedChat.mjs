@@ -6,8 +6,20 @@ export async function sendAuthenticatedChat({ body, userId, signal, getSession, 
   async function currentSession(read) {
     signal.throwIfAborted();
     let session;
-    try { session = await read(); }
-    catch { throw new UnsentMessageError('Não foi possível renovar o acesso agora. Seu texto não foi enviado; não peça outro código por tentativa.'); }
+    let onAbort;
+    try {
+      const cancelled = new Promise((_, reject) => {
+        onAbort = () => reject(signal.reason);
+        signal.addEventListener('abort', onAbort, { once: true });
+      });
+      // SDK refresh has its own lifecycle. Do not leave the composer busy if it stalls.
+      session = await Promise.race([read(), cancelled]);
+    } catch {
+      signal.throwIfAborted();
+      throw new UnsentMessageError('Não foi possível renovar o acesso agora. Seu texto não foi enviado; não peça outro código por tentativa.');
+    } finally {
+      signal.removeEventListener('abort', onAbort);
+    }
     signal.throwIfAborted();
     if (!session?.access_token || session.user?.id !== userId) {
       throw new UnsentMessageError('A sessão mudou ou não está disponível. Seu texto não foi enviado. Confira a conta antes de continuar.');

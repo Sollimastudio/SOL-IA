@@ -71,3 +71,11 @@ test('account switch during refresh prevents replay', async () => {
   })), UnsentMessageError);
   assert.equal(calls, 1);
 });
+
+test('abort releases a stalled SDK session read without waiting for it or sending', async () => {
+  const controller = new AbortController();
+  const pending = sendAuthenticatedChat(options({ signal: controller.signal,
+    getSession: () => new Promise(() => {}), fetchImpl: async () => assert.fail('must not send') }));
+  controller.abort();
+  await assert.rejects(pending, { name: 'AbortError' });
+});

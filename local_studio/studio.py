@@ -139,8 +139,9 @@ def prepare(source, script, workspace, start=0.0, seconds=10.0, idea=None):
     if not all(math.isfinite(x) for x in [start, seconds]) or start < 0 or not 3 <= seconds <= 30:
         raise StudioError('Escolha de 3 a 30 segundos de referência, com início não negativo.')
     source_info = probe(source)
-    if not has_stream(source_info, 'audio') or not has_stream(source_info, 'video'):
-        raise StudioError('A referência precisa conter imagem e áudio.')
+    if not has_stream(source_info, 'audio'):
+        raise StudioError('A referência precisa conter áudio.')
+    with_video = has_stream(source_info, 'video')
     if start + seconds > duration(source_info) + 0.05:
         raise StudioError('O trecho solicitado ultrapassa a gravação.')
     root = Path(workspace).expanduser().resolve()
@@ -154,14 +155,17 @@ def prepare(source, script, workspace, start=0.0, seconds=10.0, idea=None):
         common = ['-protocol_whitelist', 'file', '-ss', str(start), '-i', str(source)]
         ffmpeg([*common, '-t', str(seconds), '-map', '0:a:0', '-vn', '-ac', '1',
                 '-ar', '24000', '-c:a', 'pcm_s16le', '-map_metadata', '-1', str(pending / 'reference.wav')])
-        ffmpeg([*common, '-map', '0:v:0', '-frames:v', '1', '-update', '1',
-                '-vf', "scale=w='min(1080,iw)':h=-2", '-map_metadata', '-1', str(pending / 'portrait.png')])
+        if with_video:
+            ffmpeg([*common, '-map', '0:v:0', '-frames:v', '1', '-update', '1',
+                    '-vf', "scale=w='min(1080,iw)':h=-2", '-map_metadata', '-1', str(pending / 'portrait.png')])
         ref_duration = duration(probe(pending / 'reference.wav'))
         if abs(ref_duration - seconds) > 0.2:
             raise StudioError('A extração não preservou a duração esperada.')
         assets = {key: asset(pending / name) for key, name in {
-            'script': 'script.txt', 'reference': 'reference.wav', 'portrait': 'portrait.png'
+            'script': 'script.txt', 'reference': 'reference.wav'
         }.items()}
+        if with_video:
+            assets['portrait'] = asset(pending / 'portrait.png')
         if idea is not None:
             assets['idea'] = asset(pending / 'idea.txt')
         manifest = {'schema': 'jarvis-local-studio-v1', 'id': identifier,
@@ -169,7 +173,8 @@ def prepare(source, script, workspace, start=0.0, seconds=10.0, idea=None):
                     'source_sha256': digest(source), 'reference_start_seconds': start,
                     'reference_seconds': ref_duration, 'language': 'pt',
                     'approval': 'draft', 'avatar': 'not_generated',
-                    'limitations': ['portrait_is_still', 'voice_identity_not_evaluated',
+                    'input_mode': 'video_and_audio' if with_video else 'audio_only',
+                    'limitations': ['portrait_is_still' if with_video else 'portrait_missing', 'voice_identity_not_evaluated',
                                     'gesture_model_not_implemented', 'not_published']}
         save_manifest(pending, manifest)
         target = root / identifier
@@ -210,6 +215,8 @@ def render(job):
     with locked_job(job) as (job, manifest):
         if 'narration' not in manifest['assets']:
             raise StudioError('Falta uma narração. A amostra de referência não será usada como fala nova.')
+        if 'portrait' not in manifest['assets']:
+            raise StudioError('Referência somente de voz: falta imagem para montar o vídeo.')
         if 'preview' in manifest['assets']:
             return verified_asset(job, manifest['assets']['preview'])
         image = verified_asset(job, manifest['assets']['portrait'])

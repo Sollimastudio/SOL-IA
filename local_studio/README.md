@@ -4,7 +4,7 @@ Parte do núcleo `Sollimastudio/SOL-IA`, não outro produto. É código de proce
 
 ## O que executa
 
-- Recebe vídeo local com áudio e um roteiro UTF-8; opcionalmente guarda a ideia original separada.
+- Recebe áudio local (inclusive M4A) ou vídeo com áudio e um roteiro UTF-8; opcionalmente guarda a ideia original separada.
 - Extrai referência de voz mono/24 kHz e um retrato, sem modificar o vídeo original.
 - Mantém trabalho com ID, arquivos privados, hashes e estado persistido atomicamente. Roteiro alterado exige nova versão; não renderiza texto diferente usando um áudio antigo silenciosamente.
 - Aceita narração pronta com procedência explícita, ou usa o adaptador opcional Chatterbox Multilingual V3 em português.
@@ -83,3 +83,17 @@ python -m unittest discover -s tests/studio -v
 Os testes usam vídeo de cor sólida e tom sintético, extraem mídia de verdade e geram/decodificam MP4 real. Verificam duração, áudio, dimensões, originais, alteração de roteiro, falha, repetição, lock e integridade de pesos. A parte de síntese usa substituto controlado para testar o contrato; não é prova de clonagem, semelhança, naturalidade ou animação.
 
 Próxima prova de produto: referência autorizada da própria Sol + ambiente local verificado + primeira síntese real curta, seguida de escuta e comparação. Só depois incorporar sincronização labial e movimento. Falta também integrar o worker ao Jarvis com autenticação forte e armazenamento privado.
+
+## Referência somente de voz e tratamento conservador
+
+O mesmo `prepare` aceita áudio sem imagem. Nesse caso registra `input_mode=audio_only`; síntese pode usar a referência, mas `render` informa que falta imagem, sem inventar um retrato.
+
+```bash
+python -m local_studio.audio --source /caminho/gravacao.m4a --destination /caminho/privado/analise-nova
+```
+
+Esse comando mede duração, pico, RMS, amostras próximas ao limite digital e janelas de baixa energia. Propõe um trecho contínuo de dez segundos por uma heurística de energia. Não reconhece palavras, não detecta número de falantes/música, não estima relação sinal-ruído e não infere emoção ou estado clínico. Um tom sintético pode passar pela triagem: escuta continua necessária.
+
+Produz uma referência sem redução de ruído (apenas conversão para WAV mono/24 kHz), uma cópia completa experimental com filtro de graves de 65 Hz e atenuação espectral leve de ruído, e um relatório JSON. A cópia tratada não substitui a referência do modelo nem o original. Não remove pausas, não muda velocidade/tom, não comprime automaticamente e não promete melhora perceptiva sem comparação auditiva. Arquivos totalmente silenciosos não recebem referência; ausência de trecho elegível é explícita.
+
+Preserva o hash da origem, exige pasta nova e só disponibiliza o pacote após conferir durações. Até 30 minutos por entrada; sem API e sem treinamento de modelo. Antes de usar um trecho como identidade vocal, conferir fala limpa, uma pessoa falando, ausência de música e limites de frase. O JSON marca essas avaliações como pendentes.

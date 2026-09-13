@@ -6,6 +6,11 @@ Repositório: `Sollimastudio/SOL-IA`. Proposta ativa: PR #6, branch `work/jarvis
 Esta etapa preserva a interface Neural e o núcleo seguro. Não criar outro Jarvis. Não sobrescrever `main`, aplicar migrações reais ou habilitar custos automaticamente.
 Antes da continuação, ler este registro, a PR e seu HEAD real; comparar alterações concorrentes.
 
+## Atualização 13/09/2026 — queixas do teste móvel
+
+Ler `docs/QUEIXAS_E_ACEITE_MOBILE_2026-09-13.md`: login recorrente, falha piloto antes de salvar, memória detalhada/Perfil DNA, voz bloqueada e qualidade da assessoria. Contém evidências e critérios, não certificação de entrega.
+Duas gerações reais retornaram 200, depois duas validações piloto falharam 503; o marcador fictício não foi gravado. Esta revisão adiciona diagnóstico seguro, recuperação limitada de sessão, indicador honesto e estado desconhecido para gravação sem confirmação. Histórico completo e voz em background continuam pendentes. Não pedir códigos para mascarar falha de servidor nem rotacionar share links.
+
 ## Objetivo que não pode ser perdido
 
 Assessor pessoal por voz e vídeo, porta única para especialistas (apoio jurídico, autorreflexão, conteúdo/copy, tráfego, editorial, audiovisual, tecnologia e negócios). Captura da cama por palavra de ativação com privacidade; memória corrigível; acompanhamento de fontes autorizadas; live em modo público; identidade/clone autorizados; futura venda com dados isolados por cliente. Livros são parte do assessor, não substituem o produto.

@@ -1,12 +1,76 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createProviderAwareFetch, resolvePilotRuntime } from '../server/pilot-runtime.mjs';
+import { createProviderAwareFetch, resolvePilotRuntime, runtimeBlockResponse } from '../server/pilot-runtime.mjs';
 
 const owner = '11111111-1111-4111-8111-111111111111';
 const request = (token = '') => new Request('https://preview.invalid/api/jarvis-chat', {
   method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}
 });
 const noOidc = async () => '';
+
+test('pre-write response distinguishes access failures and allows refresh only for invalid session', async () => {
+  for (const [reason, status] of [['session_missing', 401], ['session_invalid', 401], ['auth_unavailable', 503], ['pilot_unavailable', 503], ['pilot_not_authorized', 403], ['ai_not_authorized', 403], ['provider_credential_missing', 503]]) {
+    const response = runtimeBlockResponse({ env: {}, diagnostics: { readinessReason: reason } });
+    assert.equal(response.status, status);
+    const data = await response.json();
+    assert.equal(data.errorCode, reason); assert.equal(data.stage, 'access'); assert.equal(data.persisted, false);
+  }
+  assert.equal(runtimeBlockResponse({ env: { JARVIS_CHAT_ENABLED: 'true' }, diagnostics: { readinessReason: 'ready' } }), null);
+  assert.equal((await runtimeBlockResponse({ env: { JARVIS_CHAT_ENABLED: 'false' }, diagnostics: { readinessReason: 'ready' } }).json()).errorCode, 'chat_flag_disabled');
+});
+
+test('rate limits and forbidden access are not retried or treated as expired sessions', async () => {
+  for (const status of [403, 429]) {
+    let calls = 0;
+    const runtime = await resolvePilotRuntime(request('private-token'), {}, async () => { calls++; return Response.json({}, { status }); }, noOidc);
+    assert.equal(calls, 1); assert.equal(runtime.diagnostics.readinessReason, 'auth_unavailable');
+    assert.equal(runtime.diagnostics.authStatus, status);
+  }
+});
+
+test('malformed Auth or membership data cannot enable AI', async () => {
+  for (const authData of [{}, { id: '' }]) {
+    const runtime = await resolvePilotRuntime(request('session'), {}, async () => Response.json(authData), noOidc);
+    assert.equal(runtime.diagnostics.readinessReason, 'auth_unavailable');
+  }
+  for (const pilotData of [{}, [{ owner_id: 'other-owner', can_use_ai: true }]]) {
+    const runtime = await resolvePilotRuntime(request('session'), { VERCEL_OIDC_TOKEN: 'oidc-test' }, async url => Response.json(String(url).includes('/auth/') ? { id: owner } : pilotData), noOidc);
+    assert.equal(runtime.diagnostics.pilotVerified, false);
+    assert.equal(runtime.env.JARVIS_CHAT_ENABLED, 'false');
+  }
+});
+
+test('cancelled verification does not retry or enable a model call', async () => {
+  const controller = new AbortController(); let calls = 0;
+  const req = new Request('https://preview.invalid/api/jarvis-chat', { headers: { Authorization: 'Bearer synthetic' }, signal: controller.signal });
+  const runtime = await resolvePilotRuntime(req, {}, async () => { calls++; controller.abort(); throw new Error('cancelled'); }, noOidc);
+  assert.equal(calls, 1); assert.equal(runtime.diagnostics.readinessReason, 'request_cancelled');
+  assert.equal(runtime.env.JARVIS_CHAT_ENABLED, 'false');
+});
+
+test('expired session is distinct from unavailable Auth and from missing pilot', async () => {
+  const invalid = await resolvePilotRuntime(request('private-token'), {}, async () => Response.json({}, { status: 401 }), noOidc);
+  assert.equal(invalid.diagnostics.readinessReason, 'session_invalid');
+  assert.equal(invalid.diagnostics.authStatus, 401);
+  assert.equal(invalid.diagnostics.authAttempts, 1);
+  const unavailable = await resolvePilotRuntime(request('private-token'), {}, async () => { throw new Error('private upstream details'); }, noOidc);
+  assert.equal(unavailable.diagnostics.readinessReason, 'auth_unavailable');
+  assert.equal(unavailable.diagnostics.authAttempts, 2);
+  assert.doesNotMatch(JSON.stringify(unavailable.diagnostics), /private-token|private upstream details/);
+  const missing = await resolvePilotRuntime(request('session'), {}, fakeFetch({ member: false }), noOidc);
+  assert.equal(missing.diagnostics.readinessReason, 'pilot_not_authorized');
+});
+
+test('one transient read retry recovers membership without bypassing approval', async () => {
+  let reads = 0;
+  const runtime = await resolvePilotRuntime(request('session'), { VERCEL_OIDC_TOKEN: 'oidc-test' }, async (url) => {
+    if (String(url).includes('/auth/')) return Response.json({ id: owner });
+    reads++;
+    return reads === 1 ? Response.json({}, { status: 503 }) : Response.json([{ owner_id: owner, can_use_ai: true }]);
+  }, noOidc);
+  assert.equal(runtime.diagnostics.readinessReason, 'ready');
+  assert.equal(runtime.diagnostics.pilotAttempts, 2);
+});
 
 function fakeFetch({ canUseAi = false, model = 'openai/gpt-5.6-sol', member = true } = {}) {
   return async (url) => {

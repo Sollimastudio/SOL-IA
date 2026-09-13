@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { createVoiceSession } from '../core/voiceSession.mjs';
 import { prepareJarvisSpeech } from '../core/jarvisSpeech';
+import { getCurrentSession, refreshCurrentSession } from '../services/authService';
+import { sendAuthenticatedChat, UnsentMessageError } from '../services/authenticatedChat.mjs';
 
 type Mode = 'private' | 'public';
 type Turn = { role: 'user' | 'assistant'; content: string; specialist?: string; isError?: boolean; modelUsed?: string };
@@ -46,6 +48,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [status, setStatus] = useState('Conta conectada. Envie uma mensagem para iniciar. Microfone desligado.');
   const [busy, setBusy] = useState(false);
+  const [accessState, setAccessState] = useState<'local' | 'verified' | 'check'>('local');
   const [listening, setListening] = useState(false);
   const [consent, setConsent] = useState(false);
   const [voiceReply, setVoiceReply] = useState(false);
@@ -86,6 +89,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   }
   useEffect(() => {
     resetConversation();
+    setAccessState('local');
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') {
         // Privacy: microphone and speech stop immediately. A text request is not a microphone.
@@ -151,6 +155,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     clearTimeout(speechWatchdog.current);
     speechResume.current = null;
     let timedOut = false;
+    let knownUnsent = false;
     const deadline = setTimeout(() => { timedOut = true; controller.abort(); }, 90000);
     const old = recognition.current; recognition.current = null;
     if (old) { old.onend = null; old.onresult = null; old.onerror = null; try { old.abort(); } catch { /* stopped */ } }
@@ -166,8 +171,8 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       if (gate.current.isActive()) { armIdleTimeout(); captureNext(); }
     };
     try {
-      const response = await fetch('/api/jarvis-chat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      const response = await sendAuthenticatedChat({
+        userId: session.user.id, getSession: getCurrentSession, refreshSession: refreshCurrentSession,
         body: JSON.stringify({ message, mode, history, remember: mode === 'private' && remember }), signal: controller.signal
       });
       if (!response.headers.get('content-type')?.includes('application/json')) {
@@ -177,11 +182,15 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       clearTimeout(deadline);
       if (!data || typeof data !== 'object') throw new Error('O servidor devolveu uma resposta inválida. Seu login não foi alterado.');
       if (requestEpoch.current !== id || controller.signal.aborted) return;
-      const savedMessage = data.persisted === true ? 'Fala confirmada no cofre.' : 'Fala não salva no cofre.';
+      const savedMessage = data.persisted === true ? 'Fala confirmada no cofre.'
+        : data.persisted === false ? 'Fala não salva no cofre.' : 'Gravação não confirmada; confira o cofre antes de reenviar.';
       if (data.persisted === true) onSaved();
       if (!response.ok || data.ok !== true || typeof data.answer !== 'string') {
+        knownUnsent = data.stage === 'access' && data.persisted === false;
+        if (knownUnsent) setAccessState('check');
         throw new Error(`${typeof data.error === 'string' ? data.error : 'A conversa não foi concluída.'} ${savedMessage}`);
       }
+      setAccessState('verified');
       const specialist = typeof data.specialist === 'string' ? data.specialist : 'jarvis_executive';
       setActiveSpecialist(specialist);
       turnsRef.current = [...turnsRef.current, { role: 'assistant', content: data.answer, specialist, modelUsed: typeof data.modelUsed === 'string' ? data.modelUsed : undefined }]; setTurns(turnsRef.current);
@@ -196,7 +205,13 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       } else resume();
     } catch (error) {
       if (requestEpoch.current !== id || (controller.signal.aborted && !timedOut)) return;
-      const errorMessage = timedOut ? 'A resposta demorou demais. O envio foi interrompido; confira o cofre antes de reenviar uma ideia. Você continua conectada.' : error instanceof Error ? error.message : 'Falha na conversa. Confira o cofre antes de considerar a ideia salva.';
+      if (knownUnsent || error instanceof UnsentMessageError) {
+        setText(message);
+        setAccessState('check');
+        // The visible failed turn stays for diagnosis but must not be duplicated in model history.
+        turnsRef.current = turnsRef.current.map((turn, index) => index === turnsRef.current.length - 1 ? { ...turn, isError: true } : turn);
+      }
+      const errorMessage = timedOut ? 'A resposta demorou demais. O envio foi interrompido; a gravação não está confirmada. Confira o cofre antes de reenviar uma ideia.' : error instanceof Error ? error.message : 'Falha na conversa. Confira o cofre antes de considerar a ideia salva.';
       setActiveSpecialist('jarvis_executive');
       turnsRef.current = [...turnsRef.current, { role: 'assistant', content: errorMessage, isError: true }];
       setTurns(turnsRef.current);
@@ -226,7 +241,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
         <div><span className="eyebrow">SOL.IA · SISTEMA NEURAL</span><h2 id="jarvis-conversation-title">JARVIS</h2><small>ASSESSOR PESSOAL · PORTA ÚNICA</small></div>
       </div>
       <div className="neural-indicators">
-        <span className={`neural-pill ${session ? 'online' : ''}`}>{session ? 'COFRE AUTENTICADO' : 'COFRE BLOQUEADO'}</span>
+        <span className={`neural-pill ${session && accessState === 'verified' ? 'online' : ''}`}>{!session ? 'ACESSO BLOQUEADO' : accessState === 'verified' ? 'ACESSO VALIDADO' : accessState === 'check' ? 'ACESSO A VERIFICAR' : 'SESSÃO LOCAL'}</span>
         <span className={`neural-pill ${listening ? 'mic-live' : ''}`}>{listening ? 'MIC ATIVO' : 'MIC OFF'}</span>
         <span className="neural-pill specialist">{specialistLabels[activeSpecialist] ?? 'ASSESSORIA EXECUTIVA'}</span>
       </div>

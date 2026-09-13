@@ -5,6 +5,48 @@ test.beforeEach(async ({page}) => {
 });
 test.afterEach(async ({page},info) => { await page.screenshot({path:info.outputPath('chat.png'),fullPage:true}); });
 const success = {ok:true,answer:'Olá, Sol. Qual ideia vamos organizar?',modelUsed:'alibaba/qwen3.8-flash',specialist:'jarvis_executive',persisted:false,warnings:[]};
+
+test('server access outage preserves unsent draft and does not invent a saved memory or logout', async ({page}) => {
+  let attempts = 0; let lastBody: any;
+  await page.route('**/api/jarvis-chat', route => {
+    attempts++; lastBody = route.request().postDataJSON();
+    return route.fulfill(attempts === 1 ? { status: 503, json: { ok: false, errorCode: 'pilot_unavailable', stage: 'access', persisted: false, error: 'Consulta piloto indisponível.' } } : { json: success });
+  });
+  await page.goto('/?case=chat');
+  await expect(page.getByText('SESSÃO LOCAL', {exact:true})).toBeVisible();
+  await expect(page.getByText('COFRE AUTENTICADO', {exact:true})).toHaveCount(0);
+  await send(page, 'Teste de rascunho');
+  await expect(page.locator('#jarvis-message')).toHaveValue('Teste de rascunho');
+  await expect(page.getByText('ACESSO A VERIFICAR', {exact:true})).toBeVisible();
+  expect(attempts).toBe(1);
+  await expect(page.getByRole('heading', {name:'Entrar no Jarvis'})).toHaveCount(0);
+  await page.getByRole('button', {name:'ENVIAR',exact:true}).click();
+  await expect(page.getByRole('log')).toContainText(success.answer);
+  expect(lastBody.history).toEqual([]);
+  await expect(page.getByText('ACESSO VALIDADO', {exact:true})).toBeVisible();
+});
+
+test('explicit pre-write invalid token renews once without asking for an email code', async ({page}) => {
+  const tokens: string[] = [];
+  await page.route('**/api/jarvis-chat', route => {
+    tokens.push(route.request().headers().authorization);
+    return route.fulfill(tokens.length === 1 ? {status:401,json:{ok:false,errorCode:'session_invalid',stage:'access',persisted:false}} : {json:success});
+  });
+  await page.goto('/?case=chat'); await send(page);
+  await expect(page.getByRole('log')).toContainText(success.answer);
+  expect(tokens).toEqual(['Bearer synthetic-session', 'Bearer synthetic-refreshed-session']);
+  await expect(page.getByRole('heading', {name:'Entrar no Jarvis'})).toHaveCount(0);
+});
+
+test('unknown persistence is not falsely described as unsaved and is not replayed', async ({page}) => {
+  let attempts = 0;
+  await page.route('**/api/jarvis-chat', route => { attempts++; return route.fulfill({status:502,json:{ok:false,error:'Resultado incompleto'}}); });
+  await page.goto('/?case=chat'); await send(page);
+  await expect(page.getByRole('log')).toContainText('Gravação não confirmada');
+  await expect(page.getByRole('log')).not.toContainText('Fala não salva');
+  await expect(page.locator('#jarvis-message')).toHaveValue('');
+  expect(attempts).toBe(1);
+});
 async function send(page: any, text = 'Oi') {
   await page.locator('#jarvis-message').fill(text);
   await page.getByRole('button',{name:'ENVIAR',exact:true}).click();

@@ -5,6 +5,10 @@ const fixtureSession = { access_token: 'synthetic-session', token_type: 'bearer'
   user: { id: '11111111-1111-4111-8111-111111111111', email: 'teste@example.invalid' } };
 const sessionForCase = () => new URLSearchParams(location.search).get('case') === 'chat' ? fixtureSession : null;
 export async function getCurrentSession() { return sessionForCase(); }
+export async function refreshCurrentSession() {
+  fixtureSession.access_token = 'synthetic-refreshed-session';
+  return sessionForCase();
+}
 export function subscribeToAuth(listener: (session: any) => void) {
   let live = true;
   queueMicrotask(() => { if (live) listener(sessionForCase()); });

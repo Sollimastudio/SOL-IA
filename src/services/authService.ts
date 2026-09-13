@@ -25,6 +25,13 @@ export async function getCurrentSession(): Promise<Session | null> {
   return data.session;
 }
 
+export async function refreshCurrentSession(): Promise<Session | null> {
+  if (!isSecureMemoryEnabled || !supabase) return null;
+  const { data, error } = await supabase.auth.refreshSession();
+  if (error) throw new Error('Session renewal unavailable');
+  return data.session;
+}
+
 export function subscribeToAuth(
   listener: (session: Session | null) => void
 ): () => void {

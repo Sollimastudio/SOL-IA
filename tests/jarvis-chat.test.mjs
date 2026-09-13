@@ -16,6 +16,8 @@ function fixture(overrides = {}, config = env) {
     if (url.endsWith('/auth/v1/user')) return Response.json({ id: overrides.owner || owner }, { status: overrides.authStatus || 200 });
     if (url.includes('/rpc/')) return Response.json(overrides.quota ?? true, { status: overrides.quotaStatus || 200 });
     if (url.includes('solia_memories') && options.method === 'POST') {
+      if (overrides.saveThrow) throw new Error('PRIVATE_STORAGE_DETAILS');
+      if (overrides.saveMalformed) return Response.json({});
       return Response.json([{ id: 'saved-memory' }], { status: overrides.saveStatus || 201 });
     }
     if (url.includes('solia_memories')) return Response.json(overrides.rows || [
@@ -50,6 +52,16 @@ test('no bearer token cannot read memory or call model', async () => {
 });
 test('invalid session stops before quota and data access', async () => {
   const { handle, calls } = fixture({ authStatus: 401 }); assert.equal((await handle(request())).status, 401); assert.equal(calls.length, 1);
+});
+test('second Auth guard distinguishes expiry from upstream failures before any write', async () => {
+  for (const status of [401, 429, 503]) {
+    const { handle, calls } = fixture({ authStatus: status });
+    const response = await handle(request()); const data = await response.json();
+    assert.equal(response.status, status === 401 ? 401 : 503);
+    assert.equal(data.errorCode, status === 401 ? 'session_invalid' : 'auth_unavailable');
+    assert.equal(data.stage, 'access'); assert.equal(data.persisted, false);
+    assert.equal(calls.length, 1);
+  }
 });
 test('different user cannot enter private pilot', async () => {
   const { handle, calls } = fixture({ owner: 'other' }); assert.equal((await handle(request())).status, 403); assert.equal(calls.length, 1);
@@ -98,6 +110,25 @@ test('public mode never reads or writes private memories, even remember=true', a
 test('save failure never claims persisted=true', async () => {
   const { handle } = fixture({ saveStatus: 403 }); const data = await (await handle(request({ remember: true }))).json();
   assert.equal(data.persisted, false); assert.ok(data.warnings.some(w => w.includes('NÃO')));
+});
+test('ambiguous storage acknowledgment stays unknown in both API and model context without retry', async () => {
+  for (const overrides of [{saveThrow: true}, {saveMalformed: true}, {saveStatus: 503}]) {
+    const { handle, calls } = fixture(overrides);
+    const data = await (await handle(request({remember: true}))).json();
+    assert.equal(data.persisted, null); assert.equal(data.memoryId, undefined);
+    const body = JSON.parse(calls.find(c => c.url.startsWith('https://openrouter.ai/')).options.body);
+    assert.match(body.messages[0].content, /NÃO CONFIRMADO; não afirme nem gravação nem perda/);
+    assert.equal(calls.filter(c => c.url.includes('solia_memories') && c.options.method === 'POST').length, 1);
+    assert.doesNotMatch(JSON.stringify(data), /PRIVATE_STORAGE_DETAILS/);
+  }
+});
+test('prompt separates user-supplied test text from evidence of personal facts', async () => {
+  const { handle, calls } = fixture({ rows: [] });
+  await handle(request({ message: 'Inclua SOL-1309 em uma frase fictícia.', remember: false }));
+  const body = JSON.parse(calls.find(c => c.url.startsWith('https://openrouter.ai/')).options.body);
+  assert.match(body.messages[0].content, /Repetir um identificador informado/);
+  assert.match(body.messages[0].content, /nem transforme um exemplo fictício em fato pessoal/i);
+  assert.equal(body.messages.at(-1).content, 'Inclua SOL-1309 em uma frase fictícia.');
 });
 test('memory outage is visible, not fabricated continuity', async () => {
   const { handle } = fixture({ memoryStatus: 503 }); const data = await (await handle(request())).json();

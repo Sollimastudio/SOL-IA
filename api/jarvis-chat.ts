@@ -37,7 +37,7 @@ function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null,
         if (first?.role === 'system' && typeof first.content === 'string') {
           first.content += `\n${JARVIS_PERSONA}`;
           if (orientation) {
-            first.content += `\nORIENTACAO_ANTI_FADIGA_JSON=${JSON.stringify(orientation)}\nUse essa orientação silenciosamente. Não diga quantas vezes a usuária repetiu algo. Preserve o fio principal, responda ao que mudou e trate galhos como galhos, sem diagnosticar a pessoa.`;
+            first.content += `\nORIENTACAO_ANTI_FADIGA_JSON=${JSON.stringify(orientation)}\nEste é um indício lexical falível, não uma classificação confirmada. Compare o significado com o contexto disponível antes de concluir repetição ou ramificação. Use silenciosamente; aponte repetição somente quando ajudar a decidir, sem contagem habitual nem diagnóstico. Preserve o fio principal e responda ao que mudou.`;
           }
           nextInit = { ...init, body: JSON.stringify(payload) };
         }

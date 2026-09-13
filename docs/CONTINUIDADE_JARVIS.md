@@ -6,6 +6,14 @@ Repositório: `Sollimastudio/SOL-IA`. Proposta ativa: PR #6, branch `work/jarvis
 Esta etapa preserva a interface Neural e o núcleo seguro. Não criar outro Jarvis. Não sobrescrever `main`, aplicar migrações reais ou habilitar custos automaticamente.
 Antes da continuação, ler este registro, a PR e seu HEAD real; comparar alterações concorrentes.
 
+## Atualização 13/09/2026 — engenharia assumida pelo produto
+
+Ler `docs/PROGRAMA_DE_CONSTRUCAO_JARVIS.md` e o [adendo de requisitos](https://github.com/Sollimastudio/SOL-IA/pull/6#issuecomment-5654738092) antes de retomar. Contêm a sequência atual, testes de aceite, live no mesmo iPhone, preservação do legado e evolução solicitada dentro do Jarvis. A auditoria do passado continua parcial; não pedir que a Sol reconstitua tudo de memória.
+
+A correção mais recente permite apontar repetição quando ajudar a reconhecer um ciclo e decidir, sem bronca nem contagem habitual. Relatórios completos permanecem sob demanda. Captura automática durável é objetivo pendente, não capacidade certificada.
+
+O Prompt Autopilot anterior não estava ligado ao chat ativo. A versão `2026-09-13.1` passa a integrar a requisição ao modelo por `server/jarvis-chat.mjs`, com fonte única em `core/prompt-autopilot.mjs`; `promptVersion` identifica a versão na resposta da API. Testes com provedor simulado comprovam integração e limites, não qualidade semântica real. A próxima entrega estrutural é continuidade durável, conforme o procedimento do programa. Login/ícone continuam com pendência de aceite físico; não repetir o teste já recebido da capa azul.
+
 ## Atualização 13/09/2026 — queixas do teste móvel
 
 Ler `docs/QUEIXAS_E_ACEITE_MOBILE_2026-09-13.md`: login recorrente, falha piloto antes de salvar, memória detalhada/Perfil DNA, voz bloqueada e qualidade da assessoria. Contém evidências e critérios, não certificação de entrega.

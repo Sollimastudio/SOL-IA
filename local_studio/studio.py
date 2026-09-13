@@ -169,6 +169,7 @@ def prepare(source, script, workspace, start=0.0, seconds=10.0, idea=None):
         if idea is not None:
             assets['idea'] = asset(pending / 'idea.txt')
         manifest = {'schema': 'jarvis-local-studio-v1', 'id': identifier,
+                    'purpose': 'content_production',
                     'stage': 'references_ready', 'assets': assets,
                     'source_sha256': digest(source), 'reference_start_seconds': start,
                     'reference_seconds': ref_duration, 'language': 'pt',
@@ -213,6 +214,8 @@ def attach_audio(job, audio, kind):
 
 def render(job):
     with locked_job(job) as (job, manifest):
+        if manifest.get('narration', {}).get('human_review') == 'rejected':
+            raise StudioError('Narração reprovada pela dona da voz; crie um novo ensaio antes de montar o vídeo.')
         if 'narration' not in manifest['assets']:
             raise StudioError('Falta uma narração. A amostra de referência não será usada como fala nova.')
         if 'portrait' not in manifest['assets']:

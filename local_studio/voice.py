@@ -100,11 +100,15 @@ def generate_local(text, reference, model_dir, device, output, receipt):
     soundfile.write(str(output), waveform.squeeze(0).detach().cpu().numpy(), model.sr, subtype='PCM_16')
 
 
-def synthesize(job, model_dir, device='cpu', generator=None):
+def synthesize(job, model_dir, device='cpu', generator=None, *, content_requested=False):
+    if content_requested is not True:
+        raise StudioError('A voz pessoal exige pedido explícito de produção de conteúdo; não é a voz de conversa do Jarvis.')
     if device not in {'cpu', 'mps', 'cuda'}:
         raise StudioError('Dispositivo de síntese inválido.')
     model_dir, receipt = verify_model(model_dir)
     with locked_job(job) as (job, manifest):
+        if manifest.get('purpose') != 'content_production':
+            raise StudioError('A voz pessoal só pode ser usada em trabalhos de conteúdo identificados; nunca no diálogo do Jarvis.')
         if 'narration' in manifest['assets']:
             raise StudioError('Narração já registrada; não será sobrescrita.')
         text = verified_asset(job, manifest['assets']['script']).read_text(encoding='utf-8')
@@ -121,6 +125,8 @@ def synthesize(job, model_dir, device='cpu', generator=None):
             output.rename(target)
         manifest['assets']['narration'] = asset(target)
         manifest['narration'] = {'origin': 'chatterbox_multilingual_v3', 'language': 'pt',
+                                 'usage': 'explicitly_requested_content_only',
+                                 'human_review': 'pending',
                                  'device': device, 'model': receipt,
                                  'script_match': 'not_verified', 'voice_identity': 'not_verified'}
         manifest['stage'] = 'narration_ready'
@@ -133,9 +139,11 @@ def main():
     parser.add_argument('--job', required=True)
     parser.add_argument('--model-dir', required=True)
     parser.add_argument('--device', choices=['cpu', 'mps', 'cuda'], default='cpu')
+    parser.add_argument('--content-requested', action='store_true',
+                        help='O operador confirma que houve pedido explícito de conteúdo com voz pessoal.')
     args = parser.parse_args()
     try:
-        result = synthesize(args.job, args.model_dir, args.device)
+        result = synthesize(args.job, args.model_dir, args.device, content_requested=args.content_requested)
         print(json.dumps({'narration': str(result), 'voice_identity': 'not_verified'}))
     except (StudioError, OSError, ValueError, ImportError) as exc:
         print(json.dumps({'ok': False, 'error': str(exc)}, ensure_ascii=False), file=sys.stderr)

@@ -59,7 +59,7 @@ export function NoCostWorkspace({ session }: { session: Session }) {
     speech.voice = voice; speech.lang = voice.lang;
     speech.onerror = () => { if (live.current) setStatus('A leitura foi interrompida. Seu texto continua na tela.'); };
     window.speechSynthesis.speak(speech);
-    setStatus('Leitura com uma voz local do aparelho. Ainda não é uma clonagem da sua voz.');
+    setStatus('Leitura com a voz do aparelho usada pelo Jarvis.');
   }
 
   return <section className="panel" aria-labelledby="no-cost-title">

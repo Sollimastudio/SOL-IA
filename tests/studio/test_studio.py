@@ -94,6 +94,19 @@ class LocalStudioTest(unittest.TestCase):
             studio.render(job)
         self.assertFalse(list(job.glob('preview-*.mp4')))
 
+    def test_rejected_voice_cannot_be_used_even_in_existing_video_preview(self):
+        job = self.job()
+        studio.attach_audio(job, self.tone, 'synthetic_test')
+        preview = studio.render(job)
+        manifest = studio.read_job(job)[1]
+        manifest['narration']['human_review'] = 'rejected'
+        studio.save_manifest(job, manifest)
+        before = (job / 'job.json').read_bytes()
+        with self.assertRaisesRegex(studio.StudioError, 'Narração reprovada'):
+            studio.render(job)
+        self.assertEqual((job / 'job.json').read_bytes(), before)
+        self.assertTrue(preview.exists())  # Preserve history, but refuse reuse.
+
     def test_changed_script_is_rejected_before_synthesis(self):
         job = self.job()
         (job / 'script.txt').write_text('Outro conteúdo')
@@ -155,25 +168,43 @@ class LocalStudioTest(unittest.TestCase):
         def failed(*args):
             raise studio.StudioError('model failed')
         with self.assertRaises(studio.StudioError):
-            voice.synthesize(job, model, generator=failed)
+            voice.synthesize(job, model, generator=failed, content_requested=True)
         self.assertEqual((job / 'job.json').read_bytes(), before)
         # Contract stub only. This is NOT a real voice-cloning acceptance test.
         calls = []
         def generated(text, reference, weights, device, output, receipt):
             calls.append((text, reference.name, weights, device))
             shutil.copyfile(self.tone, output)
-        voice.synthesize(job, model, generator=generated)
+        voice.synthesize(job, model, generator=generated, content_requested=True)
         self.assertEqual(calls, [(self.original, 'reference.wav', model, 'cpu')])
         manifest = studio.read_job(job)[1]
         self.assertEqual(manifest['narration']['voice_identity'], 'not_verified')
         self.assertEqual(manifest['narration']['script_match'], 'not_verified')
+        self.assertEqual(manifest['narration']['usage'], 'explicitly_requested_content_only')
+
+    def test_personal_voice_requires_content_request_and_never_accepts_dialogue(self):
+        job = self.job()
+        model = self.model()
+        def forbidden(*args):
+            self.fail('must not invoke voice generator')
+        with self.assertRaisesRegex(studio.StudioError, 'pedido explícito'):
+            voice.synthesize(job, model, generator=forbidden)
+        for purpose in ['assistant_dialogue', None]:
+            manifest = studio.read_job(job)[1]
+            manifest['purpose'] = purpose
+            studio.save_manifest(job, manifest)
+            before = (job / 'job.json').read_bytes()
+            with self.assertRaisesRegex(studio.StudioError, 'trabalhos de conteúdo'):
+                voice.synthesize(job, model, generator=forbidden, content_requested=True)
+            self.assertEqual((job / 'job.json').read_bytes(), before)
+            self.assertFalse((job / '.working').exists())
 
     def test_long_script_is_not_silently_truncated(self):
         long_script = self.root / 'long.txt'
         long_script.write_text('Palavra ' * 50)
         job = studio.prepare(self.source, long_script, self.root / 'jobs', seconds=3)
         with self.assertRaisesRegex(studio.StudioError, '300 caracteres'):
-            voice.synthesize(job, self.model(), generator=lambda *args: self.fail('must not generate'))
+            voice.synthesize(job, self.model(), generator=lambda *args: self.fail('must not generate'), content_requested=True)
 
     def test_network_audit_policy_refuses_remote_generation(self):
         for event in ['socket.connect', 'socket.connect_ex', 'socket.getaddrinfo', 'socket.sendto']:

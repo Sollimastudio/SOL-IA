@@ -2,6 +2,12 @@
 
 Parte do núcleo `Sollimastudio/SOL-IA`, não outro produto. É código de processamento local para quem desenvolve o Jarvis. Ainda não existe botão de avatar no iPhone nem serviço de geração exposto na internet.
 
+## Finalidade e aceite
+
+Voz pessoal serve somente a conteúdo explicitamente solicitado. Jarvis conversa com voz própria de assistente. O worker não pode ser chamado como sintetizador das respostas do chat. `synthesize(..., content_requested=True)` exige que o operador tenha um pedido explícito de conteúdo; a CLI usa `--content-requested`. O trabalho também precisa de `purpose=content_production`, incluído nas novas preparações. Trabalhos antigos sem finalidade declarada são recusados; não migrar indiscriminadamente nem definir a flag a partir de texto produzido pelo modelo. São controles de roteamento do worker, não autenticação do futuro serviço móvel.
+
+**Primeiro ensaio reprovado pela Sol:** a voz não se parece com a dela. Os resultados técnicos abaixo continuam sendo históricos, não aceite de qualidade. `human_review=rejected` impede `render`, inclusive o reaproveitamento de uma prévia existente; os arquivos históricos são preservados. Não reutilizar essa narração como conteúdo aprovado ou voz do Jarvis.
+
 ## O que executa
 
 - Recebe áudio local (inclusive M4A) ou vídeo com áudio e um roteiro UTF-8; opcionalmente guarda a ideia original separada.
@@ -73,7 +79,7 @@ Formato do manifesto (referência, não configuração para copiar sem preencher
 Este exemplo NÃO é um modelo instalado: valores de exemplo serão recusados. Se `conds.pt` ou `Cangjie5_TC.json` estiverem presentes, incluir os hashes também. Integridade confirma consistência com o manifesto do operador, não procedência independente ou aprovação automática de licença.
 
 ```bash
-python -m local_studio.voice --job /caminho/ID --model-dir /caminho/pesos-verificados --device cpu
+python -m local_studio.voice --job /caminho/ID --model-dir /caminho/pesos-verificados --device cpu --content-requested
 ```
 
 `mps` é opção para Mac compatível e `cuda` para NVIDIA compatível; não faz fallback silencioso. A geração inicial é limitada a 300 caracteres para não cortar roteiros silenciosamente. Divisão por frases, alinhamento, qualidade de pronúncia e concatenação longa ainda precisam ser desenvolvidos. Não remover a marca de procedência do modelo.
@@ -104,10 +110,10 @@ from local_studio.voice import synthesize
 
 torch.set_num_threads(4)
 torch.manual_seed(1309)
-synthesize('/caminho/ID', '/caminho/pesos-verificados', device='cpu')
+synthesize('/caminho/ID', '/caminho/pesos-verificados', device='cpu', content_requested=True)
 ```
 
-Semelhança, naturalidade e fidelidade ao roteiro continuam pendentes de escuta; o arquivo não foi ouvido/transcrito pelo agente. Não equivale a treinamento de modelo do zero. Próxima prova de produto: escuta/comparação e integração de trabalhos autenticados ao Jarvis com armazenamento privado. Sincronização labial, movimento e videochamada continuam pendentes.
+Sol ouviu e reprovou a semelhança. Naturalidade e fidelidade ao roteiro não receberam aprovação específica; o agente não ouviu/transcreveu o arquivo. Não equivale a treinamento de modelo do zero. Próxima prova de produto: comparar uma revisão do clone para conteúdo com o áudio de referência, usando critérios de timbre/sotaque/cadência e pronúncia; só depois integrar produção de conteúdos autenticada. A voz do assistente segue independente. Sincronização labial, movimento e videochamada continuam pendentes.
 
 ## Referência somente de voz e tratamento conservador
 

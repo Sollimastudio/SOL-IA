@@ -2,6 +2,12 @@
 
 Atualização de 13/09/2026. Complementa `ESTUDIO_IDENTIDADE_SOL.md`; não substitui o trabalho de voz/avatar nem a segurança pendente.
 
+## Correção de finalidade e qualidade
+
+Jarvis conversa e participa de chamadas com voz própria de assistente. A voz pessoal da Sol só deve narrar conteúdo quando ela pedir explicitamente. Aprender seu jeito de falar não significa responder imitando sua voz.
+
+O ensaio sintético de 5,04 s foi ouvido e reprovado pela Sol: não se parece com sua voz. Preservar o feedback e o histórico; não pedir aprovação da mesma amostra novamente. Antes de integrar clonagem ao estúdio de conteúdo, rever a referência e a configuração/modelo e comprovar qualidade.
+
 ## Novo pedido recebido
 
 Sol forneceu uma gravação de voz e pediu que o Jarvis aprenda progressivamente seu jeito de falar, traços vocais e variações nas conversas. Quer edição de áudio/vídeo, redução de ruído e chamada por vídeo: conversar vendo o Jarvis, enquanto ele acompanha sua imagem. Não exigir nova explicação desse objetivo em cada rodada.
@@ -10,7 +16,7 @@ Sol forneceu uma gravação de voz e pediu que o Jarvis aprenda progressivamente
 
 Foi recebido e decodificado um M4A com cerca de 3 minutos e 45 segundos, mono, 44,1 kHz. Foram calculadas medidas acústicas e preparado um candidato contínuo de dez segundos, além de cópia com tratamento leve. Original preservado. Relatório e derivados pessoais pertencem aos arquivos privados da Sol, não ao GitHub/CI.
 
-O material tem duração suficiente para iniciar a seleção de referência, sem pedir outra gravação agora. A triagem não prova inteligibilidade, pessoa única falando, ausência de música ou semelhança de clonagem. Não houve escuta suportada neste ambiente, transcrição ou inferência real do modelo de voz; essas avaliações permanecem abertas. Não dizer que a voz já foi treinada ou clonada.
+O material tem duração suficiente para iniciar a seleção de referência, sem pedir outra gravação agora. A triagem não prova inteligibilidade, pessoa única falando, ausência de música ou semelhança de clonagem. Posteriormente houve inferência real e escuta pela Sol, que reprovou a semelhança. O agente não ouviu/transcreveu o material neste ambiente. Não dizer que a identidade vocal foi aprovada ou que houve treinamento.
 
 Código entregue: entrada somente de áudio no estúdio e `local_studio/audio.py`, com medição, seleção heurística, conversão e cópia de tratamento reversível. A referência usada para preservar identidade vocal não recebe denoiser; a edição é uma derivação separada, para não confundir mudanças de processamento com mudanças na voz da pessoa.
 
@@ -42,4 +48,4 @@ Uma prévia da câmera não comprova videochamada com IA. A entrega deve integra
 
 Base técnica prevista: APIs de mídia do navegador e WebRTC quando houver transporte em tempo real, processador de fala/imagem, síntese de voz e renderizador. [getUserMedia](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia) exige contexto seguro e permissão; [constraints de mídia](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints) precisam de confirmação de suporte. [FFmpeg](https://ffmpeg.org/ffmpeg-filters.html#afftdn) fornece processamento de arquivos; não confundir essa edição offline com cancelamento de eco em uma chamada.
 
-Esta arquitetura está registrada; chamada de vídeo, análise visual ao vivo e avatar interativo ainda não foram implementados. Próxima prova do trabalho ativo continua sendo síntese real em português com a referência recebida, dependente de ambiente/modelo verificado. O equipamento da Sol ainda não foi identificado nesta conversa.
+Esta arquitetura está registrada; chamada de vídeo, análise visual ao vivo e avatar interativo ainda não foram implementados. A próxima prova do clone é melhorar a qualidade de uma narração de conteúdo, preservando a separação da voz do assistente. O ambiente temporário já executou o modelo; isso não identifica nem valida o equipamento da Sol.

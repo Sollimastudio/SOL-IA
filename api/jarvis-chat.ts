@@ -1,4 +1,5 @@
 import { classifyProviderError } from '../server/provider-errors.mjs';
+import { meteredAiBlockResponse } from '../server/budget-policy.mjs';
 import { analyzeConversation } from '../server/anti-fatigue.mjs';
 import { withAntiFatigue } from '../server/anti-fatigue-handler.mjs';
 import { createJarvisHandler } from '../server/jarvis-chat.mjs';
@@ -69,6 +70,8 @@ function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null,
 
 export default {
   async fetch(request: Request) {
+    const budgetBlock = meteredAiBlockResponse(process.env);
+    if (budgetBlock) return budgetBlock;
     const orientation = await readOrientation(request);
     const runtime = await resolvePilotRuntime(request, process.env);
     const chatFlagEnabled = runtime.env.JARVIS_CHAT_ENABLED === 'true';

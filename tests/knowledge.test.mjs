@@ -4,7 +4,7 @@ import { parseSource, trustedExcerpts } from '../server/knowledge-contract.mjs';
 import { createKnowledgeHandler } from '../server/jarvis-knowledge.mjs';
 import { createJarvisHandler } from '../server/jarvis-chat.mjs';
 const owner = '11111111-1111-4111-8111-111111111111';
-const env = { JARVIS_KNOWLEDGE_ENABLED: 'true', JARVIS_CHAT_ENABLED: 'true',
+const env = { JARVIS_KNOWLEDGE_ENABLED: 'true', JARVIS_CHAT_ENABLED: 'true', JARVIS_METERED_AI_ENABLED: 'true',
   SUPABASE_URL: 'https://test.supabase.co', SUPABASE_ANON_KEY: 'test-public-key',
   JARVIS_ALLOWED_USER_IDS: owner, OPENROUTER_API_KEY: 'test-server-only-key', JARVIS_MODEL: 'test-model' };
 const source = { mode: 'private', projectKey: 'morte-em-vida', sourceKey: 'capitulo-01.txt', title: 'Capítulo 1', content: 'Texto da fonte.\r\nSegunda linha.', expectedVersion: 0 };

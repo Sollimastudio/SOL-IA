@@ -7,4 +7,5 @@ export function sendAuthenticatedChat(options: {
   getSession: () => Promise<Session | null>;
   refreshSession: () => Promise<Session | null>;
   fetchImpl?: typeof fetch;
+  endpoint?: '/api/jarvis-chat' | '/api/jarvis-capture';
 }): Promise<Response>;

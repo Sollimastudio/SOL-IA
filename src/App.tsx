@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { AuthPanel } from './components/AuthPanel';
 import { InstallJarvis } from './components/InstallJarvis';
+import { NoCostWorkspace } from './components/NoCostWorkspace';
+import { meteredAiEnabled } from './core/budgetPolicy';
 import { JarvisConversation } from './components/JarvisConversation';
 import { KnowledgeLibrary } from './components/KnowledgeLibrary';
 import { MemoryVault } from './components/MemoryVault';
@@ -55,18 +57,18 @@ export function App() {
     <header className="hero"><div>
       <p className="eyebrow">JARVIS / SOL.IA</p>
       <h1>Fale comigo.</h1>
-      <p className="hero-copy">Você fala do seu jeito. O Jarvis organiza o contexto e coordena os bastidores.</p>
+      <p className="hero-copy">{meteredAiEnabled ? 'Você fala do seu jeito. O Jarvis organiza o contexto e coordena os bastidores.' : 'Suas ideias no cofre, com geração de IA pausada.'}</p>
     </div><div className="security-summary"><strong>{mode === 'public' ? 'Performance pública' : 'Sessão iniciada · modo privado'}</strong></div></header>
 
-    <JarvisConversation key={session.user.id} session={session} onModeChange={setMode}
-      onSaved={() => setMemoryRefreshKey(value => value + 1)} />
+    {meteredAiEnabled ? <JarvisConversation key={session.user.id} session={session} onModeChange={setMode}
+      onSaved={() => setMemoryRefreshKey(value => value + 1)} /> : <NoCostWorkspace key={session.user.id} session={session} />}
 
     {mode === 'private' && <details className="panel">
       <summary>Central do Jarvis · projetos, memória e integrações</summary>
       <p className="status-text">Esta área existe para consulta e configuração. Você não precisa usá-la para conversar com o Jarvis.</p>
       <AuthPanel session={session} />
       <KnowledgeLibrary key={session.user.id} session={session} />
-      <MemoryVault key={session.user.id} session={session} refreshKey={memoryRefreshKey} />
+      {meteredAiEnabled && <MemoryVault key={session.user.id} session={session} refreshKey={memoryRefreshKey} />}
       <details><summary>Integrações e departamentos técnicos</summary><ReadOnlySources /><MetaAdsPanel key={session.user.id} session={session} /></details>
     </details>}
   </section></main>;

@@ -36,6 +36,10 @@ jobs:
         run: node --test tests/*.test.mjs
       - name: Prepare isolated auth schema (never a production URL)
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/knowledge-setup.sql
+      - name: Verify capture on existing vault schema without any model
+        run: |
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202607240200_install_solia_vault.sql
+          psql -v ON_ERROR_STOP=1 -f tests/sql/capture-assertions.sql
       - name: Apply additive migration twice
         run: |
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609090310_knowledge_sources.sql

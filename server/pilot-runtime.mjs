@@ -81,7 +81,8 @@ export async function resolvePilotRuntime(
   request,
   baseEnv = {},
   fetchImpl = globalThis.fetch,
-  oidcResolver = defaultOidcResolver
+  oidcResolver = defaultOidcResolver,
+  { resolveProvider = true } = {}
 ) {
   const supabaseUrl = first(baseEnv.SUPABASE_URL || baseEnv.VITE_SUPABASE_URL, DEFAULT_SUPABASE_URL);
   const supabaseKey = first(baseEnv.SUPABASE_ANON_KEY || baseEnv.VITE_SUPABASE_ANON_KEY, DEFAULT_SUPABASE_PUBLISHABLE_KEY);
@@ -115,8 +116,8 @@ export async function resolvePilotRuntime(
     }
   }
 
-  const explicitOpenRouter = first(baseEnv.OPENROUTER_API_KEY, '');
-  const gateway = explicitOpenRouter
+  const explicitOpenRouter = resolveProvider ? first(baseEnv.OPENROUTER_API_KEY, '') : '';
+  const gateway = explicitOpenRouter || !resolveProvider
     ? { credential: '', source: 'none' }
     : await resolveGatewayCredential(baseEnv, oidcResolver);
   const gatewayCredential = gateway.credential;

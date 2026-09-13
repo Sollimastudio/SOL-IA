@@ -42,7 +42,7 @@ A busca de continuidade recuperou referências anteriores a `Morte em Vida`, `Re
 
 | Etapa | Construção | Critério de aceite | Estado |
 |---|---|---|---|
-| 0. Uso cotidiano | Ícone, acesso estável, renovação de sessão e recuperação de erro | Abrir no iPhone, fechar/retomar e continuar sem novo login por falha de servidor | Implementação anterior em Preview; instalação e sessão prolongada no aparelho ainda não comprovadas |
+| 0. Uso cotidiano | Ícone, acesso estável, renovação de sessão e recuperação de erro | Abrir no iPhone, fechar/retomar e continuar sem novo login por falha de servidor | Abertura pelo ícone confirmada por relato de Sol; sessão prolongada e proteção contra terceiros pendentes |
 | 1. Fala natural | Prompt interno versionado e interpretação contextual | Requisição usa a diretiva, mantém papéis e permissões; modelo real atende variações sem exigir prompt técnico | Ligação implementada nesta alteração; qualidade real pendente |
 | 2. Continuidade | Eventos originais, decisões corrigíveis, tópicos e tarefas duráveis | Retomar após reinício com fonte, decisão vigente e próximo passo; detalhe e correção não duplicam projeto | Próxima entrega de engenharia; não implementada por este documento |
 | 3. Acervo | Inventário, importação rastreável, originais e relações entre obras | Importar sem duplicar nem sobrescrever; reabrir original, localizar versão e restaurar cópia | Biblioteca textual parcial existente; acervo integral não importado |
@@ -103,3 +103,5 @@ Cada tarefa mantém estado, responsável executor, última evidência, impedimen
 Registrar orçamento operacional antes de ativar integrações/voz contínua: modelos, áudio, armazenamento, processamento e manutenção. Usar limites, alertas e cancelamento; não há orçamento aprovado nem estimativa fechada nesta rodada.
 
 A entrega de agora conecta instruções ao chat e registra este programa. Não é o diário integral, não é a equipe executora e não transfere automaticamente esta conversa do ChatGPT para o banco do Jarvis.
+
+Atualização de orçamento e segurança: ler `ORCAMENTO_ZERO_VOZ_E_SEGURANCA.md`; nenhuma API paga nova autorizada. Geração remota pausada por padrão; captura sem modelo e leitura com voz local são a entrega imediata.

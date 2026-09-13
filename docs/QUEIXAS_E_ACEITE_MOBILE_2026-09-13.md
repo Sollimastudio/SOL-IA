@@ -100,3 +100,7 @@ Changelog Supabase revisado: alterações de self-hosted/SAML e endpoint OAuth n
 
 O envio e a primeira recordação do marcador já têm evidência acima. Agora: adicionar o Jarvis à tela inicial a partir da página que já está aberta. Não pedir logout nem repetir OTP para esse ato. Depois, confirmar a abertura pelo ícone; não chamar isso de entregue antes da evidência física.
 Exclusão de material fictício exige decisão explícita. Não incorporá-lo como fato no Perfil DNA. Q1/Q2/Q3 continuam com os limites registrados; o assistente mantém o acompanhamento sem transferir à Sol o dever de reconstruí-lo.
+
+## Atualização posterior — evidência de instalação, orçamento e segurança
+
+Sol confirmou nesta conversa que abriu pelo ícone do iPhone, com pedido de login/envio de código. Não repetir o pedido de prova de instalação. Ainda falta comprovar continuidade após retorno e proteção contra terceiros. Novo requisito: voz de terceiros não deve virar fala da Sol; login persistente com confirmação forte apropriada. Ver `ORCAMENTO_ZERO_VOZ_E_SEGURANCA.md` para detalhes e orçamento zero; não declarar biometria ou sessão prolongada concluídas.

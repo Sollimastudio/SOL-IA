@@ -7,6 +7,7 @@ export default defineConfig({
   root: here('../../'),
   plugins: [react()],
   resolve: { alias: [
+    { find: /^(?:.*\/)?core\/budgetPolicy(?:\.ts)?$/, replacement: here('./budget-policy.mock.ts') },
     { find: /^(?:.*\/)?services\/authService(?:\.ts)?$/, replacement: here('./auth-service.mock.ts') },
     { find: /^(?:.*\/)?services\/supabaseClient(?:\.ts)?$/, replacement: here('./supabase-client.mock.ts') }
   ] },

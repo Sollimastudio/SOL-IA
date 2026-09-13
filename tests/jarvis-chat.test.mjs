@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createJarvisHandler, selectMemories } from '../server/jarvis-chat.mjs';
 import { SOLIA_PROMPT_AUTOPILOT_DIRECTIVE, SOLIA_PROMPT_AUTOPILOT_VERSION } from '../core/prompt-autopilot.mjs';
 const owner = '11111111-1111-4111-8111-111111111111';
-const env = { JARVIS_CHAT_ENABLED: 'true', SUPABASE_URL: 'https://example.supabase.co',
+const env = { JARVIS_CHAT_ENABLED: 'true', JARVIS_METERED_AI_ENABLED: 'true', SUPABASE_URL: 'https://example.supabase.co',
   SUPABASE_ANON_KEY: 'test-publishable-key', JARVIS_ALLOWED_USER_IDS: owner,
   OPENROUTER_API_KEY: 'test-server-key', JARVIS_MODEL: 'test/model' };
 const request = (body = {}, headers = {}, method = 'POST') => new Request('https://test.invalid/api/jarvis-chat', {
@@ -42,7 +42,7 @@ function fixture(overrides = {}, config = env) {
   return { calls, handle: createJarvisHandler({ env: config, fetchImpl, routeInput: () => ({ primarySpecialist: 'publisher_editorial' }) }) };
 }
 test('disabled by default: zero network calls', async () => {
-  const { handle, calls } = fixture({}, {}); assert.equal((await handle(request())).status, 503); assert.equal(calls.length, 0);
+  const { handle, calls } = fixture({}, {JARVIS_METERED_AI_ENABLED:'true'}); assert.equal((await handle(request())).status, 503); assert.equal(calls.length, 0);
 });
 test('missing allowlist fails closed', async () => {
   const { handle, calls } = fixture({}, { ...env, JARVIS_ALLOWED_USER_IDS: '' });

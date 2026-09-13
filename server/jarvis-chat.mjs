@@ -1,6 +1,7 @@
 import { trustedExcerpts } from './knowledge-contract.mjs';
 import { classifyProviderError, providerErrorMessage } from './provider-errors.mjs';
 import { SOLIA_PROMPT_AUTOPILOT_DIRECTIVE, SOLIA_PROMPT_AUTOPILOT_VERSION } from '../core/prompt-autopilot.mjs';
+import { meteredAiBlockResponse } from './budget-policy.mjs';
 /** Private pilot runtime. No external actions, ambient recording or service-role key. */
 const MAX_BYTES = 32768;
 const reply = (status, payload) => Response.json(payload, {
@@ -39,7 +40,7 @@ async function readBody(request) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-function parseInput(body) {
+function parseInput(body, captureOnly = false) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('input');
   const { message, mode = 'private', history = [], remember = false } = body;
   if (typeof message !== 'string' || !message.trim() || message.length > 8000) throw new Error('input');
@@ -51,7 +52,10 @@ function parseInput(body) {
     historyLength += turn.content.length;
   }
   if (historyLength > 12000) throw new Error('input');
-  return { message: message.trim(), mode, remember: mode === 'private' && remember,
+  if (captureOnly && (mode !== 'private' || remember !== true || history.length ||
+    typeof body.captureId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.captureId))) throw new Error('input');
+  return { message: captureOnly ? message : message.trim(), mode, remember: mode === 'private' && remember,
+    captureId: captureOnly ? body.captureId : undefined,
     history: history.map(({ role, content }) => ({ role, content })) };
 }
 
@@ -65,14 +69,18 @@ export function selectMemories(rows, query, ownerId) {
 }
 
 export function createJarvisHandler({ env = {}, fetchImpl = globalThis.fetch,
-  routeInput = () => ({ primarySpecialist: 'jarvis_executive' }) } = {}) {
+  routeInput = () => ({ primarySpecialist: 'jarvis_executive' }), captureOnly = false } = {}) {
   return async function handle(request) {
     if (request.method !== 'POST') return reply(405, { ok: false, error: 'Use POST.' });
-    if (env.JARVIS_CHAT_ENABLED !== 'true') return reply(503, { ok: false, error: 'Conversa em ativação controlada. Nenhuma chamada de IA foi realizada.' });
+    if (!captureOnly) {
+      const budgetBlock = meteredAiBlockResponse(env);
+      if (budgetBlock) return budgetBlock;
+      if (env.JARVIS_CHAT_ENABLED !== 'true') return reply(503, { ok: false, error: 'Conversa em ativação controlada. Nenhuma chamada de IA foi realizada.' });
+    }
     const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
     const anonKey = env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY;
     const allowed = (env.JARVIS_ALLOWED_USER_IDS || '').split(',').map(id => id.trim()).filter(Boolean);
-    if (!supabaseUrl || !anonKey || !env.OPENROUTER_API_KEY || !env.JARVIS_MODEL || !allowed.length) {
+    if (!supabaseUrl || !anonKey || !allowed.length || (!captureOnly && (!env.OPENROUTER_API_KEY || !env.JARVIS_MODEL))) {
       return reply(503, { ok: false, error: 'Ativação incompleta no servidor.' });
     }
     let base;
@@ -87,7 +95,7 @@ export function createJarvisHandler({ env = {}, fetchImpl = globalThis.fetch,
       return reply(415, { ok: false, error: 'Envie JSON.' });
     }
     let input;
-    try { input = parseInput(await readBody(request)); }
+    try { input = parseInput(await readBody(request), captureOnly); }
     catch (error) { return reply(error.message === 'size' ? 413 : 400, { ok: false, error: 'Mensagem ou histórico inválido ou grande demais.' }); }
     const headers = { apikey: anonKey, Authorization: authorization, 'Content-Type': 'application/json' };
     const call = (url, options = {}, timeout = 8000) => fetchImpl(url, {
@@ -108,7 +116,7 @@ export function createJarvisHandler({ env = {}, fetchImpl = globalThis.fetch,
     if (!allowed.includes(user.id)) return reply(403, { ok: false, stage: 'access', errorCode: 'pilot_not_authorized', persisted: false, error: 'Conta fora do piloto autorizado.' });
     if (request.signal.aborted) return reply(499, { ok: false, error: 'Conversa encerrada.' });
     // Atomic database quota: never rely on a per-process counter in serverless.
-    try {
+    if (!captureOnly) try {
       const quota = await call(`${base}/rest/v1/rpc/reserve_solia_jarvis_turn`, { method: 'POST', headers, body: '{}' });
       if (!quota.ok) throw new Error();
       if ((await quota.json()) !== true) return reply(429, { ok: false, error: 'Limite diário do piloto atingido. Nenhuma nova geração foi iniciada.' });
@@ -120,7 +128,7 @@ export function createJarvisHandler({ env = {}, fetchImpl = globalThis.fetch,
     let memoryId;
     // Public mode NEVER loads the private vault, even if a caller asks it to remember.
     if (input.mode === 'private') {
-      try {
+      if (!captureOnly) try {
         const query = new URLSearchParams({ owner_id: `eq.${user.id}`, select: 'id,owner_id,title,content,created_at', order: 'created_at.desc', limit: '50' });
         const result = await call(`${base}/rest/v1/solia_memories?${query}`, { headers });
         if (!result.ok) throw new Error();
@@ -128,7 +136,7 @@ export function createJarvisHandler({ env = {}, fetchImpl = globalThis.fetch,
         if (!Array.isArray(rows)) throw new Error();
         memories = selectMemories(rows, input.message, user.id);
       } catch { warnings.push('Memória anterior indisponível: esta resposta não terá continuidade completa.'); }
-      if (env.JARVIS_KNOWLEDGE_ENABLED === 'true' && !request.signal.aborted) {
+      if (!captureOnly && env.JARVIS_KNOWLEDGE_ENABLED === 'true' && !request.signal.aborted) {
         try {
           const result = await call(`${base}/rest/v1/rpc/search_solia_knowledge`, {
             method: 'POST', headers, body: JSON.stringify({ p_query: input.message.slice(0, 500) })
@@ -144,20 +152,42 @@ export function createJarvisHandler({ env = {}, fetchImpl = globalThis.fetch,
           const saved = await call(`${base}/rest/v1/solia_memories?select=id`, {
             method: 'POST', headers: { ...headers, Prefer: 'return=representation' },
             body: JSON.stringify({ owner_id: user.id, type: 'idea_capture', title: 'Conversa privada Jarvis',
+              ...(captureOnly ? { id: input.captureId } : {}),
               content: input.message, origin: 'conversation', tags: ['jarvis', 'private'],
-              metadata: { source: 'jarvis-chat-v1', status: 'raw_user_statement' } })
+              metadata: { source: captureOnly ? 'jarvis-capture-v1' : 'jarvis-chat-v1', status: 'raw_user_statement' } })
           });
-          if (!saved.ok) {
-            if (saved.status >= 400 && saved.status < 500) persisted = false;
-            throw new Error();
+          if (captureOnly && saved.status === 409) {
+            // Resolve an ambiguous earlier acknowledgment without updating or duplicating the original.
+            const query = new URLSearchParams({ id: `eq.${input.captureId}`, owner_id: `eq.${user.id}`,
+              select: 'id,owner_id,content', limit: '1' });
+            const check = await call(`${base}/rest/v1/solia_memories?${query}`, { headers });
+            if (!check.ok) throw new Error();
+            const rows = await check.json();
+            if (Array.isArray(rows) && rows.length === 1 && rows[0].id === input.captureId &&
+              rows[0].owner_id === user.id && rows[0].content === input.message) {
+              persisted = true; memoryId = rows[0].id;
+            } else {
+              return reply(409, { ok: false, persisted: false, errorCode: 'capture_conflict',
+                error: 'Este identificador já foi usado. O registro anterior não foi alterado; confira o cofre.' });
+            }
+          } else {
+            if (!saved.ok) {
+              if (saved.status >= 400 && saved.status < 500) persisted = false;
+              throw new Error();
+            }
+            const rows = await saved.json();
+            if (!Array.isArray(rows) || typeof rows[0]?.id !== 'string' || (captureOnly && rows[0].id !== input.captureId)) throw new Error();
+            persisted = true;
+            memoryId = rows[0].id;
           }
-          const rows = await saved.json();
-          if (!Array.isArray(rows) || typeof rows[0]?.id !== 'string') throw new Error();
-          persisted = true;
-          memoryId = rows[0].id;
         } catch { warnings.push('Sua fala NÃO foi confirmada no cofre. Não a considere salva.'); }
       }
     }
+    if (captureOnly) return reply(persisted === true ? 200 : 503, {
+      ok: persisted === true, persisted, memoryId, warnings, execution: 'capture_only',
+      ...(persisted === true ? { answer: 'Fala confirmada no cofre. Nenhum modelo de IA foi chamado.' }
+        : { error: 'Salvamento não confirmado. Seu texto deve permanecer na tela; verifique o cofre antes de reenviar.' })
+    });
     const route = routeInput(input.message);
     const specialist = Object.hasOwn(specialists, route?.primarySpecialist) ? route.primarySpecialist : 'jarvis_executive';
     const system = [

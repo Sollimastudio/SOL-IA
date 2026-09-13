@@ -2,7 +2,8 @@ export class UnsentMessageError extends Error {}
 
 // Use the SDK's current session, not a token captured when the component rendered.
 // Only the explicit pre-write access contract permits one refresh and POST replay.
-export async function sendAuthenticatedChat({ body, userId, signal, getSession, refreshSession, fetchImpl = globalThis.fetch }) {
+export async function sendAuthenticatedChat({ body, userId, signal, getSession, refreshSession, fetchImpl = globalThis.fetch, endpoint = '/api/jarvis-chat' }) {
+  if (!['/api/jarvis-chat', '/api/jarvis-capture'].includes(endpoint)) throw new UnsentMessageError('Destino de envio inválido.');
   async function currentSession(read) {
     signal.throwIfAborted();
     let session;
@@ -28,7 +29,7 @@ export async function sendAuthenticatedChat({ body, userId, signal, getSession, 
   }
   const post = session => {
     signal.throwIfAborted();
-    return fetchImpl('/api/jarvis-chat', {
+    return fetchImpl(endpoint, {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
       body, signal
     });

@@ -6,6 +6,12 @@ Repositório: `Sollimastudio/SOL-IA`. Proposta ativa: PR #6, branch `work/jarvis
 Esta etapa preserva a interface Neural e o núcleo seguro. Não criar outro Jarvis. Não sobrescrever `main`, aplicar migrações reais ou habilitar custos automaticamente.
 Antes da continuação, ler este registro, a PR e seu HEAD real; comparar alterações concorrentes.
 
+## Atualização 13/09/2026 — orçamento zero e abertura no iPhone
+
+Ler `docs/ORCAMENTO_ZERO_VOZ_E_SEGURANCA.md`. Sol estabeleceu nenhum gasto novo agora. A geração remota fica pausada por padrão; captura e consulta do cofre passam a funcionar sem chamada de IA, com confirmação e ID estável para resolver envio ambíguo. Não confundir este modo com IA generativa local, nem franquia de hospedagem com recurso ilimitado. Voz local de leitura não é clonagem.
+
+Sol confirmou abertura pelo ícone no iPhone e informou que houve login/envio de código nessa instância. Instalação confirmada por relato; sessão prolongada e proteção por biometria ainda pendentes. Novo requisito: impedir terceiros de operar como Sol sem repetir login por frase. Passkeys/verificação no dispositivo são o caminho a validar; voz não será credencial única. Nenhuma biometria ou configuração Auth adicional foi ativada nesta rodada.
+
 ## Atualização 13/09/2026 — engenharia assumida pelo produto
 
 Ler `docs/PROGRAMA_DE_CONSTRUCAO_JARVIS.md` e o [adendo de requisitos](https://github.com/Sollimastudio/SOL-IA/pull/6#issuecomment-5654738092) antes de retomar. Contêm a sequência atual, testes de aceite, live no mesmo iPhone, preservação do legado e evolução solicitada dentro do Jarvis. A auditoria do passado continua parcial; não pedir que a Sol reconstitua tudo de memória.

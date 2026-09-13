@@ -2,7 +2,8 @@ export function resolvePilotRuntime(
   request: Request,
   baseEnv?: Record<string, string | undefined>,
   fetchImpl?: typeof fetch,
-  oidcResolver?: () => string | undefined | Promise<string | undefined>
+  oidcResolver?: () => string | undefined | Promise<string | undefined>,
+  options?: { resolveProvider?: boolean }
 ): Promise<{
   env: Record<string, string | undefined>;
   useGateway: boolean;

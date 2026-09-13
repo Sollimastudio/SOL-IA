@@ -1,17 +1,16 @@
 begin;
 
--- These legacy tables predate per-user ownership. Keep their rows intact, but
--- remove application access until an explicit ownership migration exists.
-alter table public.ativos enable row level security;
-alter table public.historico enable row level security;
-alter table public.memoria enable row level security;
-alter table public.projetos enable row level security;
-alter table public.quiz_events enable row level security;
-
-revoke all privileges on table public.ativos from public, anon, authenticated;
-revoke all privileges on table public.historico from public, anon, authenticated;
-revoke all privileges on table public.memoria from public, anon, authenticated;
-revoke all privileges on table public.projetos from public, anon, authenticated;
-revoke all privileges on table public.quiz_events from public, anon, authenticated;
+do $$
+declare
+  table_name text;
+begin
+  foreach table_name in array array['ativos','historico','memoria','projetos','quiz_events'] loop
+    if pg_catalog.to_regclass(pg_catalog.format('public.%I', table_name)) is not null then
+      execute pg_catalog.format('alter table public.%I enable row level security', table_name);
+      execute pg_catalog.format('revoke all privileges on table public.%I from public, anon, authenticated', table_name);
+    end if;
+  end loop;
+end
+$$;
 
 commit;

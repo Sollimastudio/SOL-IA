@@ -8,7 +8,7 @@ test('zero budget saves only through capture and preserves the draft on failure'
     await route.fulfill({status:bodies.length===1?503:200,contentType:'application/json',body:JSON.stringify(bodies.length===1
       ? {ok:false,persisted:null,error:'Salvamento não confirmado.'}
       : {ok:true,persisted:true,memoryId:body.captureId,execution:'capture_only',
-          answer:'Fala confirmada no cofre. Nenhum modelo de IA foi chamado.',continuityPersisted:true,
+          receipt:'Fala confirmada no cofre. Nenhum modelo de IA foi chamado.',continuityPersisted:true,
           continuity:{relation:'new_topic',scope:'exploration',topicHint:'projeto fictício'}})});
   });
   await page.goto('/?case=chat&budget=zero');
@@ -39,7 +39,7 @@ test('voice status never hides a confirmed vault receipt', async ({page}) => {
   await page.route('**/api/jarvis-capture',async route=>{
     const body=route.request().postDataJSON();
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,persisted:true,
-      memoryId:body.captureId,execution:'capture_only',answer:'Fala confirmada no cofre.',continuityPersisted:true,
+      memoryId:body.captureId,execution:'capture_only',receipt:'Fala confirmada no cofre.',continuityPersisted:true,
       continuity:{relation:'detail',scope:'raw_statement',topicHint:'continuidade'}})});
   });
   await page.goto('/?case=chat&budget=zero');

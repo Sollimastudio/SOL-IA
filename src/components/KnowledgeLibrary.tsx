@@ -89,7 +89,6 @@ export function KnowledgeLibrary({ session }: { session: Session | null }) {
       setStatus(data.source.duplicate
         ? `Essa fonte já existe na versão ${data.source.version}. A versão atual continua sendo ${data.source.latestVersion}.`
         : `Fonte salva como versão ${data.source.version}, ainda não validada. Versões anteriores preservadas.`);
-      // Keep the text until the user clears it; refresh is required before a subsequent import.
       setLoaded(false); setMatches([]);
     } catch (error) {
       if (alive.current) { setLoaded(false); setStatus(error instanceof Error ? error.message : 'Confirmação indisponível; atualize a lista antes de repetir.'); }
@@ -99,23 +98,24 @@ export function KnowledgeLibrary({ session }: { session: Session | null }) {
     const epoch = ++fileEpoch.current;
     if (!file) return;
     if (!/\.(txt|md)$/i.test(file.name) || file.size > 160000) {
-      setStatus('Nesta etapa, use TXT ou Markdown UTF-8 de até 160.000 bytes. PDF e DOCX ainda não são importados.'); return;
+      setStatus('Hoje a importação automática aceita TXT ou Markdown UTF-8 de até 160.000 bytes. PDF, DOCX, links e vídeo ainda não entram automaticamente.'); return;
     }
     try {
       const text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
       if (!alive.current || epoch !== fileEpoch.current) return;
       setContent(text); setTitle(file.name.replace(/\.(txt|md)$/i, '').slice(0, 160));
       setSourceKey(file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9._-]/g, '-').replace(/^[^a-z0-9]+/, '').slice(0, 120) || 'fonte');
-      setStatus('Arquivo lido apenas nesta página. Revise o projeto e clique em importar para enviar ao cofre.');
+      setStatus('Arquivo lido apenas nesta página. Revise o projeto e clique em importar para enviar ao cofre de conhecimento.');
     } catch { if (alive.current && epoch === fileEpoch.current) setStatus('O arquivo não pôde ser lido como texto UTF-8.'); }
   }
-  return <details className="panel" data-testid="knowledge-library">
-    <summary>Biblioteca dos projetos · fontes e versões</summary>
-    <p>O Jarvis consulta trechos das fontes importadas. Importar não aprova fatos nem publica conteúdo. Esta biblioteca não aparece no modo público.</p>
+  return <section className="panel" data-testid="knowledge-library" aria-labelledby="knowledge-library-title">
+    <div className="panel-heading"><div><span className="eyebrow">JARVIS · CONHECIMENTO</span><h2 id="knowledge-library-title">Biblioteca dos projetos</h2></div><span className="status-badge safe">PRIVADA</span></div>
+    <p>O Jarvis consulta trechos das fontes importadas. Importar não aprova fatos nem publica conteúdo. Conhecimento fica separado das suas memórias pessoais.</p>
+    <div className="callout"><strong>Hoje:</strong> texto colado, TXT e Markdown. <strong>Próximo:</strong> PDF, DOCX, links, vídeos e sincronização com GitHub/Drive sem você copiar o arquivo toda vez.</div>
     <button className="button button-secondary" disabled={!session || busy} onClick={() => void load()}>Atualizar lista de fontes</button>
     <form onSubmit={event => { event.preventDefault(); void search(); }} style={{ marginTop: '1rem' }}>
       <label htmlFor="knowledge-search">Buscar nas fontes sem chamar IA</label><br />
-      <input id="knowledge-search" maxLength={500} value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex.: fita violeta" />{' '}
+      <input id="knowledge-search" maxLength={500} value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex.: jaula sofá da mentira" />{' '}
       <button className="button button-secondary" type="submit" disabled={!session || busy || !query.trim()}>Buscar trechos</button>
     </form>
     {matches.length > 0 && <div className="memory-list" data-testid="knowledge-search-results">{matches.map(match => <article className="memory-card" key={`${match.id}-${match.startChar}`}>
@@ -129,14 +129,14 @@ export function KnowledgeLibrary({ session }: { session: Session | null }) {
         <select id="knowledge-project" value={project} onChange={event => setProject(event.target.value)}>
           {projects.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select>
-        <p><label htmlFor="knowledge-file">Texto ou capítulo em TXT/Markdown</label><br />
+        <p><label htmlFor="knowledge-file">Anexar TXT ou Markdown</label><br />
           <input id="knowledge-file" type="file" accept=".txt,.md,text/plain,text/markdown" onChange={event => void selectFile(event.target.files?.[0])} /></p>
         <p><label htmlFor="knowledge-key">Identificador da fonte (mantenha o mesmo nas revisões)</label><br />
           <input id="knowledge-key" required maxLength={120} pattern="[a-z0-9][a-z0-9._\-]{0,119}" value={sourceKey} onChange={event => setSourceKey(event.target.value)} placeholder="capitulo-01.txt" /></p>
         <p><label htmlFor="knowledge-title">Título</label><br />
           <input id="knowledge-title" required maxLength={160} value={title} onChange={event => setTitle(event.target.value)} /></p>
-        <label htmlFor="knowledge-content">Conteúdo da fonte</label>
-        <textarea id="knowledge-content" required rows={5} value={content} onChange={event => setContent(event.target.value)} />
+        <label htmlFor="knowledge-content">Ou cole o conteúdo aqui</label>
+        <textarea id="knowledge-content" required rows={7} value={content} onChange={event => setContent(event.target.value)} placeholder="Cole uma fonte, capítulo, briefing ou referência…" />
         <button className="button" type="submit" disabled={!loaded || !content.trim()}>Importar versão sem apagar anteriores</button>
       </fieldset>
     </form>
@@ -144,5 +144,5 @@ export function KnowledgeLibrary({ session }: { session: Session | null }) {
     <div className="memory-list">{sources.filter(s => s.project_key === project).map(source => <article className="memory-card" key={source.id}>
       <strong>{source.title}</strong><p>Versão {source.version} · fonte importada, não validada</p><small>{source.source_key}</small>
     </article>)}</div>
-  </details>;
+  </section>;
 }

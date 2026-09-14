@@ -4,6 +4,7 @@ import { analyzeConversation } from '../server/anti-fatigue.mjs';
 import { withAntiFatigue } from '../server/anti-fatigue-handler.mjs';
 import { createJarvisHandler } from '../server/jarvis-chat.mjs';
 import { createProviderAwareFetch, resolvePilotRuntime, runtimeBlockResponse } from '../server/pilot-runtime.mjs';
+import { normalizeContinuityCues } from '../server/continuity-cues.mjs';
 import { routeCapability } from '../src/core/capabilityRouter.js';
 import { SOL_PRESENCE_PROFILE } from '../core/presence-profile.mjs';
 import { AUDIENCE_INTELLIGENCE_DIRECTIVE } from '../core/audience-intelligence.mjs';
@@ -78,7 +79,7 @@ export default {
         ])
       : [[], [], []];
     const classification = envelope?.mode === 'private'
-      ? classifyContinuity(envelope.message, packet, orientation)
+      ? classifyContinuity(normalizeContinuityCues(envelope.message), packet, orientation)
       : null;
     const continuityText = continuitySystemText(packet, classification, profilePacket, assistantHistory);
 

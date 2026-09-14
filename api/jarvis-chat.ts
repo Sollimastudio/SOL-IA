@@ -7,7 +7,7 @@ import { createProviderAwareFetch, resolvePilotRuntime, runtimeBlockResponse } f
 import { routeCapability } from '../src/core/capabilityRouter.js';
 import { SOL_PRESENCE_PROFILE } from '../core/presence-profile.mjs';
 import { AUDIENCE_INTELLIGENCE_DIRECTIVE } from '../core/audience-intelligence.mjs';
-import { classifyContinuity, continuitySystemText, loadContinuityPacket, loadProfilePacket, persistContinuityFromResponse, readConversationEnvelope } from '../server/continuity-runtime.mjs';
+import { classifyContinuity, continuitySystemText, loadAssistantHistoryPacket, loadContinuityPacket, loadProfilePacket, persistContinuityFromResponse, readConversationEnvelope } from '../server/continuity-runtime.mjs';
 
 const JARVIS_PERSONA = [
   'ESTILO_JARVIS: fale como um assessor executivo extremamente inteligente, seguro, elegante e humano.',
@@ -69,16 +69,17 @@ export default {
     const blocked = runtimeBlockResponse(runtime);
     if (blocked) return blocked;
 
-    const packet = envelope?.mode === 'private'
-      ? await loadContinuityPacket({ request, env: runtime.env, envelope, fetchImpl: globalThis.fetch })
-      : [];
-    const profilePacket = envelope?.mode === 'private'
-      ? await loadProfilePacket({ request, env: runtime.env, envelope, fetchImpl: globalThis.fetch })
-      : [];
+    const [packet, profilePacket, assistantHistory] = envelope?.mode === 'private'
+      ? await Promise.all([
+          loadContinuityPacket({ request, env: runtime.env, envelope, fetchImpl: globalThis.fetch }),
+          loadProfilePacket({ request, env: runtime.env, envelope, fetchImpl: globalThis.fetch }),
+          loadAssistantHistoryPacket({ request, env: runtime.env, envelope, fetchImpl: globalThis.fetch })
+        ])
+      : [[], [], []];
     const classification = envelope?.mode === 'private'
       ? classifyContinuity(envelope.message, packet, orientation)
       : null;
-    const continuityText = continuitySystemText(packet, classification, profilePacket);
+    const continuityText = continuitySystemText(packet, classification, profilePacket, assistantHistory);
 
     const providerFetch = createProviderAwareFetch(runtime, globalThis.fetch);
     const secureChat = createJarvisHandler({

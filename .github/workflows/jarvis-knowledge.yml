@@ -42,11 +42,14 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f tests/sql/capture-assertions.sql
       - name: Verify legacy public tables are locked without deleting data
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/legacy-lockdown-assertions.sql
-      - name: Apply additive migration twice
+      - name: Apply additive migrations twice
         run: |
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609090310_knowledge_sources.sql
-          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609090310_knowledge_sources.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141520_continuity_journal.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141520_continuity_journal.sql
       - name: Verify real versions, quotas, locators and RLS
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/knowledge-assertions.sql
+      - name: Verify durable continuity journal and account isolation
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/continuity-assertions.sql
       - name: Test simultaneous revisions with two database connections
         run: node tests/database-concurrency.mjs

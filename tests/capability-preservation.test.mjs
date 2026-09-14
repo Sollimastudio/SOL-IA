@@ -50,7 +50,7 @@ test('chat stays the product home and knowledge, vault and integrations stay rea
 });
 
 test('personal cloned voice never becomes the assistant dialogue voice by accident', () => {
-  const presence = read('docs/CONTINUIDADE_JARVIS.md');
-  assert.match(presence, /voz própria de assistente/);
-  assert.match(presence, /somente quando ela pedir explicitamente/);
+  const continuity = read('docs/CONTINUIDADE_JARVIS.md');
+  assert.match(continuity, /própria voz de assistente/);
+  assert.match(continuity, /somente quando ela pedir explicitamente/);
 });

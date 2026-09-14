@@ -65,17 +65,21 @@ export default {
 
     const chatFlagEnabled = runtime.env.JARVIS_CHAT_ENABLED === 'true';
     const blockReason = runtime.diagnostics.readinessReason === 'ready' && !chatFlagEnabled ? 'chat_flag_disabled' : runtime.diagnostics.readinessReason;
+    const runtimeDiagnostics = runtime.diagnostics as typeof runtime.diagnostics & {
+      zeroCostModelVerified?: boolean;
+      zeroCostModel?: string | null;
+    };
 
     console.info('[JARVIS_RUNTIME_SAFE]', JSON.stringify({
-      authStatus: runtime.diagnostics.authStatus, pilotStatus: runtime.diagnostics.pilotStatus,
-      authAttempts: runtime.diagnostics.authAttempts, pilotAttempts: runtime.diagnostics.pilotAttempts,
-      pilotVerified: runtime.diagnostics.pilotVerified, canUseAi: runtime.diagnostics.canUseAi,
-      providerCredentialPresent: runtime.diagnostics.providerCredentialPresent,
-      gatewayCredentialPresent: runtime.diagnostics.gatewayCredentialPresent,
-      gatewayCredentialSource: runtime.diagnostics.gatewayCredentialSource,
-      explicitOpenRouterPresent: runtime.diagnostics.explicitOpenRouterPresent,
-      zeroCostModelVerified: runtime.diagnostics.zeroCostModelVerified === true,
-      zeroCostModel: runtime.diagnostics.zeroCostModel ?? null,
+      authStatus: runtimeDiagnostics.authStatus, pilotStatus: runtimeDiagnostics.pilotStatus,
+      authAttempts: runtimeDiagnostics.authAttempts, pilotAttempts: runtimeDiagnostics.pilotAttempts,
+      pilotVerified: runtimeDiagnostics.pilotVerified, canUseAi: runtimeDiagnostics.canUseAi,
+      providerCredentialPresent: runtimeDiagnostics.providerCredentialPresent,
+      gatewayCredentialPresent: runtimeDiagnostics.gatewayCredentialPresent,
+      gatewayCredentialSource: runtimeDiagnostics.gatewayCredentialSource,
+      explicitOpenRouterPresent: runtimeDiagnostics.explicitOpenRouterPresent,
+      zeroCostModelVerified: runtimeDiagnostics.zeroCostModelVerified === true,
+      zeroCostModel: runtimeDiagnostics.zeroCostModel ?? null,
       chatFlagEnabled, blockReason
     }));
 

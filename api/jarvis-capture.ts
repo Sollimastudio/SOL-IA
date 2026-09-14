@@ -3,6 +3,20 @@ import { resolvePilotRuntime, runtimeBlockResponse } from '../server/pilot-runti
 import { normalizeContinuityCues } from '../server/continuity-cues.mjs';
 import { classifyContinuity, loadContinuityPacket, persistContinuityFromResponse, readConversationEnvelope } from '../server/continuity-runtime.mjs';
 
+async function separateCaptureReceipt(response: Response) {
+  if (!response.headers.get('content-type')?.includes('application/json')) return response;
+  try {
+    const data = await response.clone().json();
+    if (data?.execution !== 'capture_only' || typeof data?.answer !== 'string') return response;
+    const { answer, ...payload } = data;
+    const headers = new Headers(response.headers);
+    headers.set('Cache-Control', 'private, no-store');
+    return Response.json({ ...payload, receipt: answer }, { status: response.status, headers });
+  } catch {
+    return response;
+  }
+}
+
 export default {
   async fetch(request: Request) {
     const envelope = await readConversationEnvelope(request);
@@ -15,7 +29,8 @@ export default {
     const classification = envelope?.mode === 'private'
       ? classifyContinuity(normalizeContinuityCues(envelope.message), packet, null)
       : null;
-    const response = await createJarvisHandler({ env: runtime.env, captureOnly: true })(request);
+    const rawResponse = await createJarvisHandler({ env: runtime.env, captureOnly: true })(request);
+    const response = await separateCaptureReceipt(rawResponse);
     return persistContinuityFromResponse({ request, env: runtime.env, envelope, classification, response, fetchImpl: globalThis.fetch });
   }
 };

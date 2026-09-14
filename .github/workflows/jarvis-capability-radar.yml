@@ -1,0 +1,57 @@
+name: Jarvis capability radar
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 11 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: work/jarvis-neural-conversa-segura-20260908
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Restore previous radar state
+        uses: actions/cache@v4
+        with:
+          path: .radar-cache/state.json
+          key: jarvis-capability-radar-state-${{ github.run_id }}
+          restore-keys: |
+            jarvis-capability-radar-state-
+
+      - name: Watch official sources without model/API keys
+        run: node scripts/capability-radar.mjs
+
+      - name: Summarize radar status
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          import { readFileSync } from 'node:fs';
+          const report = JSON.parse(readFileSync('radar-report.json','utf8'));
+          console.log('## Jarvis Capability Radar');
+          console.log(`Observed: ${report.observedAt}`);
+          console.log(`\nChanged sources: **${report.changedCount}**`);
+          console.log(`\nUnavailable sources: **${report.unavailableCount}**`);
+          console.log('\n| Source | Kind | State | HTTP |');
+          console.log('|---|---|---:|---:|');
+          for (const item of report.results) console.log(`| ${item.key} | ${item.kind} | ${item.change} | ${item.status ?? '-'} |`);
+          console.log('\nA change is a review signal only. This workflow never changes models, strategy or production automatically.');
+          NODE
+
+      - name: Preserve report for supervised review
+        uses: actions/upload-artifact@v4
+        with:
+          name: jarvis-capability-radar-${{ github.run_id }}
+          path: radar-report.json
+          retention-days: 14

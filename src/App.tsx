@@ -4,6 +4,7 @@ import './navigation.css';
 import { AuthPanel } from './components/AuthPanel';
 import { InstallJarvis } from './components/InstallJarvis';
 import { IntegrationHub } from './components/IntegrationHub';
+import { UpdateGuard } from './components/UpdateGuard';
 import { meteredAiEnabled } from './core/budgetPolicy';
 import { JarvisConversation } from './components/JarvisConversation';
 import { KnowledgeLibrary } from './components/KnowledgeLibrary';
@@ -52,6 +53,7 @@ export function App() {
 
   if (!authResolved || !session || !isSecureMemoryEnabled || !isSupabaseConfigured) {
     return <main><section className="shell" style={{ maxWidth: 520 }}>
+      <div className="jarvis-version-row"><UpdateGuard /></div>
       <InstallJarvis />
       <header className="hero"><div>
         <p className="eyebrow">SOL.IA</p>
@@ -71,6 +73,7 @@ export function App() {
   };
 
   return <main><section className="shell">
+    <div className="jarvis-version-row"><UpdateGuard /></div>
     <InstallJarvis />
     <header className="hero"><div>
       <p className="eyebrow">JARVIS / SOL.IA</p>
@@ -78,7 +81,7 @@ export function App() {
       <p className="hero-copy">{area === 'chat'
         ? meteredAiEnabled
           ? 'Você fala do seu jeito. O Jarvis organiza o contexto e coordena os bastidores.'
-          : 'Beta sem gasto novo: o Jarvis tenta responder somente com modelo que o servidor confirme como custo zero. Se isso não estiver disponível, nenhuma IA paga é chamada.'
+          : 'Beta sem gasto novo: o Jarvis tenta responder somente com modelo que o servidor confirme como custo zero. Se isso não estiver disponível, nenhuma IA paga é chamada e sua fala privada pode ser preservada no cofre.'
         : area === 'knowledge'
           ? 'Adicione fontes que o Jarvis poderá consultar sem misturar documento com memória pessoal.'
           : area === 'vault'

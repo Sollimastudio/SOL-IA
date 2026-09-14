@@ -1,0 +1,53 @@
+{
+  "version": "2026-09-14.1",
+  "sources": [
+    {
+      "key": "openai-model-releases",
+      "kind": "model_or_api",
+      "url": "https://help.openai.com/en/articles/9624314-model-release-notes",
+      "allowedHosts": ["help.openai.com"]
+    },
+    {
+      "key": "openai-research-releases",
+      "kind": "model_or_api",
+      "url": "https://openai.com/research/index/release/",
+      "allowedHosts": ["openai.com", "www.openai.com"]
+    },
+    {
+      "key": "meta-instagram-news",
+      "kind": "platform_algorithm",
+      "url": "https://about.fb.com/news/category/technologies/instagram/",
+      "allowedHosts": ["about.fb.com"]
+    },
+    {
+      "key": "meta-facebook-news",
+      "kind": "platform_algorithm",
+      "url": "https://about.fb.com/news/category/technologies/facebook/",
+      "allowedHosts": ["about.fb.com"]
+    },
+    {
+      "key": "tiktok-newsroom",
+      "kind": "platform_algorithm",
+      "url": "https://newsroom.tiktok.com/en-us/",
+      "allowedHosts": ["newsroom.tiktok.com"]
+    },
+    {
+      "key": "tiktok-for-you-help",
+      "kind": "platform_algorithm",
+      "url": "https://support.tiktok.com/en/getting-started/for-you",
+      "allowedHosts": ["support.tiktok.com"]
+    },
+    {
+      "key": "vercel-changelog",
+      "kind": "model_or_api",
+      "url": "https://vercel.com/changelog",
+      "allowedHosts": ["vercel.com", "www.vercel.com"]
+    },
+    {
+      "key": "supabase-changelog",
+      "kind": "model_or_api",
+      "url": "https://supabase.com/changelog.md",
+      "allowedHosts": ["supabase.com", "www.supabase.com"]
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import { createProviderAwareFetch, resolvePilotRuntime, runtimeBlockResponse } f
 import { routeCapability } from '../src/core/capabilityRouter.js';
 import { SOL_PRESENCE_PROFILE } from '../core/presence-profile.mjs';
 import { AUDIENCE_INTELLIGENCE_DIRECTIVE } from '../core/audience-intelligence.mjs';
+import { classifyContinuity, continuitySystemText, loadContinuityPacket, persistContinuityFromResponse, readConversationEnvelope } from '../server/continuity-runtime.mjs';
 
 const JARVIS_PERSONA = [
   'ESTILO_JARVIS: fale como um assessor executivo extremamente inteligente, seguro, elegante e humano.',
@@ -15,23 +16,10 @@ const JARVIS_PERSONA = [
   'A personalidade deve soar masculina e sofisticada no texto, mas nunca alegue ter uma voz, identidade humana ou emoção que o sistema não possua.'
 ].join(' ');
 
-async function readOrientation(request: Request) {
-  try {
-    const clone = request.clone();
-    if (clone.method !== 'POST' || !clone.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return null;
-    const body = await clone.json();
-    if (body?.mode === 'public' || typeof body?.message !== 'string' || !Array.isArray(body?.history)) return null;
-    return analyzeConversation(body.history, body.message);
-  } catch {
-    return null;
-  }
-}
-
-function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null, baseFetch: typeof fetch): typeof fetch {
+function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null, continuityText: string, baseFetch: typeof fetch): typeof fetch {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     if (!url.startsWith('https://openrouter.ai/')) return baseFetch(input, init);
-
     let nextInit = init;
     if (typeof init?.body === 'string') {
       try {
@@ -39,32 +27,18 @@ function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null,
         const first = payload?.messages?.[0];
         if (first?.role === 'system' && typeof first.content === 'string') {
           first.content += `\n${JARVIS_PERSONA}\n${SOL_PRESENCE_PROFILE}\n${AUDIENCE_INTELLIGENCE_DIRECTIVE}`;
-          if (orientation) {
-            first.content += `\nORIENTACAO_ANTI_FADIGA_JSON=${JSON.stringify(orientation)}\nEste é um indício lexical falível, não uma classificação confirmada. Compare o significado com o contexto disponível antes de concluir repetição ou ramificação. Use silenciosamente; aponte repetição somente quando ajudar a decidir, sem contagem habitual nem diagnóstico. Preserve o fio principal e responda ao que mudou.`;
-          }
+          if (orientation) first.content += `\nORIENTACAO_ANTI_FADIGA_JSON=${JSON.stringify(orientation)}\nEste é um indício lexical falível, não uma classificação confirmada. Preserve o fio principal e responda ao que mudou.`;
+          if (continuityText) first.content += `\n${continuityText}`;
           nextInit = { ...init, body: JSON.stringify(payload) };
         }
-      } catch {
-        // A falha de enriquecimento nunca pode corromper o transporte normal do chat.
-      }
+      } catch { /* enrichment must never break chat transport */ }
     }
-
     try {
       const response = await baseFetch(input, nextInit);
-      console.info('[JARVIS_PROVIDER_SAFE]', JSON.stringify({
-        stage: 'chat_completion',
-        status: response.status,
-        ok: response.ok,
-        category: response.ok ? null : await classifyProviderError(response)
-      }));
+      console.info('[JARVIS_PROVIDER_SAFE]', JSON.stringify({ stage:'chat_completion', status:response.status, ok:response.ok, category:response.ok ? null : await classifyProviderError(response) }));
       return response;
     } catch {
-      console.info('[JARVIS_PROVIDER_SAFE]', JSON.stringify({
-        stage: 'chat_completion_transport',
-        status: null,
-        ok: false,
-        category: 'transport'
-      }));
+      console.info('[JARVIS_PROVIDER_SAFE]', JSON.stringify({ stage:'chat_completion_transport', status:null, ok:false, category:'transport' }));
       throw new Error('provider_transport');
     }
   }) as typeof fetch;
@@ -74,37 +48,42 @@ export default {
   async fetch(request: Request) {
     const budgetBlock = meteredAiBlockResponse(process.env);
     if (budgetBlock) return budgetBlock;
-    const orientation = await readOrientation(request);
+
+    const envelope = await readConversationEnvelope(request);
+    const orientation = envelope?.mode === 'private' ? analyzeConversation(envelope.history, envelope.message) : null;
     const runtime = await resolvePilotRuntime(request, process.env);
     const chatFlagEnabled = runtime.env.JARVIS_CHAT_ENABLED === 'true';
-    const blockReason = runtime.diagnostics.readinessReason === 'ready' && !chatFlagEnabled
-      ? 'chat_flag_disabled'
-      : runtime.diagnostics.readinessReason;
+    const blockReason = runtime.diagnostics.readinessReason === 'ready' && !chatFlagEnabled ? 'chat_flag_disabled' : runtime.diagnostics.readinessReason;
 
     console.info('[JARVIS_RUNTIME_SAFE]', JSON.stringify({
-      authStatus: runtime.diagnostics.authStatus,
-      pilotStatus: runtime.diagnostics.pilotStatus,
-      authAttempts: runtime.diagnostics.authAttempts,
-      pilotAttempts: runtime.diagnostics.pilotAttempts,
-      pilotVerified: runtime.diagnostics.pilotVerified,
-      canUseAi: runtime.diagnostics.canUseAi,
+      authStatus: runtime.diagnostics.authStatus, pilotStatus: runtime.diagnostics.pilotStatus,
+      authAttempts: runtime.diagnostics.authAttempts, pilotAttempts: runtime.diagnostics.pilotAttempts,
+      pilotVerified: runtime.diagnostics.pilotVerified, canUseAi: runtime.diagnostics.canUseAi,
       providerCredentialPresent: runtime.diagnostics.providerCredentialPresent,
       gatewayCredentialPresent: runtime.diagnostics.gatewayCredentialPresent,
       gatewayCredentialSource: runtime.diagnostics.gatewayCredentialSource,
       explicitOpenRouterPresent: runtime.diagnostics.explicitOpenRouterPresent,
-      chatFlagEnabled,
-      blockReason
+      chatFlagEnabled, blockReason
     }));
 
     const blocked = runtimeBlockResponse(runtime);
     if (blocked) return blocked;
 
+    const packet = envelope?.mode === 'private'
+      ? await loadContinuityPacket({ request, env: runtime.env, envelope, fetchImpl: globalThis.fetch })
+      : [];
+    const classification = envelope?.mode === 'private'
+      ? classifyContinuity(envelope.message, packet, orientation)
+      : null;
+    const continuityText = continuitySystemText(packet, classification);
+
     const providerFetch = createProviderAwareFetch(runtime, globalThis.fetch);
     const secureChat = createJarvisHandler({
       env: runtime.env,
       routeInput: routeCapability,
-      fetchImpl: guidedFetch(orientation, providerFetch)
+      fetchImpl: guidedFetch(orientation, continuityText, providerFetch)
     });
-    return withAntiFatigue(secureChat)(request);
+    const response = await withAntiFatigue(secureChat)(request);
+    return persistContinuityFromResponse({ request, env: runtime.env, envelope, classification, response, fetchImpl: globalThis.fetch });
   }
 };

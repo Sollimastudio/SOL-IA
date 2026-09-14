@@ -4,7 +4,6 @@ import './navigation.css';
 import { AuthPanel } from './components/AuthPanel';
 import { InstallJarvis } from './components/InstallJarvis';
 import { IntegrationHub } from './components/IntegrationHub';
-import { NoCostWorkspace } from './components/NoCostWorkspace';
 import { meteredAiEnabled } from './core/budgetPolicy';
 import { JarvisConversation } from './components/JarvisConversation';
 import { KnowledgeLibrary } from './components/KnowledgeLibrary';
@@ -51,8 +50,6 @@ export function App() {
     setArea('chat');
   }, [session?.user.id]);
 
-  // Do not show a dead chat asking the visitor to find a login that is disabled.
-  // The same gate used by authService is retained; no memory policy is bypassed.
   if (!authResolved || !session || !isSecureMemoryEnabled || !isSupabaseConfigured) {
     return <main><section className="shell" style={{ maxWidth: 520 }}>
       <InstallJarvis />
@@ -81,7 +78,7 @@ export function App() {
       <p className="hero-copy">{area === 'chat'
         ? meteredAiEnabled
           ? 'Você fala do seu jeito. O Jarvis organiza o contexto e coordena os bastidores.'
-          : 'Você pode continuar falando e registrando. A resposta inteligente está pausada pelo orçamento zero, mas o chat continua sendo a sua tela principal.'
+          : 'Beta sem gasto novo: o Jarvis tenta responder somente com modelo que o servidor confirme como custo zero. Se isso não estiver disponível, nenhuma IA paga é chamada.'
         : area === 'knowledge'
           ? 'Adicione fontes que o Jarvis poderá consultar sem misturar documento com memória pessoal.'
           : area === 'vault'
@@ -99,10 +96,8 @@ export function App() {
         onClick={() => chooseArea(key)}>{areaLabels[key]}</button>)}
     </nav>
 
-    {area === 'chat' && (meteredAiEnabled
-      ? <JarvisConversation key={session.user.id} session={session} onModeChange={next => { setMode(next); if (next === 'public') setArea('chat'); }}
-          onSaved={() => setMemoryRefreshKey(value => value + 1)} />
-      : <NoCostWorkspace key={session.user.id} session={session} />)}
+    {area === 'chat' && <JarvisConversation key={session.user.id} session={session} onModeChange={next => { setMode(next); if (next === 'public') setArea('chat'); }}
+      onSaved={() => setMemoryRefreshKey(value => value + 1)} />}
 
     {privateArea && mode === 'private' && <section className="jarvis-drawer" aria-label={areaLabels[area]}>
       <div className="jarvis-drawer-heading">

@@ -4,6 +4,7 @@ import { analyzeConversation } from '../server/anti-fatigue.mjs';
 import { withAntiFatigue } from '../server/anti-fatigue-handler.mjs';
 import { createJarvisHandler } from '../server/jarvis-chat.mjs';
 import { createProviderAwareFetch, resolvePilotRuntime, runtimeBlockResponse } from '../server/pilot-runtime.mjs';
+import { applyZeroCostRuntime, verifyZeroCostGatewayModel } from '../server/zero-cost-ai.mjs';
 import { normalizeContinuityCues } from '../server/continuity-cues.mjs';
 import { routeCapability } from '../src/core/capabilityRouter.js';
 import { SOL_PRESENCE_PROFILE } from '../core/presence-profile.mjs';
@@ -48,12 +49,20 @@ function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null,
 
 export default {
   async fetch(request: Request) {
-    const budgetBlock = meteredAiBlockResponse(process.env);
-    if (budgetBlock) return budgetBlock;
-
     const envelope = await readConversationEnvelope(request);
     const orientation = envelope?.mode === 'private' ? analyzeConversation(envelope.history, envelope.message) : null;
-    const runtime = await resolvePilotRuntime(request, process.env);
+    let runtime = await resolvePilotRuntime(request, process.env);
+
+    // Budget-zero beta: never fall through to a priced model. When paid AI is disabled,
+    // use the Gateway only if its live catalog confirms the dedicated candidate has
+    // both input and output price equal to zero at request time.
+    if (process.env.JARVIS_METERED_AI_ENABLED !== 'true') {
+      const zeroCost = await verifyZeroCostGatewayModel(globalThis.fetch);
+      runtime = applyZeroCostRuntime(runtime, zeroCost);
+      const budgetBlock = meteredAiBlockResponse(runtime.env);
+      if (budgetBlock) return budgetBlock;
+    }
+
     const chatFlagEnabled = runtime.env.JARVIS_CHAT_ENABLED === 'true';
     const blockReason = runtime.diagnostics.readinessReason === 'ready' && !chatFlagEnabled ? 'chat_flag_disabled' : runtime.diagnostics.readinessReason;
 
@@ -65,6 +74,8 @@ export default {
       gatewayCredentialPresent: runtime.diagnostics.gatewayCredentialPresent,
       gatewayCredentialSource: runtime.diagnostics.gatewayCredentialSource,
       explicitOpenRouterPresent: runtime.diagnostics.explicitOpenRouterPresent,
+      zeroCostModelVerified: runtime.diagnostics.zeroCostModelVerified === true,
+      zeroCostModel: runtime.diagnostics.zeroCostModel ?? null,
       chatFlagEnabled, blockReason
     }));
 

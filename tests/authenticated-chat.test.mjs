@@ -79,3 +79,46 @@ test('abort releases a stalled SDK session read without waiting for it or sendin
   controller.abort();
   await assert.rejects(pending, { name: 'AbortError' });
 });
+
+test('budget pause preserves a private remembered message through capture without calling another model', async () => {
+  const calls = [];
+  const body = JSON.stringify({ message: 'Ideia importante da Sol', mode: 'private', remember: true, history: [{ role: 'user', content: 'contexto' }] });
+  const response = await sendAuthenticatedChat(options({ body, fetchImpl: async (url, init) => {
+    calls.push({ url, init });
+    if (url === '/api/jarvis-chat') {
+      return Response.json({ ok: false, errorCode: 'ai_budget_paused', stage: 'budget', persisted: false }, { status: 403 });
+    }
+    assert.equal(url, '/api/jarvis-capture');
+    const capture = JSON.parse(init.body);
+    assert.equal(capture.message, 'Ideia importante da Sol');
+    assert.equal(capture.mode, 'private');
+    assert.equal(capture.remember, true);
+    assert.deepEqual(capture.history, []);
+    assert.match(capture.captureId, /^[0-9a-f-]{36}$/i);
+    return Response.json({ ok: true, persisted: true, memoryId: capture.captureId, execution: 'capture_only', continuityPersisted: true,
+      continuity: { relation: 'new_topic', scope: 'raw_statement', topicHint: 'ideia' } });
+  }}));
+  const data = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(data.ok, true);
+  assert.equal(data.persisted, true);
+  assert.equal(data.execution, 'capture_only_budget_fallback');
+  assert.equal(data.modelUsed, 'none');
+  assert.match(data.answer, /guardada no cofre e no Diário/);
+  assert.equal(calls.length, 2);
+});
+
+test('budget pause never auto-captures public mode or a private message with memory disabled', async () => {
+  for (const body of [
+    JSON.stringify({ message: 'público', mode: 'public', remember: false, history: [] }),
+    JSON.stringify({ message: 'privado sem memória', mode: 'private', remember: false, history: [] })
+  ]) {
+    let calls = 0;
+    const response = await sendAuthenticatedChat(options({ body, fetchImpl: async () => {
+      calls++;
+      return Response.json({ ok: false, errorCode: 'ai_budget_paused', stage: 'budget', persisted: false }, { status: 403 });
+    }}));
+    assert.equal(response.status, 403);
+    assert.equal(calls, 1);
+  }
+});

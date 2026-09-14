@@ -2,6 +2,15 @@ name: Jarvis capability radar
 
 on:
   workflow_dispatch:
+  push:
+    branches: ['work/jarvis-neural-conversa-segura-20260908']
+    paths:
+      - 'core/growth-intelligence.*'
+      - 'config/capability-radar-sources.json'
+      - 'scripts/capability-radar.mjs'
+      - 'tests/growth-intelligence.test.mjs'
+      - 'tests/capability-radar.test.mjs'
+      - '.github/workflows/jarvis-capability-radar.yml'
   schedule:
     - cron: '17 11 * * *'
 
@@ -15,12 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: work/jarvis-neural-conversa-segura-20260908
           persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Contract tests for freshness and source detection
+        run: node --test tests/growth-intelligence.test.mjs tests/capability-radar.test.mjs
 
       - name: Restore previous radar state
         uses: actions/cache@v4

@@ -15,7 +15,19 @@ type Recognition = {
   start(): void; abort(): void;
 };
 type VoiceWindow = Window & { SpeechRecognition?: new () => Recognition; webkitSpeechRecognition?: new () => Recognition };
+type ChatAttachment = {
+  id: string;
+  kind: 'image' | 'text';
+  name: string;
+  mimeType: string;
+  size: number;
+  dataUrl?: string;
+  text?: string;
+};
 
+const MAX_ATTACHMENTS = 3;
+const MAX_TEXT_ATTACHMENT_CHARS = 16000;
+const MAX_IMAGE_DATA_URL_CHARS = 900000;
 const specialistLabels: Record<string, string> = {
   jarvis_executive: 'ASSESSORIA EXECUTIVA',
   vault_memory: 'MEMÓRIA & CONTINUIDADE',
@@ -40,19 +52,67 @@ function boundedHistory(turns: Turn[]): Array<{ role: 'user' | 'assistant'; cont
   return result;
 }
 
+function attachmentSummary(attachments: ChatAttachment[]) {
+  return attachments.map(item => `📎 ${item.name}`).join('\n');
+}
+
+async function compressImage(file: File): Promise<string> {
+  if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) throw new Error('Use JPG, PNG ou WEBP.');
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const candidate = new Image();
+      candidate.onload = () => resolve(candidate);
+      candidate.onerror = () => reject(new Error('Não consegui abrir essa imagem.'));
+      candidate.src = objectUrl;
+    });
+    const maxSide = 1280;
+    const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('O navegador não conseguiu preparar a imagem.');
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    let quality = 0.82;
+    let dataUrl = canvas.toDataURL('image/jpeg', quality);
+    while (dataUrl.length > MAX_IMAGE_DATA_URL_CHARS && quality > 0.5) {
+      quality -= 0.08;
+      dataUrl = canvas.toDataURL('image/jpeg', quality);
+    }
+    if (dataUrl.length > MAX_IMAGE_DATA_URL_CHARS) throw new Error('A imagem continua grande demais mesmo após redução.');
+    return dataUrl;
+  } finally { URL.revokeObjectURL(objectUrl); }
+}
+
+async function prepareAttachment(file: File): Promise<ChatAttachment> {
+  const id = typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  if (/^image\//i.test(file.type)) {
+    return { id, kind: 'image', name: file.name.slice(0, 160), mimeType: 'image/jpeg', size: file.size, dataUrl: await compressImage(file) };
+  }
+  if (/\.(txt|md|csv|json)$/i.test(file.name) || /^(text\/|application\/json)/i.test(file.type)) {
+    const text = await file.text();
+    if (!text.trim()) throw new Error(`${file.name}: o arquivo está vazio.`);
+    if (text.length > MAX_TEXT_ATTACHMENT_CHARS) throw new Error(`${file.name}: reduza para até ${MAX_TEXT_ATTACHMENT_CHARS.toLocaleString('pt-BR')} caracteres nesta etapa.`);
+    return { id, kind: 'text', name: file.name.slice(0, 160), mimeType: file.type || 'text/plain', size: file.size, text };
+  }
+  throw new Error(`${file.name}: nesta etapa o chat aceita imagens, TXT, Markdown, CSV e JSON. PDF e DOCX entram na próxima camada de importação.`);
+}
+
 export function JarvisConversation({ session, onModeChange, onSaved }: {
   session: Session | null; onModeChange(mode: Mode): void; onSaved(): void;
 }) {
   const [mode, setMode] = useState<Mode>('private');
   const [text, setText] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [status, setStatus] = useState('Conta conectada. Envie uma mensagem para iniciar. Microfone desligado.');
   const [busy, setBusy] = useState(false);
   const [accessState, setAccessState] = useState<'local' | 'verified' | 'check'>('local');
   const [listening, setListening] = useState(false);
   const [consent, setConsent] = useState(false);
   const [voiceReply, setVoiceReply] = useState(false);
-  // Private conversations preserve the user's own statements by default; the user can still pause capture.
   const [remember, setRemember] = useState(true);
   const [activeSpecialist, setActiveSpecialist] = useState('jarvis_executive');
   const gate = useRef(createVoiceSession());
@@ -66,6 +126,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   const sendRef = useRef<(message: string) => void>(() => {});
   const speechResume = useRef<(() => void) | null>(null);
   const speechWatchdog = useRef<ReturnType<typeof setTimeout> | undefined>();
+  const fileInput = useRef<HTMLInputElement | null>(null);
 
   function stopVoiceHardware() {
     clearTimeout(restart.current); clearTimeout(idle.current);
@@ -85,7 +146,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     setStatus('Conversa de voz encerrada. Microfone desligado; nenhuma escuta de espera está ativa.');
   }
   function resetConversation() {
-    stopHardware(); setBusy(false); setListening(false); setText(''); setActiveSpecialist('jarvis_executive');
+    stopHardware(); setBusy(false); setListening(false); setText(''); setAttachments([]); setActiveSpecialist('jarvis_executive');
     turnsRef.current = []; setTurns([]);
   }
   useEffect(() => {
@@ -123,10 +184,6 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       const decision = gate.current.accept(fragments.join(' '));
       if (decision.kind === 'stop') { endSession(); return; }
       if (decision.kind === 'message') { armIdleTimeout(); sendRef.current(decision.text); return; }
-      if (gate.current.isEngaged()) {
-        armIdleTimeout();
-        setStatus('Jarvis ativado. Pode falar; diga “Jarvis, encerrar” para desligar.');
-      }
     };
     rec.onerror = event => {
       if (!gate.current.isCurrent(ticket)) return;
@@ -140,15 +197,32 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     try {
       rec.start();
       setListening(true);
-      setStatus(gate.current.isEngaged()
-        ? 'Jarvis ativado. Pode falar; diga “Jarvis, encerrar” para desligar.'
-        : 'Sessão de voz em primeiro plano. Diga “Jarvis” para ativar; “Jarvis, encerrar” desliga.');
+      setStatus('Ouvindo. Pode falar normalmente; diga “encerrar” quando quiser desligar o microfone.');
     }
     catch { endSession(); setStatus('O microfone não pôde iniciar. Nenhuma escuta foi mantida.'); }
   }
 
+  async function addAttachments(files?: FileList | null) {
+    if (!files?.length || attachmentBusy) return;
+    const room = Math.max(0, MAX_ATTACHMENTS - attachments.length);
+    if (!room) { setStatus(`O chat aceita até ${MAX_ATTACHMENTS} anexos por mensagem nesta etapa.`); return; }
+    setAttachmentBusy(true);
+    try {
+      const next: ChatAttachment[] = [];
+      for (const file of Array.from(files).slice(0, room)) next.push(await prepareAttachment(file));
+      setAttachments(current => [...current, ...next]);
+      setStatus(`${next.length} anexo(s) pronto(s). Você pode escrever uma instrução ou enviar apenas os anexos.`);
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'Não consegui preparar o anexo.'); }
+    finally {
+      setAttachmentBusy(false);
+      if (fileInput.current) fileInput.current.value = '';
+    }
+  }
+
   async function send(message: string) {
-    if (!session?.access_token || !message.trim() || busyRef.current) return;
+    const currentAttachments = attachments;
+    const normalizedMessage = message.trim() || (currentAttachments.length ? 'Analise os anexos desta mensagem.' : '');
+    if (!session?.access_token || !normalizedMessage || busyRef.current || attachmentBusy) return;
     const id = ++requestEpoch.current;
     const controller = new AbortController(); request.current = controller;
     busyRef.current = true; setBusy(true); setListening(false);
@@ -161,7 +235,8 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     if (old) { old.onend = null; old.onresult = null; old.onerror = null; try { old.abort(); } catch { /* stopped */ } }
     window.speechSynthesis?.cancel();
     const history = boundedHistory(turnsRef.current);
-    turnsRef.current = [...turnsRef.current, { role: 'user', content: message }];
+    const visibleMessage = currentAttachments.length ? `${normalizedMessage}\n${attachmentSummary(currentAttachments)}` : normalizedMessage;
+    turnsRef.current = [...turnsRef.current, { role: 'user', content: visibleMessage }];
     setTurns(turnsRef.current); setText(''); setStatus('Jarvis analisando e encaminhando ao especialista adequado…');
     const resume = () => {
       clearTimeout(speechWatchdog.current);
@@ -173,7 +248,10 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     try {
       const response = await sendAuthenticatedChat({
         userId: session.user.id, getSession: getCurrentSession, refreshSession: refreshCurrentSession,
-        body: JSON.stringify({ message, mode, history, remember: mode === 'private' && remember }), signal: controller.signal
+        body: JSON.stringify({
+          message: normalizedMessage, mode, history, remember: mode === 'private' && remember,
+          attachments: currentAttachments.map(({ id: _id, size: _size, ...item }) => item)
+        }), signal: controller.signal
       });
       if (!response.headers.get('content-type')?.includes('application/json')) {
         throw new Error('A hospedagem devolveu uma página de acesso em vez da resposta da IA. Não apague sua sessão nem peça vários códigos.');
@@ -190,6 +268,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
         if (knownUnsent) setAccessState('check');
         throw new Error(`${typeof data.error === 'string' ? data.error : 'A conversa não foi concluída.'} ${savedMessage}`);
       }
+      setAttachments([]);
       setAccessState('verified');
       const specialist = typeof data.specialist === 'string' ? data.specialist : 'jarvis_executive';
       setActiveSpecialist(specialist);
@@ -215,9 +294,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       setTurns(turnsRef.current);
       endSession();
       setStatus(errorMessage);
-    } finally {
-      clearTimeout(deadline);
-    }
+    } finally { clearTimeout(deadline); }
   }
   sendRef.current = message => { void send(message); };
 
@@ -227,8 +304,11 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   }
   function startVoice() {
     if (!session || !gate.current.start(true)) return;
+    gate.current.accept('Jarvis');
     setConsent(true);
-    setVoiceReply(true); armIdleTimeout(); captureNext();
+    armIdleTimeout();
+    setStatus('Microfone autorizado. Pode falar normalmente. A resposta em voz alta continua desligada até você pedir.');
+    captureNext();
   }
 
   return <section className="neural-assessor" aria-labelledby="jarvis-conversation-title">
@@ -261,7 +341,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
 
       <div className="neural-chat">
         {!session && <div className="neural-empty"><strong>ASSISTENTE EM ESPERA</strong><p>Entre no cofre seguro acima para habilitar a conversa privada com memória. Nenhuma chave de IA é entregue ao navegador.</p></div>}
-        {session && turns.length === 0 && <div className="neural-empty"><strong>CONTA CONECTADA</strong><p>Fale como você fala. No modo privado, suas falas são guardadas no cofre por padrão; eu recupero contexto permitido e encaminho internamente para o especialista adequado.</p><div className="neural-suggestions"><button onClick={() => setText('Jarvis, organize minhas prioridades de hoje.')}>Organizar meu dia</button><button onClick={() => setText('Jarvis, continue meu projeto mais importante do ponto onde paramos.')}>Retomar projeto</button><button onClick={() => setText('Jarvis, tive uma ideia. Analise o potencial e me diga onde ela se encaixa.')}>Guardar uma ideia</button></div></div>}
+        {session && turns.length === 0 && <div className="neural-empty"><strong>CONTA CONECTADA</strong><p>Digite, fale ou anexe. O microfone aceita sua fala assim que você tocar nele; você não precisa dizer “Jarvis” primeiro.</p><div className="neural-suggestions"><button onClick={() => setText('Jarvis, organize minhas prioridades de hoje.')}>Organizar meu dia</button><button onClick={() => setText('Jarvis, continue meu projeto mais importante do ponto onde paramos.')}>Retomar projeto</button><button onClick={() => setText('Jarvis, tive uma ideia. Analise o potencial e me diga onde ela se encaixa.')}>Guardar uma ideia</button></div></div>}
         <div className="neural-log" role="log" aria-label="Conversa" aria-live="polite">
           {turns.map((turn, index) => <article key={index} className={`neural-message ${turn.role}`}>
             <div className="neural-message-head"><strong>{turn.role === 'user' ? 'SOL' : turn.isError ? 'AVISO DO SISTEMA' : 'JARVIS'}</strong>{turn.specialist && <span>{specialistLabels[turn.specialist] ?? turn.specialist}</span>}</div>
@@ -275,20 +355,24 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
 
     <div className="neural-console">
       <form onSubmit={event => { event.preventDefault(); void send(text); }}>
+        {attachments.length > 0 && <div className="neural-attachments" aria-label="Anexos selecionados">{attachments.map(item => <span className="neural-attachment" key={item.id}>📎 {item.name}<button type="button" aria-label={`Remover ${item.name}`} onClick={() => setAttachments(current => current.filter(candidate => candidate.id !== item.id))}>×</button></span>)}</div>}
         <div className="neural-input-wrap">
-          <button className={`neural-icon-button ${listening ? 'danger' : ''}`} type="button" disabled={!session || busy} onClick={listening ? endSession : startVoice} title={listening ? 'Encerrar voz' : 'Iniciar voz'} aria-label={listening ? 'Encerrar voz' : 'Iniciar voz'}>◉</button>
-          <textarea id="jarvis-message" rows={2} maxLength={8000} value={text} disabled={!session || busy} onChange={event => setText(event.target.value)} placeholder={listening ? 'Ouvindo… diga “Jarvis, encerrar” para parar.' : 'Fale com seu assessor…'} />
-          <button className="neural-send" type="submit" disabled={!session || busy || !text.trim()}>{busy ? 'ANALISANDO' : 'ENVIAR'}</button>
+          <button className={`neural-icon-button ${listening ? 'danger' : ''}`} type="button" disabled={!session || busy} onClick={listening ? endSession : startVoice} title={listening ? 'Encerrar voz' : 'Falar agora'} aria-label={listening ? 'Encerrar voz' : 'Falar agora'}>◉</button>
+          <button className="neural-icon-button" type="button" disabled={!session || busy || attachmentBusy || attachments.length >= MAX_ATTACHMENTS} onClick={() => fileInput.current?.click()} title="Anexar arquivo" aria-label="Anexar arquivo">＋</button>
+          <input ref={fileInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp,.txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json" onChange={event => void addAttachments(event.target.files)} />
+          <textarea id="jarvis-message" rows={2} maxLength={8000} value={text} disabled={!session || busy} onChange={event => setText(event.target.value)} placeholder={listening ? 'Ouvindo… fale normalmente; diga “encerrar” para parar.' : 'Converse com o Jarvis…'} />
+          <button className="neural-send" type="submit" disabled={!session || busy || attachmentBusy || (!text.trim() && !attachments.length)}>{busy ? 'ANALISANDO' : 'ENVIAR'}</button>
         </div>
         <div className="neural-options">
           {mode === 'private' && <label><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} /> Memória automática — guardar minhas falas</label>}
-          <label><input type="checkbox" checked={voiceReply} onChange={event => { setVoiceReply(event.target.checked); if (!event.target.checked) { const resume = speechResume.current; speechResume.current = null; window.speechSynthesis?.cancel(); resume?.(); } }} /> Responder em voz alta</label>
+          <label><input type="checkbox" checked={voiceReply} onChange={event => { setVoiceReply(event.target.checked); if (!event.target.checked) { const resume = speechResume.current; speechResume.current = null; window.speechSynthesis?.cancel(); resume?.(); } }} /> Ouvir resposta com a voz do aparelho (opcional)</label>
           <label><input type="checkbox" checked={consent} onChange={event => { setConsent(event.target.checked); if (!event.target.checked) endSession(); }} /> Autorizar microfone nesta sessão</label>
           <button type="button" onClick={endSession}>ENCERRAR / MIC OFF</button>
         </div>
       </form>
       <p className="neural-status" role="status">{status}</p>
-      <details className="neural-disclosure"><summary>Limites desta etapa</summary><p>“Jarvis” funciona como gatilho somente dentro de uma sessão de voz autorizada e com a página em primeiro plano. O reconhecimento depende do navegador e pode usar processamento remoto de áudio; não é detecção local garantida. Ainda não há ativação com tela bloqueada, biometria de voz ou videochamada. O modo público não consulta o cofre privado.</p></details>
+      <p className="neural-status">Sua voz pessoal não é usada para o Jarvis responder. Ela fica reservada para criação de conteúdos quando você pedir explicitamente.</p>
+      <details className="neural-disclosure"><summary>Limites desta etapa</summary><p>O microfone funciona somente com a página em primeiro plano e depende do reconhecimento de voz do navegador. O chat aceita imagens JPG/PNG/WEBP e arquivos TXT/MD/CSV/JSON. PDF e DOCX ainda não entram diretamente nesta caixa de conversa. A voz falada do aparelho é opcional e permanece desligada por padrão.</p></details>
     </div>
   </section>;
 }

@@ -27,9 +27,17 @@ export type ProfileRow = {
   created_at?: string;
   match_kind?: string;
 };
+export type AssistantHistoryRow = {
+  id?: string;
+  specialist?: string;
+  answer?: string;
+  created_at?: string;
+  match_kind?: string;
+};
 export function classifyContinuity(message: string, priorRows?: ContinuityRow[], orientation?: any): ContinuityClassification;
-export function continuitySystemText(packet: ContinuityRow[], classification: ContinuityClassification | null, profilePacket?: ProfileRow[]): string;
+export function continuitySystemText(packet: ContinuityRow[], classification: ContinuityClassification | null, profilePacket?: ProfileRow[], assistantHistory?: AssistantHistoryRow[]): string;
 export function readConversationEnvelope(request: Request): Promise<{ message: string; mode: 'private' | 'public'; remember: boolean; history: any[] } | null>;
 export function loadContinuityPacket(args: { request: Request; env: Record<string,string|undefined>; envelope: any; fetchImpl?: typeof fetch; limit?: number }): Promise<ContinuityRow[]>;
 export function loadProfilePacket(args: { request: Request; env: Record<string,string|undefined>; envelope: any; fetchImpl?: typeof fetch; limit?: number }): Promise<ProfileRow[]>;
+export function loadAssistantHistoryPacket(args: { request: Request; env: Record<string,string|undefined>; envelope: any; fetchImpl?: typeof fetch; limit?: number }): Promise<AssistantHistoryRow[]>;
 export function persistContinuityFromResponse(args: { request: Request; env: Record<string,string|undefined>; envelope: any; classification: ContinuityClassification | null; response: Response; fetchImpl?: typeof fetch }): Promise<Response>;

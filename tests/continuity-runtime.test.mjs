@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyContinuity, continuitySystemText, loadContinuityPacket, loadProfilePacket, persistContinuityFromResponse } from '../server/continuity-runtime.mjs';
+import { classifyContinuity, continuitySystemText, loadAssistantHistoryPacket, loadContinuityPacket, loadProfilePacket, persistContinuityFromResponse } from '../server/continuity-runtime.mjs';
 
 test('repeat stays repeat instead of rediscovery', () => {
   const prior=[{id:'1',content:'Quero um Jarvis que guarde tudo e nao me faça repetir.',match_kind:'match'}];
@@ -34,20 +34,29 @@ test('goal and boundary become operational profile statements', () => {
   assert.equal(boundary.scope,'profile_statement'); assert.equal(boundary.signals.profileKind,'boundary');
 });
 
-test('system directive forbids repeated rediscovery and identity drift', () => {
-  const text=continuitySystemText([{content:'x'}], classifyContinuity('Hoje estou cansada.',[],null), [{kind:'goal',content:'Construir comunidade.'}]);
+test('system directive separates assistant history from user facts', () => {
+  const text=continuitySystemText(
+    [{content:'x'}],
+    classifyContinuity('Hoje estou cansada.',[],null),
+    [{kind:'goal',content:'Construir comunidade.'}],
+    [{answer:'Já expliquei a arquitetura ontem.',specialist:'jarvis_executive'}]
+  );
   assert.match(text,/Nao reexplique a visao do projeto/);
   assert.match(text,/Estado temporario NAO substitui identidade/);
   assert.match(text,/PERFIL_DNA_OPERACIONAL/);
+  assert.match(text,/HISTORICO_ASSISTENTE/);
+  assert.match(text,/NAO e fato sobre a usuaria/);
   assert.match(text,/agora entendi/);
 });
 
-test('public mode never queries continuity vault', async () => {
+test('public mode never queries private continuity, profile or assistant history', async () => {
   let calls=0;
   const request=new Request('https://test.invalid/api/jarvis-chat',{headers:{authorization:'Bearer token'}});
-  const rows=await loadContinuityPacket({request,env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'key'},envelope:{mode:'public',message:'oi'},fetchImpl:async()=>{calls++;throw new Error('must not call');}});
-  const profile=await loadProfilePacket({request,env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'key'},envelope:{mode:'public',message:'oi'},fetchImpl:async()=>{calls++;throw new Error('must not call');}});
-  assert.deepEqual(rows,[]); assert.deepEqual(profile,[]); assert.equal(calls,0);
+  const args={request,env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'key'},envelope:{mode:'public',message:'oi'},fetchImpl:async()=>{calls++;throw new Error('must not call');}};
+  assert.deepEqual(await loadContinuityPacket(args),[]);
+  assert.deepEqual(await loadProfilePacket(args),[]);
+  assert.deepEqual(await loadAssistantHistoryPacket(args),[]);
+  assert.equal(calls,0);
 });
 
 test('private retrieval truncates untrusted rows and uses RPC', async () => {
@@ -67,6 +76,14 @@ test('profile retrieval uses dedicated RPC and truncates rows', async () => {
   assert.equal(rows[0].content.length,1600); assert.equal(rows[0].topic_hint.length,160);
 });
 
+test('assistant history retrieval uses dedicated RPC and truncates generated answer', async () => {
+  let calledUrl='';
+  const request=new Request('https://test.invalid/api/jarvis-chat',{headers:{authorization:'Bearer token'}});
+  const rows=await loadAssistantHistoryPacket({request,env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'key'},envelope:{mode:'private',message:'arquitetura'},fetchImpl:async (url)=>{calledUrl=String(url); return Response.json([{id:'1',answer:'x'.repeat(4000),specialist:'jarvis_executive',match_kind:'match'}]);}});
+  assert.match(calledUrl,/search_solia_assistant_history/);
+  assert.equal(rows[0].answer.length,1800);
+});
+
 test('continuity persistence happens only after confirmed memory write', async () => {
   let calls=0;
   const request=new Request('https://test.invalid/api/jarvis-chat',{headers:{authorization:'Bearer token'}});
@@ -77,10 +94,23 @@ test('continuity persistence happens only after confirmed memory write', async (
   assert.equal(calls,1); assert.equal(data.continuityPersisted,true); assert.equal(data.profileUpdated,true); assert.equal(data.continuity.relation,'decision');
 });
 
-test('unsaved memory never creates continuity event', async () => {
+test('successful generated answer is archived separately after memory confirmation', async () => {
+  const urls=[];
+  const request=new Request('https://test.invalid/api/jarvis-chat',{headers:{authorization:'Bearer token'}});
+  const response=Response.json({ok:true,persisted:true,memoryId:'11111111-1111-4111-8111-111111111111',answer:'Resposta nova.',specialist:'jarvis_executive',modelUsed:'model',promptVersion:'v1',warnings:[]});
+  const classification=classifyContinuity('Meu objetivo é avançar.',[],null);
+  const out=await persistContinuityFromResponse({request,env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'key'},envelope:{mode:'private',remember:true},classification,response,fetchImpl:async (url)=>{urls.push(String(url)); return Response.json([{id:'ok'}]);}});
+  const data=await out.json();
+  assert.equal(urls.length,2);
+  assert.ok(urls.some(url=>url.includes('record_solia_continuity_event')));
+  assert.ok(urls.some(url=>url.includes('record_solia_assistant_response')));
+  assert.equal(data.assistantHistoryPersisted,true);
+});
+
+test('unsaved memory never creates continuity or assistant history', async () => {
   let calls=0;
   const request=new Request('https://test.invalid/api/jarvis-chat',{headers:{authorization:'Bearer token'}});
-  const response=Response.json({ok:false,persisted:false});
+  const response=Response.json({ok:false,persisted:false,answer:'nao deve salvar'});
   const out=await persistContinuityFromResponse({request,env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'key'},envelope:{mode:'private',remember:true},classification:classifyContinuity('oi',[],null),response,fetchImpl:async()=>{calls++; return Response.json({});}});
   assert.equal(calls,0); assert.equal((await out.json()).persisted,false);
 });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyContinuity, continuitySystemText, loadContinuityPacket, persistContinuityFromResponse } from '../server/continuity-runtime.mjs';
+import { classifyContinuity, continuitySystemText, loadContinuityPacket, loadProfilePacket, persistContinuityFromResponse } from '../server/continuity-runtime.mjs';
 
 test('repeat stays repeat instead of rediscovery', () => {
   const prior=[{id:'1',content:'Quero um Jarvis que guarde tudo e nao me faça repetir.',match_kind:'match'}];
@@ -13,11 +13,13 @@ test('explicit correction outranks lexical similarity', () => {
   const result=classifyContinuity('Corrigindo: não quero minha voz para conversar, só para conteúdo.',prior,null);
   assert.equal(result.relation,'correction');
   assert.equal(result.scope,'explicit_update');
+  assert.equal(result.signals.profileKind,'correction');
 });
 
 test('temporary state never becomes stable identity', () => {
   const result=classifyContinuity('Hoje estou sem energia e mais chateada.',[],null);
   assert.equal(result.scope,'temporary_state');
+  assert.equal(result.signals.profileKind,null);
 });
 
 test('exploration remains exploration', () => {
@@ -25,10 +27,18 @@ test('exploration remains exploration', () => {
   assert.equal(result.scope,'exploration');
 });
 
+test('goal and boundary become operational profile statements', () => {
+  const goal=classifyContinuity('Meu objetivo é construir uma comunidade paga forte.',[],null);
+  assert.equal(goal.scope,'profile_statement'); assert.equal(goal.signals.profileKind,'goal');
+  const boundary=classifyContinuity('Não quero que o Jarvis fale demais comigo.',[],null);
+  assert.equal(boundary.scope,'profile_statement'); assert.equal(boundary.signals.profileKind,'boundary');
+});
+
 test('system directive forbids repeated rediscovery and identity drift', () => {
-  const text=continuitySystemText([{content:'x'}], classifyContinuity('Hoje estou cansada.',[],null));
+  const text=continuitySystemText([{content:'x'}], classifyContinuity('Hoje estou cansada.',[],null), [{kind:'goal',content:'Construir comunidade.'}]);
   assert.match(text,/Nao reexplique a visao do projeto/);
   assert.match(text,/Estado temporario NAO substitui identidade/);
+  assert.match(text,/PERFIL_DNA_OPERACIONAL/);
   assert.match(text,/agora entendi/);
 });
 
@@ -36,7 +46,8 @@ test('public mode never queries continuity vault', async () => {
   let calls=0;
   const request=new Request('https://test.invalid/api/jarvis-chat',{headers:{authorization:'Bearer token'}});
   const rows=await loadContinuityPacket({request,env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'key'},envelope:{mode:'public',message:'oi'},fetchImpl:async()=>{calls++;throw new Error('must not call');}});
-  assert.deepEqual(rows,[]); assert.equal(calls,0);
+  const profile=await loadProfilePacket({request,env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'key'},envelope:{mode:'public',message:'oi'},fetchImpl:async()=>{calls++;throw new Error('must not call');}});
+  assert.deepEqual(rows,[]); assert.deepEqual(profile,[]); assert.equal(calls,0);
 });
 
 test('private retrieval truncates untrusted rows and uses RPC', async () => {
@@ -48,6 +59,14 @@ test('private retrieval truncates untrusted rows and uses RPC', async () => {
   assert.equal(rows[0].topic_hint.length,160);
 });
 
+test('profile retrieval uses dedicated RPC and truncates rows', async () => {
+  let calledUrl='';
+  const request=new Request('https://test.invalid/api/jarvis-chat',{headers:{authorization:'Bearer token'}});
+  const rows=await loadProfilePacket({request,env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'key'},envelope:{mode:'private',message:'comunidade'},fetchImpl:async (url)=>{calledUrl=String(url); return Response.json([{id:'1',kind:'goal',content:'x'.repeat(4000),topic_hint:'t'.repeat(300),match_kind:'match'}]);}});
+  assert.match(calledUrl,/search_solia_profile_claims/);
+  assert.equal(rows[0].content.length,1600); assert.equal(rows[0].topic_hint.length,160);
+});
+
 test('continuity persistence happens only after confirmed memory write', async () => {
   let calls=0;
   const request=new Request('https://test.invalid/api/jarvis-chat',{headers:{authorization:'Bearer token'}});
@@ -55,7 +74,7 @@ test('continuity persistence happens only after confirmed memory write', async (
   const classification=classifyContinuity('A partir de agora fica definido assim.',[],null);
   const out=await persistContinuityFromResponse({request,env:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_ANON_KEY:'key'},envelope:{mode:'private',remember:true},classification,response,fetchImpl:async()=>{calls++; return Response.json([{id:'event'}]);}});
   const data=await out.json();
-  assert.equal(calls,1); assert.equal(data.continuityPersisted,true); assert.equal(data.continuity.relation,'decision');
+  assert.equal(calls,1); assert.equal(data.continuityPersisted,true); assert.equal(data.profileUpdated,true); assert.equal(data.continuity.relation,'decision');
 });
 
 test('unsaved memory never creates continuity event', async () => {

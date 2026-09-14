@@ -1,5 +1,6 @@
 import { createJarvisHandler } from '../server/jarvis-chat.mjs';
 import { resolvePilotRuntime, runtimeBlockResponse } from '../server/pilot-runtime.mjs';
+import { normalizeContinuityCues } from '../server/continuity-cues.mjs';
 import { classifyContinuity, loadContinuityPacket, persistContinuityFromResponse, readConversationEnvelope } from '../server/continuity-runtime.mjs';
 
 export default {
@@ -12,7 +13,7 @@ export default {
       ? await loadContinuityPacket({ request, env: runtime.env, envelope, fetchImpl: globalThis.fetch })
       : [];
     const classification = envelope?.mode === 'private'
-      ? classifyContinuity(envelope.message, packet, null)
+      ? classifyContinuity(normalizeContinuityCues(envelope.message), packet, null)
       : null;
     const response = await createJarvisHandler({ env: runtime.env, captureOnly: true })(request);
     return persistContinuityFromResponse({ request, env: runtime.env, envelope, classification, response, fetchImpl: globalThis.fetch });

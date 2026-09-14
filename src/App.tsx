@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
+import './navigation.css';
 import { AuthPanel } from './components/AuthPanel';
 import { InstallJarvis } from './components/InstallJarvis';
 import { IntegrationHub } from './components/IntegrationHub';

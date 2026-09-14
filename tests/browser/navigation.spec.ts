@@ -4,7 +4,8 @@ test('zero-budget Jarvis keeps conversation as home and exposes simple drawers',
   await page.goto('/?case=chat&budget=zero');
   const nav = page.getByRole('navigation', { name: 'Menu principal do Jarvis' });
   await expect(nav.getByRole('button', { name: 'CONVERSAR', exact: true })).toHaveAttribute('aria-current', 'page');
-  await expect(page.getByRole('heading', { name: 'Guardar sem chamar IA' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'JARVIS', exact: true })).toBeVisible();
+  await expect(page.getByText('ASSESSOR PESSOAL · PORTA ÚNICA')).toBeVisible();
 
   await nav.getByRole('button', { name: 'CONHECIMENTO', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'conhecimento' })).toBeVisible();
@@ -21,5 +22,5 @@ test('zero-budget Jarvis keeps conversation as home and exposes simple drawers',
 
   await page.getByRole('button', { name: 'VOLTAR PARA CONVERSAR', exact: true }).click();
   await expect(nav.getByRole('button', { name: 'CONVERSAR', exact: true })).toHaveAttribute('aria-current', 'page');
-  await expect(page.getByRole('heading', { name: 'Guardar sem chamar IA' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'JARVIS', exact: true })).toBeVisible();
 });

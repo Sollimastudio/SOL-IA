@@ -66,8 +66,13 @@ export function NoCostWorkspace({ session }: { session: Session }) {
         throw new Error(typeof data.error === 'string' ? data.error : 'Salvamento não confirmado. Confira o cofre; o texto continua na tela.');
       }
       pending.current = null; setText(''); setRefreshKey(value => value + 1);
+      const receiptText = typeof data.receipt === 'string' && data.receipt.trim()
+        ? data.receipt
+        : typeof data.answer === 'string' && data.answer.trim()
+          ? data.answer
+          : 'Fala confirmada no cofre.';
       setReceipt({
-        answer: typeof data.answer === 'string' && data.answer.trim() ? data.answer : 'Fala confirmada no cofre.',
+        answer: receiptText,
         continuityPersisted: data.continuityPersisted === true,
         relation: typeof data.continuity?.relation === 'string' ? data.continuity.relation : undefined,
         scope: typeof data.continuity?.scope === 'string' ? data.continuity.scope : undefined,

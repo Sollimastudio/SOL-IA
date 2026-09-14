@@ -1,17 +1,17 @@
 {
-  "version": "2026-09-14.1",
+  "version": "2026-09-14.2",
   "sources": [
     {
-      "key": "openai-model-releases",
+      "key": "openai-model-catalog",
       "kind": "model_or_api",
-      "url": "https://help.openai.com/en/articles/9624314-model-release-notes",
-      "allowedHosts": ["help.openai.com"]
+      "url": "https://developers.openai.com/api/docs/models",
+      "allowedHosts": ["developers.openai.com"]
     },
     {
-      "key": "openai-research-releases",
+      "key": "openai-latest-model-guide",
       "kind": "model_or_api",
-      "url": "https://openai.com/research/index/release/",
-      "allowedHosts": ["openai.com", "www.openai.com"]
+      "url": "https://developers.openai.com/api/docs/guides/latest-model",
+      "allowedHosts": ["developers.openai.com"]
     },
     {
       "key": "meta-instagram-news",
@@ -32,10 +32,10 @@
       "allowedHosts": ["newsroom.tiktok.com"]
     },
     {
-      "key": "tiktok-for-you-help",
+      "key": "tiktok-for-you-explainer",
       "kind": "platform_algorithm",
-      "url": "https://support.tiktok.com/en/getting-started/for-you",
-      "allowedHosts": ["support.tiktok.com"]
+      "url": "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you",
+      "allowedHosts": ["newsroom.tiktok.com"]
     },
     {
       "key": "vercel-changelog",

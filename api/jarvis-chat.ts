@@ -5,6 +5,8 @@ import { withAntiFatigue } from '../server/anti-fatigue-handler.mjs';
 import { createJarvisHandler } from '../server/jarvis-chat.mjs';
 import { createProviderAwareFetch, resolvePilotRuntime, runtimeBlockResponse } from '../server/pilot-runtime.mjs';
 import { routeCapability } from '../src/core/capabilityRouter.js';
+import { SOL_PRESENCE_PROFILE } from '../core/presence-profile.mjs';
+import { AUDIENCE_INTELLIGENCE_DIRECTIVE } from '../core/audience-intelligence.mjs';
 
 const JARVIS_PERSONA = [
   'ESTILO_JARVIS: fale como um assessor executivo extremamente inteligente, seguro, elegante e humano.',
@@ -36,7 +38,7 @@ function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null,
         const payload = JSON.parse(init.body);
         const first = payload?.messages?.[0];
         if (first?.role === 'system' && typeof first.content === 'string') {
-          first.content += `\n${JARVIS_PERSONA}`;
+          first.content += `\n${JARVIS_PERSONA}\n${SOL_PRESENCE_PROFILE}\n${AUDIENCE_INTELLIGENCE_DIRECTIVE}`;
           if (orientation) {
             first.content += `\nORIENTACAO_ANTI_FADIGA_JSON=${JSON.stringify(orientation)}\nEste é um indício lexical falível, não uma classificação confirmada. Compare o significado com o contexto disponível antes de concluir repetição ou ramificação. Use silenciosamente; aponte repetição somente quando ajudar a decidir, sem contagem habitual nem diagnóstico. Preserve o fio principal e responda ao que mudou.`;
           }

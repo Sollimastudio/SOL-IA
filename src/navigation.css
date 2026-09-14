@@ -1,3 +1,43 @@
+.jarvis-version-row {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 24px;
+  margin-bottom: 4px;
+}
+
+.jarvis-version {
+  align-self: center;
+  color: #665b6c;
+  font-size: .68rem;
+  letter-spacing: .06em;
+}
+
+.jarvis-update {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(251,191,36,.48);
+  border-radius: 12px;
+  background: rgba(69,45,12,.54);
+  color: #fde68a;
+  font-size: .78rem;
+}
+
+.jarvis-update button {
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid rgba(251,191,36,.6);
+  border-radius: 9px;
+  background: #5d3b0c;
+  color: #fff7d6;
+  font-weight: 850;
+}
+
+.jarvis-update small { margin-left: auto; color: #c9a65c; }
+
 .jarvis-main-nav {
   position: sticky;
   top: 8px;
@@ -49,6 +89,9 @@
 }
 
 @media (max-width: 760px) {
+  .jarvis-update { align-items: flex-start; }
+  .jarvis-update button { width: 100%; }
+  .jarvis-update small { margin-left: 0; }
   .jarvis-main-nav {
     grid-template-columns: repeat(4, max-content);
     overflow-x: auto;

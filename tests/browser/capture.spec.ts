@@ -53,7 +53,8 @@ test('public mode never falls back into private capture when budget is paused', 
   await page.route('**/api/jarvis-chat', route => route.fulfill({
     status: 403,
     contentType: 'application/json',
-    body: JSON.stringify({ ok: false, errorCode: 'ai_budget_paused', stage: 'budget', persisted: false })
+    body: JSON.stringify({ ok: false, errorCode: 'ai_budget_paused', stage: 'budget', persisted: false,
+      error: 'Geração de IA paga continua bloqueada. Nenhuma fala pública foi enviada ao cofre privado.' })
   }));
   await page.route('**/api/jarvis-capture', route => { captures++; return route.abort(); });
 
@@ -62,6 +63,8 @@ test('public mode never falls back into private capture when budget is paused', 
   const input = page.locator('#jarvis-message');
   await input.fill('Mensagem pública de teste.');
   await page.getByRole('button', { name: 'ENVIAR', exact: true }).click();
-  await expect(page.getByRole('log', { name: 'Conversa' })).toContainText('Geração de IA paga continua bloqueada');
+  const log = page.getByRole('log', { name: 'Conversa' });
+  await expect(log).toContainText('Geração de IA paga continua bloqueada.');
+  await expect(log).toContainText('Fala não salva no cofre.');
   expect(captures).toBe(0);
 });

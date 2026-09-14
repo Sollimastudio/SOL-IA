@@ -52,6 +52,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   const [listening, setListening] = useState(false);
   const [consent, setConsent] = useState(false);
   const [voiceReply, setVoiceReply] = useState(false);
+  // Private conversations preserve the user's own statements by default; the user can still pause capture.
   const [remember, setRemember] = useState(true);
   const [activeSpecialist, setActiveSpecialist] = useState('jarvis_executive');
   const gate = useRef(createVoiceSession());
@@ -92,7 +93,6 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     setAccessState('local');
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') {
-        // Privacy: microphone and speech stop immediately. A text request is not a microphone.
         const resumeSpeech = speechResume.current;
         stopVoiceHardware(); setListening(false);
         resumeSpeech?.();
@@ -199,7 +199,6 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       if (voiceReply && document.visibilityState === 'visible' && 'speechSynthesis' in window) {
         const speech = prepareJarvisSpeech(new SpeechSynthesisUtterance(data.answer));
         speechResume.current = resume; speech.onend = resume; speech.onerror = resume;
-        // Some mobile engines fail to emit onend/onerror. Never leave the composer locked forever.
         speechWatchdog.current = setTimeout(() => { window.speechSynthesis.cancel(); resume(); }, 60000);
         window.speechSynthesis.speak(speech);
       } else resume();
@@ -208,7 +207,6 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       if (knownUnsent || error instanceof UnsentMessageError) {
         setText(message);
         setAccessState('check');
-        // The visible failed turn stays for diagnosis but must not be duplicated in model history.
         turnsRef.current = turnsRef.current.map((turn, index) => index === turnsRef.current.length - 1 ? { ...turn, isError: true } : turn);
       }
       const errorMessage = timedOut ? 'A resposta demorou demais. O envio foi interrompido; a gravação não está confirmada. Confira o cofre antes de reenviar uma ideia.' : error instanceof Error ? error.message : 'Falha na conversa. Confira o cofre antes de considerar a ideia salva.';
@@ -225,7 +223,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
 
   function changeMode(next: Mode) {
     resetConversation(); setMode(next); onModeChange(next);
-    setStatus(next === 'public' ? 'Modo Performance iniciado. O cofre privado fica fora desta conversa.' : 'Modo privado iniciado. Cofre disponível após autenticação.');
+    setStatus(next === 'public' ? 'Modo Performance iniciado. O cofre privado fica fora desta conversa.' : 'Modo privado iniciado. Memória automática das suas falas ligada por padrão.');
   }
   function startVoice() {
     if (!session || !gate.current.start(true)) return;
@@ -263,7 +261,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
 
       <div className="neural-chat">
         {!session && <div className="neural-empty"><strong>ASSISTENTE EM ESPERA</strong><p>Entre no cofre seguro acima para habilitar a conversa privada com memória. Nenhuma chave de IA é entregue ao navegador.</p></div>}
-        {session && turns.length === 0 && <div className="neural-empty"><strong>CONTA CONECTADA</strong><p>Fale como você fala. Eu encaminho internamente para o especialista adequado, recupero contexto permitido e respondo por esta única porta.</p><div className="neural-suggestions"><button onClick={() => setText('Jarvis, organize minhas prioridades de hoje.')}>Organizar meu dia</button><button onClick={() => setText('Jarvis, continue meu projeto mais importante do ponto onde paramos.')}>Retomar projeto</button><button onClick={() => setText('Jarvis, tive uma ideia. Analise o potencial e me diga onde ela se encaixa.')}>Guardar uma ideia</button></div></div>}
+        {session && turns.length === 0 && <div className="neural-empty"><strong>CONTA CONECTADA</strong><p>Fale como você fala. No modo privado, suas falas são guardadas no cofre por padrão; eu recupero contexto permitido e encaminho internamente para o especialista adequado.</p><div className="neural-suggestions"><button onClick={() => setText('Jarvis, organize minhas prioridades de hoje.')}>Organizar meu dia</button><button onClick={() => setText('Jarvis, continue meu projeto mais importante do ponto onde paramos.')}>Retomar projeto</button><button onClick={() => setText('Jarvis, tive uma ideia. Analise o potencial e me diga onde ela se encaixa.')}>Guardar uma ideia</button></div></div>}
         <div className="neural-log" role="log" aria-label="Conversa" aria-live="polite">
           {turns.map((turn, index) => <article key={index} className={`neural-message ${turn.role}`}>
             <div className="neural-message-head"><strong>{turn.role === 'user' ? 'SOL' : turn.isError ? 'AVISO DO SISTEMA' : 'JARVIS'}</strong>{turn.specialist && <span>{specialistLabels[turn.specialist] ?? turn.specialist}</span>}</div>
@@ -283,7 +281,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
           <button className="neural-send" type="submit" disabled={!session || busy || !text.trim()}>{busy ? 'ANALISANDO' : 'ENVIAR'}</button>
         </div>
         <div className="neural-options">
-          {mode === 'private' && <label><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} /> Guardar minhas falas no cofre</label>}
+          {mode === 'private' && <label><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} /> Memória automática — guardar minhas falas</label>}
           <label><input type="checkbox" checked={voiceReply} onChange={event => { setVoiceReply(event.target.checked); if (!event.target.checked) { const resume = speechResume.current; speechResume.current = null; window.speechSynthesis?.cancel(); resume?.(); } }} /> Responder em voz alta</label>
           <label><input type="checkbox" checked={consent} onChange={event => { setConsent(event.target.checked); if (!event.target.checked) endSession(); }} /> Autorizar microfone nesta sessão</label>
           <button type="button" onClick={endSession}>ENCERRAR / MIC OFF</button>

@@ -10,13 +10,17 @@ select * from public.record_solia_continuity_event('aaaaaaaa-aaaa-4aaa-8aaa-aaaa
 
 do $$ begin
   if (select count(*) from public.search_solia_continuity('guardar repetir',12)) <> 1 then raise exception 'owner search failed'; end if;
-  if exists(select 1 from public.solia_continuity_events where content like '%SEGREDO%') then raise exception 'cross owner leak'; end if;
+  begin
+    perform 1 from public.solia_continuity_events limit 1;
+    raise exception 'direct journal table access should be denied';
+  exception when insufficient_privilege then null;
+  end;
 end $$;
 
 reset role;
 set role authenticated;
 select set_config('request.jwt.claim.sub','22222222-2222-4222-8222-222222222222',false);
 do $$ begin
-  if exists(select 1 from public.search_solia_continuity('guardar repetir',12) where content like '%Jarvis%') then raise exception 'RLS leak'; end if;
+  if exists(select 1 from public.search_solia_continuity('guardar repetir',12) where content like '%Jarvis%') then raise exception 'RPC cross-owner leak'; end if;
 end $$;
 reset role;

@@ -1,0 +1,62 @@
+.jarvis-main-nav {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 4px 0 14px;
+  padding: 8px;
+  border: 1px solid #2f2436;
+  border-radius: 16px;
+  background: rgba(7,4,10,.94);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 16px 44px rgba(0,0,0,.25);
+}
+
+.jarvis-main-nav button {
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 1px solid #34273d;
+  border-radius: 11px;
+  background: #0d0911;
+  color: #9d8fa6;
+  font-size: .68rem;
+  font-weight: 850;
+  letter-spacing: .07em;
+}
+
+.jarvis-main-nav button.active {
+  border-color: rgba(168,85,247,.72);
+  background: linear-gradient(135deg, rgba(109,40,217,.35), rgba(126,34,206,.16));
+  color: #f3e8ff;
+  box-shadow: inset 0 0 22px rgba(168,85,247,.08);
+}
+
+.jarvis-drawer { margin-top: 14px; }
+.jarvis-drawer-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 4px 2px;
+}
+.jarvis-drawer-heading h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 500;
+}
+
+@media (max-width: 760px) {
+  .jarvis-main-nav {
+    grid-template-columns: repeat(4, max-content);
+    overflow-x: auto;
+    justify-content: start;
+    scrollbar-width: none;
+  }
+  .jarvis-main-nav::-webkit-scrollbar { display: none; }
+  .jarvis-main-nav button { white-space: nowrap; min-width: 112px; }
+  .jarvis-drawer-heading { align-items: flex-start; flex-direction: column; }
+  .jarvis-drawer-heading .button { width: 100%; }
+}

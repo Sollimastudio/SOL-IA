@@ -29,6 +29,17 @@ test('branch preserves root and return signal instead of dropping the main threa
   assert.equal(result.signals.returnNeeded,true);
 });
 
+test('a fresh session inherits the durable root from a related prior event', () => {
+  const prior=[{
+    id:'11111111-1111-4111-8111-111111111111',
+    content:'Quero que o Jarvis preserve minha continuidade entre conversas.',
+    match_kind:'match',
+    signals:{rootTopic:'jarvis continuidade mestre',currentBranch:'memória'}
+  }];
+  const result=classifyContinuity('Quero melhorar isso sem perder o que já fizemos.',prior,{rootTopic:'melhorar perder fizemos',currentBranch:'melhorar perder fizemos',newSignals:['melhorar']});
+  assert.equal(result.signals.rootTopic,'jarvis continuidade mestre');
+});
+
 test('temporary state never becomes stable identity', () => {
   const result=classifyContinuity('Hoje estou sem energia e mais chateada.',[],null);
   assert.equal(result.scope,'temporary_state');

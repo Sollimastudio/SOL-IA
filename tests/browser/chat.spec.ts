@@ -111,28 +111,28 @@ test('switching public/private mode drops late private responses',async ({page})
   await expect(page.locator('#jarvis-message')).toBeEnabled();
 });
 
-test('one explicit voice-start gesture accepts direct speech and can route an optional response to Brazilian speech',async ({page})=>{
+test('explicit wake phrase opens a continuous foreground conversation and Veludo speaks by default',async ({page})=>{
   await page.addInitScript(()=>{
     const w=window as any;
-    let emitted=false;
+    const transcripts=['Jarvis, tá aí?','oi'];
     w.SpeechRecognition=class {
       onresult:any=null; onend:any=null; onerror:any=null;
-      start(){ if(!emitted){emitted=true;setTimeout(()=>this.onresult?.({resultIndex:0,results:[{isFinal:true,0:{transcript:'Jarvis, oi'}}]}),50);} }
+      start(){ const transcript=transcripts.shift(); if(transcript) setTimeout(()=>{this.onresult?.({resultIndex:0,results:[{isFinal:true,0:{transcript}}]});setTimeout(()=>this.onend?.(),5);},40); }
       abort(){}
     };
-    w.SpeechSynthesisUtterance=class { text:string; constructor(text:string){this.text=text;} };
+    w.SpeechSynthesisUtterance=class { text:string; rate=1; pitch=1; volume=1; lang=''; voice:any=null; onend:any=null; onerror:any=null; constructor(text:string){this.text=text;} };
     Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{
-      cancel(){},getVoices(){return [{lang:'pt-BR',name:'Female voice'},{lang:'pt-BR',name:'Felipe'}];},
-      speak(speech:any){w.__spoken={text:speech.text,lang:speech.lang,voice:speech.voice?.name};setTimeout(()=>speech.onend?.(),10);}
+      cancel(){},getVoices(){return [{lang:'pt-BR',name:'Female voice',localService:true},{lang:'pt-BR',name:'Felipe Premium',localService:true}];},
+      speak(speech:any){w.__spoken={text:speech.text,lang:speech.lang,voice:speech.voice?.name,rate:speech.rate,pitch:speech.pitch};setTimeout(()=>speech.onend?.(),10);}
     }});
   });
   await page.route('**/api/jarvis-chat',route=>route.fulfill({json:success}));
   await page.goto('/?case=chat');
-  await page.getByLabel('Ouvir resposta com a voz do aparelho (opcional)').check();
-  await page.getByRole('button',{name:'Falar agora',exact:true}).click();
+  await expect(page.getByLabel('Voz Jarvis · Veludo — responder em voz alta')).toBeChecked();
+  await page.getByRole('button',{name:'Ativar escuta',exact:true}).click();
   await expect(page.getByLabel('Autorizar microfone nesta sessão')).toBeChecked();
   await expect(page.getByRole('log')).toContainText(success.answer);
-  await expect.poll(()=>page.evaluate(()=>(window as any).__spoken)).toEqual({text:success.answer,lang:'pt-BR',voice:'Felipe'});
+  await expect.poll(()=>page.evaluate(()=>(window as any).__spoken)).toEqual({text:success.answer,lang:'pt-BR',voice:'Felipe Premium',rate:0.88,pitch:0.78});
   await page.getByRole('button',{name:'ENCERRAR / MIC OFF'}).click();
   await expect(page.getByText('MIC OFF',{exact:true})).toBeVisible();
 });

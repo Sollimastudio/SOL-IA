@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { createVoiceSession } from '../core/voiceSession.mjs';
-import { prepareJarvisSpeech } from '../core/jarvisSpeech';
+import { JARVIS_VOICE_PROFILE, prepareJarvisSpeech } from '../core/jarvisSpeech';
 import { getCurrentSession, refreshCurrentSession } from '../services/authService';
 import { sendAuthenticatedChat, UnsentMessageError } from '../services/authenticatedChat.mjs';
 
@@ -135,7 +135,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   const [accessState, setAccessState] = useState<'local' | 'verified' | 'check'>('local');
   const [listening, setListening] = useState(false);
   const [consent, setConsent] = useState(false);
-  const [voiceReply, setVoiceReply] = useState(false);
+  const [voiceReply, setVoiceReply] = useState(true);
   const [remember, setRemember] = useState(true);
   const [activeSpecialist, setActiveSpecialist] = useState('jarvis_executive');
   const [callActive, setCallActive] = useState(false);
@@ -200,6 +200,9 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   useEffect(() => {
     resetConversation();
     setAccessState('local');
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+    }
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') {
         const resumeSpeech = speechResume.current;
@@ -519,6 +522,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
         <span className={`neural-pill ${session && accessState === 'verified' ? 'online' : ''}`}>{!session ? 'ACESSO BLOQUEADO' : accessState === 'verified' ? 'ACESSO VALIDADO' : accessState === 'check' ? 'ACESSO A VERIFICAR' : 'SESSÃO LOCAL'}</span>
         <span className={`neural-pill ${listening ? 'mic-live' : ''}`}>{listening ? 'MIC ATIVO' : 'MIC OFF'}</span>
         <span className={`neural-pill ${callActive ? 'online' : ''}`}>{callActive ? 'CAM ATIVA' : 'CAM OFF'}</span>
+        <span className="neural-pill">VOZ · {JARVIS_VOICE_PROFILE.label.toUpperCase()}</span>
         <span className="neural-pill">LOCUTOR NÃO VERIFICADO</span>
         <span className="neural-pill specialist">{specialistLabels[activeSpecialist] ?? 'ASSESSORIA EXECUTIVA'}</span>
       </div>
@@ -574,7 +578,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
         </div>
         <div className="neural-options">
           {mode === 'private' && <label><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} /> Memória automática — guardar minhas falas</label>}
-          <label><input type="checkbox" checked={voiceReply} onChange={event => { setVoiceReply(event.target.checked); if (!event.target.checked) { const resume = speechResume.current; speechResume.current = null; window.speechSynthesis?.cancel(); resume?.(); } }} /> Ouvir resposta com a voz do aparelho (opcional)</label>
+          <label><input type="checkbox" checked={voiceReply} onChange={event => { setVoiceReply(event.target.checked); if (!event.target.checked) { const resume = speechResume.current; speechResume.current = null; window.speechSynthesis?.cancel(); resume?.(); } }} /> Voz Jarvis · {JARVIS_VOICE_PROFILE.label} — responder em voz alta</label>
           <label><input type="checkbox" checked={consent} onChange={event => { setConsent(event.target.checked); if (!event.target.checked) endSession(); }} /> Autorizar microfone nesta sessão</label>
           <button type="button" disabled={!session || busy} onClick={() => void (callActive ? Promise.resolve(endSession()) : startVideoCall())}>{callActive ? 'ENCERRAR VIDEOCHAMADA' : 'INICIAR VIDEOCHAMADA'}</button>
           <button type="button" disabled={!session || busy} onClick={toggleAmbient}>{ambientMode ? `AMBIENTE ON · ${ambientCount}` : 'MODO AMBIENTE'}</button>
@@ -582,6 +586,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
         </div>
       </form>
       <p className="neural-status" role="status">{status}</p>
+      <p className="neural-status">Voz do Jarvis: perfil {JARVIS_VOICE_PROFILE.label}, masculino pt-BR, grave moderado e cadência calma. O timbre final depende da melhor voz instalada no aparelho.</p>
       <p className="neural-status">Identificação de locutor ainda não está ativa: transcrição de voz não prova que quem falou foi você. Voz nunca substituirá login/biometria do aparelho como autorização.</p>
       <p className="neural-status">Sua voz pessoal não é usada para o Jarvis responder. Ela fica reservada para criação de conteúdos quando você pedir explicitamente.</p>
       <details className="neural-disclosure"><summary>Limites desta etapa</summary><p>A palavra de ativação “{WAKE_PHRASE}” funciona somente enquanto a página está visível e o microfone foi autorizado. O iPhone não permite que este web app mantenha um wake word confiável com a tela bloqueada. A videochamada desta etapa usa câmera local + conversa de voz e consegue enviar um quadro atual para análise sob comando; ainda não é visão contínua em streaming. O modo ambiente mantém um buffer temporário local e não salva fala de terceiros automaticamente. Identificação biométrica de locutor ainda precisa do motor de verificação de voz apropriado.</p></details>

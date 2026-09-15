@@ -39,6 +39,16 @@ test('repeating wake phrase while engaged does not leak it into message content'
   assert.deepEqual(gate.accept('Jarvis, tá aí? olha isso'), { kind: 'message', text: 'olha isso' });
 });
 
+test('assistant wake acknowledgement echo is ignored after activation', () => {
+  for (const echoed of ['Tô aqui. Pode falar.', 'To aqui pode falar', 'Estou aqui.']) {
+    const gate = createVoiceSession();
+    gate.start(true);
+    gate.accept('Jarvis, tá aí?');
+    assert.deepEqual(gate.accept(echoed), { kind: 'ignored' });
+    assert.equal(gate.isEngaged(), true);
+  }
+});
+
 test('explicit ending stops session and invalidates late callbacks', () => {
   const gate = createVoiceSession();
   gate.start(true);

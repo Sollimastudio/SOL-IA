@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import AppIntents
 import Speech
 import AVFAudio
@@ -48,6 +49,7 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
     private var quietTask: Task<Void, Never>?
     private var lastText = ""
     private var afterSpeech: (() -> Void)?
+    private var tapInstalled = false
 
     override init() {
         super.init()
@@ -91,6 +93,7 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in request.append(buffer) }
+        tapInstalled = true
         task = recognizer?.recognitionTask(with: request) { [weak self] result, _ in
             Task { @MainActor in
                 guard let self, let result else { return }
@@ -160,7 +163,10 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
         request?.endAudio()
         request = nil
         if engine.isRunning { engine.stop() }
-        engine.inputNode.removeTap(onBus: 0)
+        if tapInstalled {
+            engine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
         listening = false
     }
 
@@ -186,7 +192,10 @@ struct JarvisNativeApp: App {
                     Text(voice.transcript).padding().background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 14))
                 }
                 Button(voice.active ? "Encerrar" : "Iniciar manualmente") {
-                    Task { voice.active ? voice.stop() : await voice.start() }
+                    Task {
+                        if voice.active { voice.stop() }
+                        else { await voice.start() }
+                    }
                 }
             }
             .padding()

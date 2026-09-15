@@ -77,6 +77,10 @@ export function classifyContinuity(message, priorRows = [], orientation = null) 
   const topicHint = String(orientation?.currentBranch || label(message)).slice(0, 160);
   const deltaHint = (orientation?.newSignals?.length ? orientation.newSignals : deltaTerms).slice(0, 10).join(' · ').slice(0, 500);
   const priorEventId = typeof prior?.id === 'string' ? prior.id : null;
+  const inheritedRootTopic = typeof prior?.signals?.rootTopic === 'string' && prior.signals.rootTopic.trim()
+    ? prior.signals.rootTopic.trim()
+    : null;
+  const rootTopic = String(inheritedRootTopic || orientation?.rootTopic || label(priorContent || message)).slice(0, 160);
 
   return {
     relation: RELATIONS.has(relation) ? relation : 'new_topic',
@@ -96,7 +100,7 @@ export function classifyContinuity(message, priorRows = [], orientation = null) 
       orientationRepeat: orientation?.likelyRepeat === true,
       orientationBranch: orientation?.likelyBranch === true,
       priorEventId,
-      rootTopic: String(orientation?.rootTopic ?? '').slice(0, 160) || null,
+      rootTopic: rootTopic || null,
       currentBranch: String(orientation?.currentBranch ?? topicHint).slice(0, 160) || null,
       returnNeeded: orientation?.returnNeeded === true
     }

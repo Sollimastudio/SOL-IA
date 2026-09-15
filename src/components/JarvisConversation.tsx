@@ -200,9 +200,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
   useEffect(() => {
     resetConversation();
     setAccessState('local');
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-    }
+    if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
     const onVisibility = () => {
       if (document.visibilityState !== 'visible') {
         const resumeSpeech = speechResume.current;
@@ -265,13 +263,11 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       setStatus('Este navegador não oferece câmera para o modo chamada.');
       return false;
     }
-    const previous = cameraStream.current;
-    previous?.getTracks().forEach(track => track.stop());
+    cameraStream.current?.getTracks().forEach(track => track.stop());
     cameraStream.current = null;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false
+        video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false
       });
       cameraStream.current = stream;
       callActiveRef.current = true; setCallActive(true); setCameraFacing(facing);
@@ -281,9 +277,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       }
       return true;
     } catch {
-      stopCameraHardware();
-      setStatus('A câmera não pôde iniciar. Confira a permissão do aparelho.');
-      return false;
+      stopCameraHardware(); setStatus('A câmera não pôde iniciar. Confira a permissão do aparelho.'); return false;
     }
   }
 
@@ -298,8 +292,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
 
   async function switchCamera() {
     if (!callActiveRef.current) return;
-    const next = cameraFacing === 'user' ? 'environment' : 'user';
-    await startCamera(next);
+    await startCamera(cameraFacing === 'user' ? 'environment' : 'user');
   }
 
   function captureNext() {
@@ -313,9 +306,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     rec.onresult = event => {
       if (!gate.current.isCurrent(ticket)) return;
       const fragments: string[] = [];
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) fragments.push(event.results[i][0].transcript);
-      }
+      for (let i = event.resultIndex; i < event.results.length; i++) if (event.results[i].isFinal) fragments.push(event.results[i][0].transcript);
       const transcript = fragments.join(' ').trim();
       const wasEngaged = gate.current.isEngaged();
       const decision = gate.current.accept(transcript);
@@ -328,9 +319,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
         if (command === 'ambient_analyze') { void analyzeAmbient(false); return; }
         if (command === 'ambient_save') { void analyzeAmbient(true); return; }
         if (command === 'ambient_clear') {
-          ambientTranscript.current = []; setAmbientCount(0);
-          setStatus('Buffer temporário do ambiente limpo. Nada foi salvo.');
-          return;
+          ambientTranscript.current = []; setAmbientCount(0); setStatus('Buffer temporário do ambiente limpo. Nada foi salvo.'); return;
         }
         if (ambientModeRef.current) { appendAmbient(decision.text); return; }
         sendRef.current(decision.text); return;
@@ -346,13 +335,11 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       if (gate.current.isCurrent(ticket) && !busyRef.current) restart.current = setTimeout(captureNext, 250);
     };
     try {
-      rec.start();
-      setListening(true);
+      rec.start(); setListening(true);
       if (!gate.current.isEngaged()) setStatus(`Escuta de espera ativa. Diga “${WAKE_PHRASE}” para falar comigo.`);
       else if (ambientModeRef.current) setStatus(`Modo ambiente temporário ativo. ${ambientTranscript.current.length} trecho(s) locais; nada é salvo automaticamente.`);
       else setStatus('Conversa de voz ativa. Diga “encerrar” quando quiser desligar o microfone.');
-    }
-    catch { endSession(); setStatus('O microfone não pôde iniciar. Nenhuma escuta foi mantida.'); }
+    } catch { endSession(); setStatus('O microfone não pôde iniciar. Nenhuma escuta foi mantida.'); }
   }
 
   async function addAttachments(files?: FileList | null) {
@@ -366,10 +353,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       setAttachments(current => [...current, ...next]);
       setStatus(`${next.length} anexo(s) pronto(s). Você pode escrever uma instrução ou enviar apenas os anexos.`);
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Não consegui preparar o anexo.'); }
-    finally {
-      setAttachmentBusy(false);
-      if (fileInput.current) fileInput.current.value = '';
-    }
+    finally { setAttachmentBusy(false); if (fileInput.current) fileInput.current.value = ''; }
   }
 
   async function send(message: string, options: SendOptions = {}) {
@@ -379,10 +363,8 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     const id = ++requestEpoch.current;
     const controller = new AbortController(); request.current = controller;
     busyRef.current = true; setBusy(true); setListening(false);
-    clearTimeout(speechWatchdog.current);
-    speechResume.current = null;
-    let timedOut = false;
-    let knownUnsent = false;
+    clearTimeout(speechWatchdog.current); speechResume.current = null;
+    let timedOut = false; let knownUnsent = false;
     const deadline = setTimeout(() => { timedOut = true; controller.abort(); }, 90000);
     const old = recognition.current; recognition.current = null;
     if (old) { old.onend = null; old.onresult = null; old.onerror = null; try { old.abort(); } catch { /* stopped */ } }
@@ -393,10 +375,9 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     turnsRef.current = [...turnsRef.current, { role: 'user', content: visibleMessage }];
     setTurns(turnsRef.current); setText(''); setStatus('Jarvis analisando e encaminhando ao especialista adequado…');
     const resume = () => {
-      clearTimeout(speechWatchdog.current);
-      speechResume.current = null;
+      clearTimeout(speechWatchdog.current); speechResume.current = null;
       if (requestEpoch.current !== id) return;
-      busyRef.current = false; setBusy(false);
+      busyRef.current = false; request.current = null; setBusy(false);
       if (gate.current.isActive()) { armIdleTimeout(); captureNext(); }
     };
     try {
@@ -408,15 +389,11 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
           attachments: currentAttachments.map(({ id: _id, size: _size, ...item }) => item)
         }), signal: controller.signal
       });
-      if (!response.headers.get('content-type')?.includes('application/json')) {
-        throw new Error('A hospedagem devolveu uma página de acesso em vez da resposta da IA. Não apague sua sessão nem peça vários códigos.');
-      }
-      const data = await response.json();
-      clearTimeout(deadline);
+      if (!response.headers.get('content-type')?.includes('application/json')) throw new Error('A hospedagem devolveu uma página de acesso em vez da resposta da IA. Não apague sua sessão nem peça vários códigos.');
+      const data = await response.json(); clearTimeout(deadline);
       if (!data || typeof data !== 'object') throw new Error('O servidor devolveu uma resposta inválida. Seu login não foi alterado.');
       if (requestEpoch.current !== id || controller.signal.aborted) return;
-      const savedMessage = data.persisted === true ? 'Fala confirmada no cofre.'
-        : data.persisted === false ? 'Fala não salva no cofre.' : 'Gravação não confirmada; confira o cofre antes de reenviar.';
+      const savedMessage = data.persisted === true ? 'Fala confirmada no cofre.' : data.persisted === false ? 'Fala não salva no cofre.' : 'Gravação não confirmada; confira o cofre antes de reenviar.';
       if (data.persisted === true) onSaved();
       if (!response.ok || data.ok !== true || typeof data.answer !== 'string') {
         knownUnsent = data.stage === 'access' && data.persisted === false;
@@ -445,42 +422,25 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       }
       const errorMessage = timedOut ? 'A resposta demorou demais. O envio foi interrompido; a gravação não está confirmada. Confira o cofre antes de reenviar uma ideia.' : error instanceof Error ? error.message : 'Falha na conversa. Confira o cofre antes de considerar a ideia salva.';
       setActiveSpecialist('jarvis_executive');
-      turnsRef.current = [...turnsRef.current, { role: 'assistant', content: errorMessage, isError: true }];
-      setTurns(turnsRef.current);
-      stopVoiceHardware(); setBusy(false); setListening(false);
-      setStatus(errorMessage);
+      turnsRef.current = [...turnsRef.current, { role: 'assistant', content: errorMessage, isError: true }]; setTurns(turnsRef.current);
+      busyRef.current = false; request.current = null;
+      stopVoiceHardware(); setBusy(false); setListening(false); setStatus(errorMessage);
     } finally { clearTimeout(deadline); }
   }
 
   async function analyzeCurrentView(command = 'O que você vê agora?') {
-    if (!callActiveRef.current) {
-      setStatus('Para eu olhar o ambiente, inicie a VIDEOCHAMADA primeiro.');
-      return;
-    }
+    if (!callActiveRef.current) { setStatus('Para eu olhar o ambiente, inicie a VIDEOCHAMADA primeiro.'); return; }
     try {
       const frame = await captureCameraFrame();
-      await send(
-        `Estou em uma chamada com a Sol. Analise somente o quadro atual da câmera anexado e responda ao pedido: ${command}. Descreva apenas o que está visível e relevante. Não tente identificar pessoas e não infira características sensíveis. Se algo não estiver claro, diga que não está claro.`,
-        { forcedAttachments: [frame], rememberOverride: false, visibleMessage: 'Analisar o que estou mostrando pela câmera' }
-      );
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Não consegui analisar o quadro atual.');
-    }
+      await send(`Estou em uma chamada com a Sol. Analise somente o quadro atual da câmera anexado e responda ao pedido: ${command}. Descreva apenas o que está visível e relevante. Não tente identificar pessoas e não infira características sensíveis. Se algo não estiver claro, diga que não está claro.`, { forcedAttachments: [frame], rememberOverride: false, visibleMessage: 'Analisar o que estou mostrando pela câmera' });
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'Não consegui analisar o quadro atual.'); }
   }
 
   async function analyzeAmbient(save: boolean) {
     const transcript = ambientTranscript.current.join('\n').trim();
-    if (!transcript) {
-      setStatus('O modo ambiente ainda não capturou nenhum trecho para analisar.');
-      return;
-    }
-    const instruction = save
-      ? 'A usuária pediu explicitamente para guardar esta conversa depois da análise.'
-      : 'Esta transcrição é temporária: não a transforme em memória pessoal nem em fato permanente.';
-    await send(
-      `Analise a transcrição temporária abaixo como contexto de ambiente/conversa. ${instruction} Separe observações do texto de hipóteses. Não diagnostique, não tente reconhecer pessoas pela voz e não atribua fala a um locutor específico sem indicação textual.\n\nTRANSCRICAO_TEMPORARIA:\n${transcript}`,
-      { rememberOverride: save, visibleMessage: save ? `Analisar e guardar conversa ambiente (${ambientTranscript.current.length} trechos)` : `Analisar conversa ambiente (${ambientTranscript.current.length} trechos temporários)` }
-    );
+    if (!transcript) { setStatus('O modo ambiente ainda não capturou nenhum trecho para analisar.'); return; }
+    const instruction = save ? 'A usuária pediu explicitamente para guardar esta conversa depois da análise.' : 'Esta transcrição é temporária: não a transforme em memória pessoal nem em fato permanente.';
+    await send(`Analise a transcrição temporária abaixo como contexto de ambiente/conversa. ${instruction} Separe observações do texto de hipóteses. Não diagnostique, não tente reconhecer pessoas pela voz e não atribua fala a um locutor específico sem indicação textual.\n\nTRANSCRICAO_TEMPORARIA:\n${transcript}`, { rememberOverride: save, visibleMessage: save ? `Analisar e guardar conversa ambiente (${ambientTranscript.current.length} trechos)` : `Analisar conversa ambiente (${ambientTranscript.current.length} trechos temporários)` });
   }
 
   sendRef.current = message => { void send(message); };
@@ -492,10 +452,7 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
 
   function startVoice() {
     if (!session || gate.current.isActive() || !gate.current.start(true)) return;
-    setConsent(true);
-    armIdleTimeout();
-    setStatus(`Escuta de espera autorizada. Diga “${WAKE_PHRASE}” para ativar a conversa.`);
-    captureNext();
+    setConsent(true); armIdleTimeout(); setStatus(`Escuta de espera autorizada. Diga “${WAKE_PHRASE}” para ativar a conversa.`); captureNext();
   }
 
   function toggleAmbient() {
@@ -505,84 +462,50 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
       ambientTranscript.current = []; setAmbientCount(0);
       if (!gate.current.isActive()) startVoice();
       setStatus(`Modo ambiente temporário ligado. Diga “${WAKE_PHRASE}” para começar. As falas ficam apenas no buffer local até você pedir análise ou salvamento.`);
-    } else {
-      ambientTranscript.current = []; setAmbientCount(0);
-      setStatus('Modo ambiente desligado e buffer temporário apagado.');
-    }
+    } else { ambientTranscript.current = []; setAmbientCount(0); setStatus('Modo ambiente desligado e buffer temporário apagado.'); }
   }
 
   return <section className="neural-assessor" aria-labelledby="jarvis-conversation-title">
     <div className="neural-grid" aria-hidden="true" />
     <header className="neural-toolbar">
-      <div className="neural-brand">
-        <div className={`neural-orb ${busy ? 'thinking' : ''} ${listening ? 'listening' : ''}`}><span /></div>
-        <div><span className="eyebrow">SOL.IA · SISTEMA NEURAL</span><h2 id="jarvis-conversation-title">JARVIS</h2><small>ASSESSOR PESSOAL · PORTA ÚNICA</small></div>
-      </div>
+      <div className="neural-brand"><div className={`neural-orb ${busy ? 'thinking' : ''} ${listening ? 'listening' : ''}`}><span /></div><div><span className="eyebrow">SOL.IA · SISTEMA NEURAL</span><h2 id="jarvis-conversation-title">JARVIS</h2><small>ASSESSOR PESSOAL · PORTA ÚNICA</small></div></div>
       <div className="neural-indicators">
         <span className={`neural-pill ${session && accessState === 'verified' ? 'online' : ''}`}>{!session ? 'ACESSO BLOQUEADO' : accessState === 'verified' ? 'ACESSO VALIDADO' : accessState === 'check' ? 'ACESSO A VERIFICAR' : 'SESSÃO LOCAL'}</span>
         <span className={`neural-pill ${listening ? 'mic-live' : ''}`}>{listening ? 'MIC ATIVO' : 'MIC OFF'}</span>
         <span className={`neural-pill ${callActive ? 'online' : ''}`}>{callActive ? 'CAM ATIVA' : 'CAM OFF'}</span>
-        <span className="neural-pill">VOZ · {JARVIS_VOICE_PROFILE.label.toUpperCase()}</span>
-        <span className="neural-pill">LOCUTOR NÃO VERIFICADO</span>
-        <span className="neural-pill specialist">{specialistLabels[activeSpecialist] ?? 'ASSESSORIA EXECUTIVA'}</span>
+        <span className="neural-pill">VOZ · {JARVIS_VOICE_PROFILE.label.toUpperCase()}</span><span className="neural-pill">LOCUTOR NÃO VERIFICADO</span><span className="neural-pill specialist">{specialistLabels[activeSpecialist] ?? 'ASSESSORIA EXECUTIVA'}</span>
       </div>
     </header>
-
     <div className="neural-modebar" role="group" aria-label="Privacidade da conversa">
       <button className={mode === 'private' ? 'active' : ''} aria-pressed={mode === 'private'} onClick={() => changeMode('private')}>PRIVADO</button>
       <button className={mode === 'public' ? 'active public' : ''} aria-pressed={mode === 'public'} onClick={() => changeMode('public')}>MODO PERFORMANCE</button>
-      <button onClick={() => { resetConversation(); setStatus('Nova conversa. Microfone e câmera desligados.'); }}>NOVA CONVERSA</button>
-      <div className="neural-mode-spacer" />
-      <span>{mode === 'public' ? 'Sem acesso ao cofre privado' : 'Memória privada isolada por usuário'}</span>
+      <button onClick={() => { resetConversation(); setStatus('Nova conversa. Microfone e câmera desligados.'); }}>NOVA CONVERSA</button><div className="neural-mode-spacer" /><span>{mode === 'public' ? 'Sem acesso ao cofre privado' : 'Memória privada isolada por usuário'}</span>
     </div>
-
     <div className="neural-stage">
-      <aside className="neural-rail" aria-label="Departamentos do Jarvis">
-        <span>JARVIS</span><span>MEMÓRIA</span><span>EDITORIAL</span><span>CONTEÚDO</span><span>TRÁFEGO</span><span>JURÍDICO</span><span>VÍDEO</span><span>ROTINA</span>
-        <small>O roteamento é automático. Você não precisa escolher agente.</small>
-      </aside>
-
+      <aside className="neural-rail" aria-label="Departamentos do Jarvis"><span>JARVIS</span><span>MEMÓRIA</span><span>EDITORIAL</span><span>CONTEÚDO</span><span>TRÁFEGO</span><span>JURÍDICO</span><span>VÍDEO</span><span>ROTINA</span><small>O roteamento é automático. Você não precisa escolher agente.</small></aside>
       <div className="neural-chat">
         {!session && <div className="neural-empty"><strong>ASSISTENTE EM ESPERA</strong><p>Entre no cofre seguro acima para habilitar a conversa privada com memória. Nenhuma chave de IA é entregue ao navegador.</p></div>}
         {session && turns.length === 0 && <div className="neural-empty"><strong>CONTA CONECTADA</strong><p>Digite, anexe ou ligue a escuta. Para voz contínua em primeiro plano, toque no microfone e diga “{WAKE_PHRASE}”.</p><div className="neural-suggestions"><button onClick={() => setText('Jarvis, organize minhas prioridades de hoje.')}>Organizar meu dia</button><button onClick={() => setText('Jarvis, continue meu projeto mais importante do ponto onde paramos.')}>Retomar projeto</button><button onClick={() => setText('Jarvis, tive uma ideia. Analise o potencial e me diga onde ela se encaixa.')}>Guardar uma ideia</button></div></div>}
         <div className="neural-log" role="log" aria-label="Conversa" aria-live="polite">
-          {turns.map((turn, index) => <article key={index} className={`neural-message ${turn.role}`}>
-            <div className="neural-message-head"><strong>{turn.role === 'user' ? 'SOL' : turn.isError ? 'AVISO DO SISTEMA' : 'JARVIS'}</strong>{turn.specialist && <span>{specialistLabels[turn.specialist] ?? turn.specialist}</span>}</div>
-            <p>{turn.content}</p>
-            {turn.modelUsed && <small>Modelo: {turn.modelUsed}</small>}
-          </article>)}
+          {turns.map((turn, index) => <article key={index} className={`neural-message ${turn.role}`}><div className="neural-message-head"><strong>{turn.role === 'user' ? 'SOL' : turn.isError ? 'AVISO DO SISTEMA' : 'JARVIS'}</strong>{turn.specialist && <span>{specialistLabels[turn.specialist] ?? turn.specialist}</span>}</div><p>{turn.content}</p>{turn.modelUsed && <small>Modelo: {turn.modelUsed}</small>}</article>)}
           {busy && <article className="neural-message assistant thinking-card"><div className="neural-message-head"><strong>JARVIS</strong><span>ORQUESTRANDO</span></div><p className="neural-thinking"><i /><i /><i /> consultando o núcleo seguro…</p></article>}
         </div>
       </div>
     </div>
-
     <div hidden={!callActive} style={{ margin: '14px 0', border: '1px solid #31233b', borderRadius: 16, padding: 12, background: '#09060d' }} aria-label="Videochamada com Jarvis">
       <video ref={videoPreview} autoPlay muted playsInline style={{ width: '100%', maxHeight: '56vh', objectFit: 'cover', borderRadius: 12, background: '#000' }} />
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-        <button className="button button-secondary" type="button" onClick={() => void analyzeCurrentView('O que você vê agora e o que é relevante para mim?')}>ANALISAR O QUE ESTOU MOSTRANDO</button>
-        <button className="button button-secondary" type="button" onClick={() => void switchCamera()}>TROCAR CÂMERA</button>
-        <button className="button button-secondary" type="button" onClick={endSession}>ENCERRAR CHAMADA</button>
-      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}><button className="button button-secondary" type="button" onClick={() => void analyzeCurrentView('O que você vê agora e o que é relevante para mim?')}>ANALISAR O QUE ESTOU MOSTRANDO</button><button className="button button-secondary" type="button" onClick={() => void switchCamera()}>TROCAR CÂMERA</button><button className="button button-secondary" type="button" onClick={endSession}>ENCERRAR CHAMADA</button></div>
       <p className="neural-status">A câmera fica visível. O Jarvis analisa um quadro somente quando você pede; visão contínua ainda não está ativa.</p>
     </div>
-
     <div className="neural-console">
       <form onSubmit={event => { event.preventDefault(); void send(text); }}>
         {attachments.length > 0 && <div className="neural-attachments" aria-label="Anexos selecionados">{attachments.map(item => <span className="neural-attachment" key={item.id}>📎 {item.name}<button type="button" aria-label={`Remover ${item.name}`} onClick={() => setAttachments(current => current.filter(candidate => candidate.id !== item.id))}>×</button></span>)}</div>}
-        <div className="neural-input-wrap">
-          <button className={`neural-icon-button ${listening ? 'danger' : ''}`} type="button" disabled={!session || busy} onClick={listening ? endSession : startVoice} title={listening ? 'Encerrar voz' : 'Ativar escuta'} aria-label={listening ? 'Encerrar voz' : 'Ativar escuta'}>◉</button>
-          <button className="neural-icon-button" type="button" disabled={!session || busy || attachmentBusy || attachments.length >= MAX_ATTACHMENTS} onClick={() => fileInput.current?.click()} title="Anexar arquivo" aria-label="Anexar arquivo">＋</button>
-          <input ref={fileInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp,.txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json" onChange={event => void addAttachments(event.target.files)} />
-          <textarea id="jarvis-message" rows={2} maxLength={8000} value={text} disabled={!session || busy} onChange={event => setText(event.target.value)} placeholder={listening ? `Escuta ativa… diga “${WAKE_PHRASE}”.` : 'Converse com o Jarvis…'} />
-          <button className="neural-send" type="submit" disabled={!session || busy || attachmentBusy || (!text.trim() && !attachments.length)}>{busy ? 'ANALISANDO' : 'ENVIAR'}</button>
-        </div>
+        <div className="neural-input-wrap"><button className={`neural-icon-button ${listening ? 'danger' : ''}`} type="button" disabled={!session || busy} onClick={listening ? endSession : startVoice} title={listening ? 'Encerrar voz' : 'Ativar escuta'} aria-label={listening ? 'Encerrar voz' : 'Ativar escuta'}>◉</button><button className="neural-icon-button" type="button" disabled={!session || busy || attachmentBusy || attachments.length >= MAX_ATTACHMENTS} onClick={() => fileInput.current?.click()} title="Anexar arquivo" aria-label="Anexar arquivo">＋</button><input ref={fileInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp,.txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json" onChange={event => void addAttachments(event.target.files)} /><textarea id="jarvis-message" rows={2} maxLength={8000} value={text} disabled={!session || busy} onChange={event => setText(event.target.value)} placeholder={listening ? `Escuta ativa… diga “${WAKE_PHRASE}”.` : 'Converse com o Jarvis…'} /><button className="neural-send" type="submit" disabled={!session || busy || attachmentBusy || (!text.trim() && !attachments.length)}>{busy ? 'ANALISANDO' : 'ENVIAR'}</button></div>
         <div className="neural-options">
           {mode === 'private' && <label><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} /> Memória automática — guardar minhas falas</label>}
           <label><input type="checkbox" checked={voiceReply} onChange={event => { setVoiceReply(event.target.checked); if (!event.target.checked) { const resume = speechResume.current; speechResume.current = null; window.speechSynthesis?.cancel(); resume?.(); } }} /> Voz Jarvis · {JARVIS_VOICE_PROFILE.label} — responder em voz alta</label>
           <label><input type="checkbox" checked={consent} onChange={event => { setConsent(event.target.checked); if (!event.target.checked) endSession(); }} /> Autorizar microfone nesta sessão</label>
-          <button type="button" disabled={!session || busy} onClick={() => void (callActive ? Promise.resolve(endSession()) : startVideoCall())}>{callActive ? 'ENCERRAR VIDEOCHAMADA' : 'INICIAR VIDEOCHAMADA'}</button>
-          <button type="button" disabled={!session || busy} onClick={toggleAmbient}>{ambientMode ? `AMBIENTE ON · ${ambientCount}` : 'MODO AMBIENTE'}</button>
-          <button type="button" onClick={endSession}>ENCERRAR / MIC OFF</button>
+          <button type="button" disabled={!session || busy} onClick={() => void (callActive ? Promise.resolve(endSession()) : startVideoCall())}>{callActive ? 'ENCERRAR VIDEOCHAMADA' : 'INICIAR VIDEOCHAMADA'}</button><button type="button" disabled={!session || busy} onClick={toggleAmbient}>{ambientMode ? `AMBIENTE ON · ${ambientCount}` : 'MODO AMBIENTE'}</button><button type="button" onClick={endSession}>ENCERRAR / MIC OFF</button>
         </div>
       </form>
       <p className="neural-status" role="status">{status}</p>

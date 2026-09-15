@@ -1,3 +1,5 @@
+export const ANTI_FATIGUE_VERSION = '2026-09-15.1';
+
 const STOP = new Set(`a o as os um uma uns umas de da do das dos e em no na nos nas por para com sem que se eu voce você ele ela eles elas isso isto aquilo meu minha meus minhas seu sua seus suas ja já mais muito muita muitos muitas como quando onde porque porquê sobre pra pro estou está esta tava ter tenho tem foi ser esse essa esses essas aqui ali la lá quero preciso jarvis sol`.split(/\s+/));
 
 const normalize = (value) => String(value ?? '')

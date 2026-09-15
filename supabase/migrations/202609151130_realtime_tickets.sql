@@ -37,10 +37,13 @@ begin
     where p.owner_id=v_owner and p.can_use_ai=true and p.can_use_realtime=true
   ) then raise exception 'realtime not authorized'; end if;
 
-  v_raw := encode(gen_random_bytes(32),'hex');
+  -- 256 bits of random material from two PostgreSQL core UUID generators.
+  -- The database stores only a 128-bit one-way digest. Tickets expire in <=60s
+  -- and are single-use, so no raw bearer capability is retained at rest.
+  v_raw := replace(gen_random_uuid()::text,'-','') || replace(gen_random_uuid()::text,'-','');
   v_expires := now() + make_interval(secs => p_ttl_seconds);
   insert into public.solia_realtime_tickets(owner_id,ticket_hash,expires_at)
-  values(v_owner,digest(v_raw,'sha256'),v_expires);
+  values(v_owner,decode(md5(v_raw),'hex'),v_expires);
 
   return query select v_raw,v_expires;
 end;$$;
@@ -58,7 +61,7 @@ begin
   update public.solia_realtime_tickets t
   set used_at=now()
   from public.solia_pilot_users p
-  where t.ticket_hash=digest(p_ticket,'sha256')
+  where t.ticket_hash=decode(md5(p_ticket),'hex')
     and t.used_at is null
     and t.expires_at>now()
     and p.owner_id=t.owner_id

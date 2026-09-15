@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "check": "tsc -b",
-    "prebuild": "node --test tests/env-audit.test.mjs && node scripts/env-audit.mjs",
+    "prebuild": "node --test tests/*.test.mjs && node scripts/env-audit.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "node scripts/security-check.mjs"

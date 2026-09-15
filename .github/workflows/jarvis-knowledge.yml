@@ -51,13 +51,15 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141555_continuity_anchor_retrieval.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141620_profile_dna_v1.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141620_profile_dna_v1.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609150815_profile_supersession_chain.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609150815_profile_supersession_chain.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141650_assistant_history.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141650_assistant_history.sql
       - name: Verify real versions, quotas, locators and RLS
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/knowledge-assertions.sql
       - name: Verify durable continuity journal and account isolation
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/continuity-assertions.sql
-      - name: Verify operational profile DNA and state separation
+      - name: Verify operational profile DNA, state separation and supersession
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/profile-dna-assertions.sql
       - name: Verify assistant history is separate and isolated
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/assistant-history-assertions.sql

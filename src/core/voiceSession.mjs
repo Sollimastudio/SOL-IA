@@ -8,6 +8,7 @@
 export const VOICE_WAKE_PHRASE = 'Jarvis, tá aí?';
 
 const WAKE_RAW = /^\s*jarvis\b[\s,;:!?.-]*(?:(?:t[aá]\s*a[ií]|ta[ií])|(?:est[aá]\s*a[ií])|(?:voc[eê]\s+(?:t[aá]\s*a[ií]|ta[ií])))[\s,;:!?.-]*(.*)$/i;
+const SELF_ACK = /^(?:to|tô|estou)\s+aqui\s*(?:pode\s+falar)?$/i;
 
 export function createVoiceSession() {
   let active = false;
@@ -52,6 +53,10 @@ export function createVoiceSession() {
         const command = String(wake[1] ?? '').trim();
         return command ? { kind: 'message', text: command } : { kind: 'ignored' };
       }
+
+      // Ignore the assistant's own short wake acknowledgement if the device mic
+      // picks it up through the speaker. This is echo protection, not identity.
+      if (SELF_ACK.test(normalized)) return { kind: 'ignored' };
 
       // Repeating the wake phrase while already engaged is harmless. If a command
       // follows it, strip the wake phrase instead of sending it as user content.

@@ -5,6 +5,10 @@
  * no microphone access by itself and only evaluates transcripts while the UI
  * has an explicitly authorized foreground recognition session running.
  */
+export const VOICE_WAKE_PHRASE = 'Jarvis, tá aí?';
+
+const WAKE_RAW = /^\s*jarvis\b[\s,;:!?.-]*(?:(?:t[aá]\s*a[ií]|ta[ií])|(?:est[aá]\s*a[ií])|(?:voc[eê]\s+(?:t[aá]\s*a[ií]|ta[ií])))[\s,;:!?.-]*(.*)$/i;
+
 export function createVoiceSession() {
   let active = false;
   let engaged = false;
@@ -41,10 +45,18 @@ export function createVoiceSession() {
         return { kind: 'stop' };
       }
 
+      const wake = raw.match(WAKE_RAW);
       if (!engaged) {
-        if (!/^jarvis(?:\s|$)/.test(normalized)) return { kind: 'ignored' };
+        if (!wake) return { kind: 'ignored' };
         engaged = true;
-        const command = raw.replace(/^\s*jarvis\b[\s,;:!?.-]*/i, '').trim();
+        const command = String(wake[1] ?? '').trim();
+        return command ? { kind: 'message', text: command } : { kind: 'ignored' };
+      }
+
+      // Repeating the wake phrase while already engaged is harmless. If a command
+      // follows it, strip the wake phrase instead of sending it as user content.
+      if (wake) {
+        const command = String(wake[1] ?? '').trim();
         return command ? { kind: 'message', text: command } : { kind: 'ignored' };
       }
 

@@ -45,6 +45,7 @@ jobs:
       - name: Apply additive migrations twice
         run: |
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609090310_knowledge_sources.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609100330_pilot_users.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141520_continuity_journal.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141520_continuity_journal.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141545_continuity_api_lockdown.sql
@@ -55,6 +56,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609150815_profile_supersession_chain.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141650_assistant_history.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609141650_assistant_history.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609151130_realtime_tickets.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/202609151130_realtime_tickets.sql
       - name: Verify real versions, quotas, locators and RLS
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/knowledge-assertions.sql
       - name: Verify durable continuity journal and account isolation
@@ -63,5 +66,7 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/profile-dna-assertions.sql
       - name: Verify assistant history is separate and isolated
         run: psql -v ON_ERROR_STOP=1 -f tests/sql/assistant-history-assertions.sql
+      - name: Verify one-use realtime ticket isolation without provider calls
+        run: psql -v ON_ERROR_STOP=1 -f tests/sql/realtime-ticket-assertions.sql
       - name: Test simultaneous revisions with two database connections
         run: node tests/database-concurrency.mjs

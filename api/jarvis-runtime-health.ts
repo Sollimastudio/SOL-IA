@@ -1,3 +1,7 @@
+import { JARVIS_INVARIANTS_VERSION } from '../core/jarvis-invariants.mjs';
+import { GROWTH_INTELLIGENCE_VERSION } from '../core/growth-intelligence.mjs';
+import { ANTI_FATIGUE_VERSION } from '../server/anti-fatigue.mjs';
+
 export default {
   async fetch() {
     let helperOidcPresent = false;
@@ -15,6 +19,14 @@ export default {
       ok: true,
       runtime: 'vercel',
       environmentPresent: typeof process.env.VERCEL_ENV === 'string' && process.env.VERCEL_ENV.length > 0,
+      core: {
+        invariantsVersion: JARVIS_INVARIANTS_VERSION,
+        antiFatigueVersion: ANTI_FATIGUE_VERSION,
+        growthIntelligenceVersion: GROWTH_INTELLIGENCE_VERSION,
+        durableContinuity: true,
+        profileDna: true,
+        assistantHistorySeparation: true
+      },
       gateway: {
         explicitKeyPresent,
         envOidcPresent,

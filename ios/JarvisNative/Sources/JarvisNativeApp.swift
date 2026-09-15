@@ -38,22 +38,64 @@ struct JarvisAppShortcuts: AppShortcutsProvider {
 final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     @Published var status = "Em espera"
     @Published var transcript = ""
+    @Published var lastAnswer = ""
     @Published var active = false
     @Published var listening = false
+    @Published var authenticated = false
+    @Published var authMessage = "Entre uma vez para ligar sua memória privada ao Jarvis."
 
     private let engine = AVAudioEngine()
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "pt-BR"))
     private let speaker = AVSpeechSynthesizer()
+    private let auth = JarvisNativeAuth()
+    private let core = JarvisNativeContextClient()
+    private let brain = JarvisNativeBrain()
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var quietTask: Task<Void, Never>?
     private var lastText = ""
     private var afterSpeech: (() -> Void)?
     private var tapInstalled = false
+    private var processing = false
 
     override init() {
         super.init()
         speaker.delegate = self
+    }
+
+    func restoreAuth() async {
+        do {
+            authenticated = try await auth.currentSession() != nil
+            authMessage = authenticated ? "Acesso privado confirmado neste iPhone." : "Entre uma vez para ligar sua memória privada ao Jarvis."
+        } catch {
+            authenticated = false
+            authMessage = error.localizedDescription
+        }
+    }
+
+    func requestLoginCode(email: String) async {
+        do {
+            try await auth.requestCode(email: email)
+            authMessage = "Código enviado. Digite o número recebido no e-mail."
+        } catch { authMessage = error.localizedDescription }
+    }
+
+    func verifyLogin(email: String, code: String) async {
+        do {
+            _ = try await auth.verifyCode(email: email, code: code)
+            authenticated = true
+            authMessage = "Acesso privado confirmado neste iPhone."
+        } catch {
+            authenticated = false
+            authMessage = error.localizedDescription
+        }
+    }
+
+    func signOut() {
+        stop()
+        auth.signOutLocal()
+        authenticated = false
+        authMessage = "Sessão privada removida deste iPhone."
     }
 
     func start() async {
@@ -67,6 +109,7 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
             try audio.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
             try audio.setActive(true)
             active = true
+            processing = false
             say("Tô aqui. Pode falar.") { [weak self] in self?.listen() }
         } catch {
             status = "Não consegui iniciar o áudio."
@@ -84,7 +127,7 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
     }
 
     private func listen() {
-        guard active else { return }
+        guard active, !processing else { return }
         stopRecognition()
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
@@ -104,7 +147,7 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
             engine.prepare()
             try engine.start()
             listening = true
-            status = "Ouvindo. Diga “encerrar” para parar."
+            status = "Ouvindo. Continue falando normalmente; diga “encerrar” para parar."
         } catch {
             stopRecognition()
             status = "Falha ao iniciar o microfone."
@@ -112,6 +155,7 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
     }
 
     private func receive(_ value: String, final: Bool) {
+        guard !processing else { return }
         let text = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         transcript = text
@@ -122,20 +166,55 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
             try? await Task.sleep(for: .milliseconds(1100))
             guard !Task.isCancelled else { return }
             await MainActor.run {
-                guard let self, self.lastText == text else { return }
+                guard let self, self.lastText == text, !self.processing else { return }
                 self.commit(text)
             }
         }
     }
 
     private func commit(_ text: String) {
+        guard !processing else { return }
         let normalized = text.folding(options: .diacriticInsensitive, locale: .current).lowercased()
         if ["encerrar", "jarvis encerrar", "silencio", "parar de ouvir"].contains(normalized) {
             stop()
             return
         }
+        processing = true
         stopRecognition()
-        status = "Fala capturada. O próximo passo conecta esta frase ao Jarvis Core."
+        status = "Consultando sua memória privada…"
+        Task { [weak self] in await self?.answer(text) }
+    }
+
+    private func answer(_ text: String) async {
+        do {
+            guard let session = try await auth.currentSession() else {
+                authenticated = false
+                authMessage = "Entre uma vez para o Jarvis usar sua memória privada."
+                say("Eu te ouvi, mas preciso que você entre uma vez neste iPhone antes de usar sua memória privada.") { [weak self] in
+                    self?.processing = false
+                    self?.stop()
+                }
+                return
+            }
+            authenticated = true
+            let context = await core.fetch(query: text, auth: session)
+            status = context.warnings.isEmpty ? "Pensando no próprio iPhone…" : "Pensando com contexto parcial…"
+            let response = try await brain.answer(message: text, context: context)
+            lastAnswer = response
+            say(response) { [weak self] in
+                guard let self else { return }
+                self.processing = false
+                self.listen()
+            }
+        } catch {
+            let message = error.localizedDescription
+            status = message
+            say("Eu entendi sua fala, mas meu cérebro local não conseguiu responder agora. Não vou inventar uma resposta.") { [weak self] in
+                guard let self else { return }
+                self.processing = false
+                self.listen()
+            }
+        }
     }
 
     private func say(_ text: String, then: @escaping () -> Void) {
@@ -172,8 +251,10 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
 
     func stop() {
         active = false
+        processing = false
         stopRecognition()
         if speaker.isSpeaking { speaker.stopSpeaking(at: .immediate) }
+        afterSpeech = nil
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         status = "Sessão encerrada."
     }
@@ -182,23 +263,74 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
 @main
 struct JarvisNativeApp: App {
     @StateObject private var voice = JarvisVoiceSession()
+    @State private var email = ""
+    @State private var code = ""
 
     var body: some Scene {
         WindowGroup {
-            VStack(spacing: 18) {
-                Text("JARVIS").font(.largeTitle.bold())
-                Text(voice.status).multilineTextAlignment(.center)
-                if !voice.transcript.isEmpty {
-                    Text(voice.transcript).padding().background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                Button(voice.active ? "Encerrar" : "Iniciar manualmente") {
-                    Task {
-                        if voice.active { voice.stop() }
-                        else { await voice.start() }
+            ScrollView {
+                VStack(spacing: 18) {
+                    Text("JARVIS").font(.largeTitle.bold())
+                    Text(voice.status).multilineTextAlignment(.center)
+
+                    if !voice.authenticated {
+                        GroupBox("Acesso privado — uma vez neste aparelho") {
+                            VStack(spacing: 10) {
+                                TextField("Seu e-mail", text: $email)
+                                    .textInputAutocapitalization(.never)
+                                    .keyboardType(.emailAddress)
+                                    .textContentType(.emailAddress)
+                                Button("Enviar código") { Task { await voice.requestLoginCode(email: email) } }
+                                TextField("Código recebido", text: $code)
+                                    .keyboardType(.numberPad)
+                                Button("Confirmar acesso") { Task { await voice.verifyLogin(email: email, code: code) } }
+                                Text(voice.authMessage).font(.footnote)
+                            }
+                        }
+                    } else {
+                        HStack {
+                            Label("Memória privada conectada", systemImage: "lock.fill")
+                            Spacer()
+                            Button("Sair") { voice.signOut() }
+                        }
+                        .font(.footnote)
                     }
+
+                    if !voice.transcript.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("VOCÊ").font(.caption.bold())
+                            Text(voice.transcript)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding().background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    if !voice.lastAnswer.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("JARVIS").font(.caption.bold())
+                            Text(voice.lastAnswer)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding().background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+
+                    Button(voice.active ? "Encerrar" : "Iniciar manualmente") {
+                        Task {
+                            if voice.active { voice.stop() }
+                            else { await voice.start() }
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Text("Depois da configuração única do Atalho Vocal, “Jarvis, tá aí?” inicia esta sessão sem você tocar na tela. Durante a sessão, continue falando normalmente até dizer “encerrar”.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
+                .padding()
             }
-            .padding()
+            .task {
+                await voice.restoreAuth()
+                if JarvisWakeState.consume() { await voice.start() }
+            }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
                 if JarvisWakeState.consume() { Task { await voice.start() } }
             }

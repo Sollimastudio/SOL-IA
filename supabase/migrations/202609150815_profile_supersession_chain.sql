@@ -87,9 +87,9 @@ begin
       end if;
 
       if p_relation='correction' and v_prior_claim is not null and v_new_claim is not null and v_prior_claim <> v_new_claim then
-        update public.solia_profile_claims
+        update public.solia_profile_claims pc
         set status='superseded', superseded_by_id=v_new_claim, updated_at=now()
-        where id=v_prior_claim and owner_id=v_owner and status='active';
+        where pc.id=v_prior_claim and pc.owner_id=v_owner and pc.status='active';
       end if;
     end if;
   end if;

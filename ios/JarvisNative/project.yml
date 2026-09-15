@@ -1,0 +1,26 @@
+name: JarvisNative
+options:
+  bundleIdPrefix: com.sollimastudio
+  deploymentTarget:
+    iOS: "18.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+targets:
+  JarvisNative:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sollimastudio.jarvis
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: Jarvis
+        NSMicrophoneUsageDescription: "Microfone usado somente durante uma conversa de voz iniciada pela usuária."
+        NSSpeechRecognitionUsageDescription: "A fala é transcrita para a conversa com o Jarvis."
+        UIBackgroundModes:
+          - audio

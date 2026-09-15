@@ -1,3 +1,5 @@
+export const ANTI_FATIGUE_VERSION: string;
+
 export type AntiFatigueOrientation = {
   rootTopic: string;
   currentBranch: string;

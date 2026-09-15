@@ -117,9 +117,7 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
     }
 
     private func permissions() async -> Bool {
-        let mic = await withCheckedContinuation { continuation in
-            AVAudioSession.sharedInstance().requestRecordPermission { continuation.resume(returning: $0) }
-        }
+        let mic = await AVAudioApplication.requestRecordPermission()
         guard mic else { return false }
         return await withCheckedContinuation { continuation in
             SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0 == .authorized) }
@@ -263,6 +261,7 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
 @main
 struct JarvisNativeApp: App {
     @StateObject private var voice = JarvisVoiceSession()
+    @StateObject private var diagnostics = JarvisNativeDiagnostics()
     @State private var email = ""
     @State private var code = ""
 
@@ -320,6 +319,25 @@ struct JarvisNativeApp: App {
                         }
                     }
                     .buttonStyle(.borderedProminent)
+
+                    DisclosureGroup("Diagnóstico deste iPhone") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Button(diagnostics.running ? "Verificando…" : "Verificar agora") {
+                                Task { await diagnostics.run() }
+                            }
+                            .disabled(diagnostics.running)
+                            ForEach(diagnostics.items) { item in
+                                HStack(alignment: .top) {
+                                    Image(systemName: item.ok ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(item.label).font(.footnote.bold())
+                                        Text(item.detail).font(.caption).foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.top, 8)
+                    }
 
                     Text("Depois da configuração única do Atalho Vocal, “Jarvis, tá aí?” inicia esta sessão sem você tocar na tela. Durante a sessão, continue falando normalmente até dizer “encerrar”.")
                         .font(.footnote)

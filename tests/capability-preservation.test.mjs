@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
 const requiredFiles = [
+  'core/jarvis-invariants.mjs',
   'core/presence-profile.mjs',
   'core/audience-intelligence.mjs',
   'core/growth-intelligence.mjs',
@@ -40,6 +41,36 @@ test('active chat remains wired to presence, audience, growth, anti-fatigue and 
     'persistContinuityFromResponse',
     'verifyZeroCostGatewayModel'
   ]) assert.match(chat, new RegExp(marker), `${marker} must stay wired into active chat`);
+});
+
+test('non-negotiable continuity invariants remain centralized and injected', () => {
+  const invariants = read('core/jarvis-invariants.mjs');
+  const continuity = read('server/continuity-runtime.mjs');
+  for (const marker of [
+    'DELTA_FIRST',
+    'REPETITION_IS_SIGNAL_NOT_REPROACH',
+    'PRESERVE_ROOT_AND_BRANCHES',
+    'STATE_IS_NOT_IDENTITY',
+    'EXPLORATION_IS_NOT_OPINION',
+    'OPINION_IS_NOT_FACT',
+    'IMPORTED_SOURCE_IS_NOT_USER_FACT',
+    'ASSISTANT_SUGGESTION_IS_NOT_USER_DECISION',
+    'EXPLICIT_CORRECTION_PRESERVES_HISTORY_AND_SUPERSEDES_LINKED_PRIOR',
+    'NEW_CAPABILITY_MUST_NOT_REMOVE_EXISTING_CORE_CAPABILITY'
+  ]) assert.ok(invariants.includes(marker), `${marker} must remain a core invariant`);
+  assert.match(continuity,/JARVIS_INVARIANTS_DIRECTIVE/);
+  assert.match(continuity,/priorEventId/);
+  assert.match(continuity,/rootTopic/);
+  assert.match(continuity,/currentBranch/);
+});
+
+test('profile corrections keep an explicit supersession chain instead of deleting history', () => {
+  const migration = read('supabase/migrations/202609150815_profile_supersession_chain.sql');
+  assert.match(migration,/supersedes_id/);
+  assert.match(migration,/superseded_by_id/);
+  assert.match(migration,/p_signals->>'priorEventId'/);
+  assert.match(migration,/status='superseded'/);
+  assert.match(migration,/pc\.status='active'/);
 });
 
 test('chat stays the product home and knowledge, vault and integrations stay reachable', () => {

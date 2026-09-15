@@ -64,6 +64,18 @@ test('non-negotiable continuity invariants remain centralized and injected', () 
   assert.match(continuity,/currentBranch/);
 });
 
+test('deployed health endpoint exposes the compiled continuity intelligence versions', () => {
+  const health = read('api/jarvis-runtime-health.ts');
+  for (const marker of [
+    'JARVIS_INVARIANTS_VERSION',
+    'ANTI_FATIGUE_VERSION',
+    'GROWTH_INTELLIGENCE_VERSION',
+    'durableContinuity',
+    'profileDna',
+    'assistantHistorySeparation'
+  ]) assert.match(health,new RegExp(marker),`${marker} must remain visible in runtime health`);
+});
+
 test('profile corrections keep an explicit supersession chain instead of deleting history', () => {
   const migration = read('supabase/migrations/202609150815_profile_supersession_chain.sql');
   assert.match(migration,/supersedes_id/);

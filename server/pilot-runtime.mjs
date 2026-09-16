@@ -42,7 +42,6 @@ async function readAccessJson(url, headers, signal, fetchImpl) {
         continue;
       }
       if (!response.ok) return { status, attempts, data: null };
-      // A malformed success is not approval. Do not log response bodies.
       let data = null;
       try { data = await response.json(); } catch { /* fail closed */ }
       return { status, attempts, data };
@@ -85,7 +84,11 @@ export async function resolvePilotRuntime(
   { resolveProvider = true } = {}
 ) {
   const supabaseUrl = first(baseEnv.SUPABASE_URL || baseEnv.VITE_SUPABASE_URL, DEFAULT_SUPABASE_URL);
-  const supabaseKey = first(baseEnv.SUPABASE_ANON_KEY || baseEnv.VITE_SUPABASE_ANON_KEY, DEFAULT_SUPABASE_PUBLISHABLE_KEY);
+  const supabaseKey = first(
+    baseEnv.SUPABASE_PUBLISHABLE_KEY || baseEnv.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    baseEnv.SUPABASE_ANON_KEY || baseEnv.VITE_SUPABASE_ANON_KEY,
+    DEFAULT_SUPABASE_PUBLISHABLE_KEY
+  );
   const authorization = request.headers.get('authorization') || '';
   let allowedUser = '__pilot_not_verified__';
   let canUseAi = false;
@@ -138,6 +141,7 @@ export async function resolvePilotRuntime(
     env: {
       ...baseEnv,
       SUPABASE_URL: supabaseUrl,
+      SUPABASE_PUBLISHABLE_KEY: supabaseKey,
       SUPABASE_ANON_KEY: supabaseKey,
       JARVIS_ALLOWED_USER_IDS: first(baseEnv.JARVIS_ALLOWED_USER_IDS, allowedUser),
       JARVIS_KNOWLEDGE_ENABLED: first(baseEnv.JARVIS_KNOWLEDGE_ENABLED, 'true'),

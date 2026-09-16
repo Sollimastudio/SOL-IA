@@ -1,158 +1,255 @@
-# Jarvis / Sol.IA — cérebro crescente, autoatualização e inteligência social
+# Jarvis — cérebro crescente, autoatualização e inteligência de domínio
+
+> Atualizado em 16/09/2026. O piloto Sol continua sendo a configuração mais profunda atual, mas esta arquitetura é parametrizável por tenant/workspace.
 
 ## Princípio
 
-O Jarvis não deve depender de um único provedor/modelo nem confundir o app ChatGPT com o seu próprio cérebro. O produto mantém memória, perfil, projetos, permissões e continuidade em infraestrutura própria. Modelos externos entram como motores substituíveis por tarefa.
+Jarvis não depende de um único provedor/modelo nem confunde o app ChatGPT com o próprio cérebro. O produto mantém memória, perfil, projetos, permissões, objetivos, continuidade e regras em infraestrutura própria. Modelos externos entram como motores substituíveis por tarefa.
+
+A inteligência crescente deve funcionar para **qualquer contexto autorizado**: creator, agência, empresa, equipe, profissional ou outro objetivo legítimo.
 
 ## 1. Cérebro principal
 
 Arquitetura por camadas:
 
-- `Jarvis Core`: identidade operacional, contexto, anti-fadiga, estado da conversa e políticas.
-- `Model Router`: escolhe o modelo/provedor por tarefa, custo, latência e capacidade.
-- `Tool Router`: arquivos, web, código, calendário, redes sociais, analytics e demais ferramentas autorizadas.
-- `Memory/Knowledge`: memória privada, perfil autoral, fontes versionadas e estado dos projetos.
-- `Agent Orchestrator`: coordena especialistas sem exigir que a usuária escolha agente.
+- `Jarvis Core`: identidade operacional, escopo, contexto, anti-fadiga e políticas.
+- `Tenant/Workspace Context`: organização, cliente, projeto, usuário e role corretos.
+- `Model Router`: escolhe modelo/provedor por tarefa, política, custo, latência e capacidade.
+- `Tool Router`: arquivos, web, código, CRM, calendário, redes, analytics e ferramentas autorizadas.
+- `Memory/Knowledge/Assets`: memória, Perfil DNA, fontes versionadas, projetos e ativos.
+- `Agent/Skill Orchestrator`: coordena especialistas sem exigir escolha manual.
+- `Objective Engine`: objetivos, KPIs, prazos, riscos e critérios de sucesso do tenant.
 
-A OpenAI pode ser o cérebro principal via API. Não se embute a sessão pessoal do aplicativo ChatGPT. O Jarvis chama modelos da OpenAI pela API e combina as respostas com a memória/estado próprios.
+A OpenAI pode ser um dos cérebros via API, mas não é a identidade do Jarvis. Chaves nunca vão para frontend público.
 
-Para o piloto, manter suporte ao backend existente e adicionar um adaptador de OpenAI Responses API em etapa controlada. O provedor deve ser configurável no servidor. Chaves nunca vão para o navegador.
+## 2. Uso de modelos e ferramentas
 
-## 2. Uso de OpenAI dentro do Jarvis
+Modelos podem receber texto, imagem, arquivos e usar ferramentas permitidas. O sistema deve selecionar somente capacidades compatíveis com:
 
-A Responses API pode receber texto/imagem/arquivos, usar web search, file search, funções próprias, MCP e outras ferramentas permitidas. Isso permite aproximar a experiência do ChatGPT dentro do Jarvis sem depender da interface do ChatGPT.
+- tarefa;
+- tenant/workspace;
+- privacidade;
+- orçamento;
+- risco;
+- latência;
+- qualidade verificada.
 
-Para voz, usar uma camada Realtime apropriada quando validada no iPhone, mantendo wake word/privacidade como problema separado do modelo de voz.
+Voz realtime, código, vídeo e outros domínios podem usar motores especializados sem quebrar a continuidade do Core.
 
 ## 3. Inteligência crescente
 
-“Crescente” não significa modificar pesos do modelo ou aprender qualquer inferência como verdade. Significa melhorar o sistema continuamente com dados verificáveis:
+“Crescente” não significa modificar pesos do modelo ou transformar qualquer inferência em verdade.
 
-- lembrar correções e preferências;
+Significa melhorar continuamente com evidência:
+
+- lembrar correções e preferências do escopo correto;
 - consolidar decisões;
-- comparar resultados de conteúdo e campanhas;
-- aprender quais formatos performam melhor para cada objetivo;
-- aprimorar o perfil de voz/estilo por exemplos aprovados/rejeitados;
-- detectar perguntas repetidas pelo próprio Jarvis e reduzir redundância;
-- testar novos modelos e ferramentas em benchmark próprio;
-- promover somente melhorias que superem a baseline sem quebrar segurança/qualidade.
+- aprender padrões de resultado;
+- aprender formatos/processos melhores para cada objetivo;
+- aprimorar linguagem/voz/estilo por exemplos aprovados/rejeitados;
+- detectar repetição causada pelo próprio Jarvis;
+- testar novos modelos/ferramentas;
+- comparar custo/latência/qualidade;
+- promover somente melhorias que superem baseline e gates.
 
-## 4. Radar de novidades / autoatualização
+Aprendizado local de Tenant A **não altera silenciosamente** Tenant B.
 
-Criar um `Capability Radar` periódico que monitore apenas fontes autorizadas e confiáveis:
+## 4. Capability Radar global
 
-- changelogs e documentação de OpenAI, Meta, TikTok, Vercel, Supabase e demais fornecedores usados;
-- releases de SDKs e dependências do projeto;
-- novos modelos, limites, preços, ferramentas e depreciações;
-- mudanças relevantes de APIs sociais;
-- vulnerabilidades de dependências.
+O `Capability Radar` monitora fontes confiáveis relevantes para a plataforma:
+
+- changelogs/documentação de provedores usados;
+- releases de SDKs/dependências;
+- novos modelos, limites, preços e depreciações;
+- APIs sociais e integrações;
+- segurança/vulnerabilidades;
+- novas capacidades de voz, vídeo, agentes, modelos locais, automação e infraestrutura.
 
 Fluxo:
+
 1. coletar novidade;
-2. classificar impacto no Sol.IA;
-3. registrar oportunidade/risco;
-4. reproduzir ou prototipar em branch/sandbox;
-5. rodar testes comparativos;
-6. abrir PR com evidências;
-7. promover apenas após gates.
+2. validar evidência/frescor;
+3. classificar impacto na plataforma;
+4. registrar oportunidade/risco;
+5. prototipar em branch/sandbox quando necessário;
+6. rodar benchmark/testes;
+7. promover somente após gates.
 
-O Radar não altera produção sozinho, não troca modelo principal sem benchmark e não cria custo ilimitado.
+O Radar não altera produção sozinho e não cria custo ilimitado.
 
-## 5. Social Intelligence Hub
+## 5. Radar de Domínio por tenant
 
-Objetivo: conectar contas autorizadas da usuária e aprender com o comportamento agregado do público sem expor dados além do necessário.
+Além do radar tecnológico global, cada tenant pode possuir radar próprio.
 
-Conectores previstos:
+Exemplos:
 
-### Instagram profissional
-- múltiplas contas Business/Creator;
-- mídia, métricas e insights permitidos pela API;
-- performance por formato, tema, gancho, duração, CTA e horário;
-- publicação somente quando a permissão/fluxo oficial permitir e com política de aprovação.
+- creator: redes, comportamento cultural, formatos, audiência e ofertas;
+- agência: tendências, plataformas e oportunidades por cliente;
+- e-commerce: categoria, demanda, preço, concorrência, estoque e canais;
+- SaaS: mercado, concorrentes, comunidade, produto e tecnologia;
+- empresa B2B: setor, clientes, vendas, riscos e concorrência;
+- operação interna: custos, incidentes, gargalos, metas e qualidade.
 
-### Facebook Pages
-- múltiplas páginas;
-- conteúdo e Page Insights conforme permissões aprovadas;
-- análise de alcance, engajamento e desempenho por ativo;
-- ações de publicação somente com escopo e aprovação adequados.
+O mesmo sinal externo pode ser urgente para um tenant e irrelevante para outro.
 
-### TikTok
-- perfil e vídeos via APIs permitidas;
-- Content Posting API para rascunho/publicação quando aplicativo e escopos estiverem aprovados;
-- métricas disponíveis conforme o produto/escopo concedido.
+## 6. Social Intelligence Hub
 
-Nenhum conector deve presumir acesso a contas pessoais/privadas que a API não expõe.
+Objetivo: conectar contas autorizadas e aprender com comportamento agregado/performance sem exceder permissões.
 
-## 6. Audience Strategy Engine
+Conectores previstos podem incluir Instagram profissional, Facebook Pages, TikTok, YouTube e outras plataformas oficiais.
 
-O Jarvis deve aceitar um objetivo de audiência explícito, por exemplo:
+Para agências:
 
-- maior poder aquisitivo;
-- faixa etária;
-- região;
-- interesses e temas;
-- nível de profundidade do conteúdo;
-- intenção (autoridade, alcance, venda, comunidade, livro, Magnetus etc.).
+- várias contas podem coexistir;
+- cada cliente precisa de identidade/credenciais/dados isolados;
+- métricas e recomendações permanecem associadas ao cliente correto;
+- um playbook pode ser reutilizado sem vazar dados.
 
-Evitar rótulos depreciativos ou inferir inteligência, pobreza, saúde, raça, religião, política ou outras características sensíveis de indivíduos. Para estratégia, trabalhar com sinais agregados e segmentações permitidas pelas plataformas, como comportamento de conteúdo, localização ampla, interesses/engajamento disponibilizados, dispositivo/canal e performance observada.
+Nenhum conector presume acesso a conta/recurso que a API não expõe.
 
-O sistema deve traduzir “quero um público classe média alta e mais posicionado” em critérios operacionais verificáveis: ticket esperado, temas, linguagem, canais, localização agregada, conteúdo, oferta e métricas de qualidade — não em uma tentativa de classificar pessoas individualmente como “inteligentes” ou “pobres”.
+## 7. Objective & Audience Strategy Engine
 
-## 7. Loop de aprendizagem de conteúdo
+A camada antiga de “audiência” é generalizada para um motor de objetivo.
 
-Para cada conteúdo:
+Pode receber critérios como:
+
+- público desejado;
+- mercado/região;
+- oferta/preço;
+- objetivo da campanha;
+- meta de vendas;
+- retenção;
+- geração de leads;
+- produtividade;
+- economia;
+- qualidade;
+- risco;
+- prazo;
+- KPI específico.
+
+Evitar inferir características sensíveis de indivíduos. Estratégia deve trabalhar com dados agregados, consentidos e segmentações permitidas.
+
+## 8. Loop de aprendizagem
+
+Para qualquer experimento/ação relevante:
 
 1. registrar hipótese e objetivo;
-2. registrar versão publicada;
-3. coletar métricas permitidas em janelas definidas;
-4. normalizar por tamanho da audiência/tempo/alcance;
-5. atribuir sinais a gancho, tema, formato, duração, CTA e estilo;
-6. comparar com baseline e conteúdos similares;
+2. registrar versão executada/publicada;
+3. coletar métricas permitidas;
+4. normalizar contexto;
+5. comparar com baseline;
+6. relacionar resultado a fatores observáveis;
 7. atualizar recomendações com nível de confiança;
-8. nunca transformar correlação em causalidade sem teste suficiente.
+8. não transformar correlação em causalidade sem evidência adequada.
 
-O Jarvis deve responder “o que meu público está preferindo?” com evidências e período analisado.
+A função de sucesso depende do tenant.
 
-## 8. Personalização da Sol
+Exemplos:
 
-Manter perfis separados:
+- conteúdo → retenção/lead/venda;
+- campanha → CAC/ROAS/margem;
+- suporte → resolução/satisfação;
+- engenharia → incidentes/latência;
+- operação → tempo/custo/erro;
+- vendas → pipeline/conversão.
 
-- privado;
-- conteúdo;
+## 9. Personalization Engine
+
+A personalização é uma capacidade estrutural.
+
+Perfis possíveis por tenant:
+
+- pessoal/privado;
+- marca;
 - editorial;
 - institucional;
 - comercial;
-- performance/live.
+- atendimento;
+- performance/live;
+- departamentos;
+- projetos;
+- clientes de agência.
 
-Aprender jargões, pronúncias, sarcasmo, ritmo, frases aprovadas/rejeitadas e padrões de escrita. Atualizações precisam ser versionadas e reversíveis.
+Cada perfil pode aprender, de forma versionada e corrigível:
 
-## 9. Relatórios sob demanda
+- linguagem;
+- exemplos aprovados/rejeitados;
+- objetivos;
+- regras;
+- formatos;
+- tolerância a risco;
+- preferências de resposta;
+- voz/presença;
+- canais;
+- métricas relevantes.
 
-O Jarvis não deve despejar relatórios pessoais sem necessidade. Por padrão, conduz silenciosamente. Relatórios aparecem quando a usuária pedir ou quando existir risco operacional relevante que justifique um parecer curto.
+### Sol Profile Pack
 
-Relatórios possíveis:
-- progresso operacional pessoal;
-- projetos e loops abertos;
-- conteúdo/audiência;
-- campanhas;
-- saúde técnica do próprio Jarvis;
-- novidades tecnológicas relevantes.
+A Sol permanece como primeiro perfil profundo. Seus jargões, livros, produtos, história, estilo, metas e rotinas pertencem ao tenant dela e não devem aparecer em contas novas.
 
-## 10. Protótipo — ordem imediata
+## 10. Loop Tendência → Ativo → Resultado
 
-P0 — simplificar interface para uma única conversa + estado real.
-P0 — motor anti-fadiga: raiz/galhos, repetição/novidade, loops abertos e retomada.
-P0 — adaptador de modelo com OpenAI Responses API opcional, mantendo fallback atual.
-P0 — fontes/memória versionadas já iniciadas.
-P1 — voz em primeiro plano real e validação no iPhone; depois arquitetura nativa/wake word.
-P1 — Capability Radar para novidades e self-checks técnicos.
-P1 — Social Intelligence Hub somente leitura primeiro: Instagram/Facebook/TikTok.
-P1 — Audience Strategy Engine e relatórios de conteúdo.
-P2 — publicação assistida/aprovada nas redes.
-P2 — voz personalizada/clone audiovisual e live.
-P2 — self-healing supervisionado com patches em branch, testes e PR.
-P3 — produto multiusuário e cobrança.
+O radar de atenção é parametrizado pelo objetivo do tenant.
+
+Fluxo:
+
+`ESCANEAR → VALIDAR → CRUZAR COM OBJETIVOS/ATIVOS → PRIORIZAR → PRODUZIR/AGIR → MEDIR → APRENDER`
+
+Para a Sol, isso pode gerar conteúdo/autoridade/receita. Para uma agência, pode indicar quais clientes combinam com a tendência. Para uma empresa, pode virar decisão de produto, economia ou oportunidade comercial.
+
+Ver `LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md`.
+
+## 11. Relatórios sob demanda
+
+Jarvis não deve despejar relatórios sem necessidade. Por padrão, conduz silenciosamente e informa quando algo muda decisão, risco, custo ou oportunidade.
+
+Relatórios podem variar por role:
+
+- executivo: KPIs, risco, caixa, prioridades;
+- agência: clientes, performance e margem;
+- marketing: conteúdo/campanhas;
+- engenharia: saúde técnica;
+- individual: projetos/loops;
+- plataforma: tecnologia/modelos/custos.
+
+## 12. Roadmap arquitetural
+
+A ordem de implementação separa **fundamento multi-tenant** de **lançamento comercial multi-tenant**.
+
+### P0/P1 — desde agora
+
+- todo novo desenho deve ser tenant-aware;
+- Perfil DNA e skills não podem hardcodar Sol;
+- interfaces devem esconder complexidade;
+- memória/continuidade permanecem com escopo;
+- Capability Radar continua expandindo;
+- voz/realtime e conectores entram com gates;
+- testes devem preservar isolamento atual e preparar isolamento futuro.
+
+### P2
+
+- execução externa aprovada;
+- integrações sociais/operacionais mais completas;
+- self-healing supervisionado;
+- Skill Packs parametrizáveis;
+- workspaces/clientes/roles na interface.
+
+### P3 — comercialização multi-tenant
+
+- criação de múltiplas organizações reais;
+- RBAC/ABAC e isolamento comprovado;
+- billing/metering;
+- exportação/restauração por tenant;
+- agência multi-cliente;
+- onboarding adaptativo;
+- testes adversariais cross-tenant.
+
+Ou seja: **multiusuário comercial pode ser P3; pensar multiusuário não pode esperar até P3.**
 
 ## Regra de ouro
 
-A usuária fala com Jarvis. A complexidade acontece atrás dele. Todo novo recurso deve responder: isso reduz trabalho mental/operacional da usuária ou apenas adiciona mais uma tela para ela administrar?
+A pessoa/equipe fala com Jarvis. A complexidade acontece atrás dele.
+
+Todo novo recurso deve responder:
+
+> isso reduz trabalho mental/operacional e melhora o objetivo daquele tenant, ou apenas adiciona mais uma tela, bot ou ferramenta para ele administrar?

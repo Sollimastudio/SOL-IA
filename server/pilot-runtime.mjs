@@ -1,3 +1,5 @@
+import { createSolPilotTenantContext } from '../core/tenant-context.mjs';
+
 const DEFAULT_SUPABASE_URL = 'https://rkkpbmzrucaghrojujvb.supabase.co';
 const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_XhsUjBPVRtC-0DBfMNDQTA_FaK8XFj8';
 const DEFAULT_MODEL = 'alibaba/qwen3.8-flash';
@@ -42,7 +44,6 @@ async function readAccessJson(url, headers, signal, fetchImpl) {
         continue;
       }
       if (!response.ok) return { status, attempts, data: null };
-      // A malformed success is not approval. Do not log response bodies.
       let data = null;
       try { data = await response.json(); } catch { /* fail closed */ }
       return { status, attempts, data };
@@ -85,12 +86,17 @@ export async function resolvePilotRuntime(
   { resolveProvider = true } = {}
 ) {
   const supabaseUrl = first(baseEnv.SUPABASE_URL || baseEnv.VITE_SUPABASE_URL, DEFAULT_SUPABASE_URL);
-  const supabaseKey = first(baseEnv.SUPABASE_ANON_KEY || baseEnv.VITE_SUPABASE_ANON_KEY, DEFAULT_SUPABASE_PUBLISHABLE_KEY);
+  const supabaseKey = first(
+    baseEnv.SUPABASE_PUBLISHABLE_KEY || baseEnv.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    baseEnv.SUPABASE_ANON_KEY || baseEnv.VITE_SUPABASE_ANON_KEY,
+    DEFAULT_SUPABASE_PUBLISHABLE_KEY
+  );
   const authorization = request.headers.get('authorization') || '';
   let allowedUser = '__pilot_not_verified__';
   let canUseAi = false;
   let model = first(baseEnv.JARVIS_MODEL, DEFAULT_MODEL);
   let accessReason = 'session_missing';
+  let tenantContext = null;
   let authStatus = null, pilotStatus = null, authAttempts = 0, pilotAttempts = 0;
 
   if (/^Bearer [^\s]+$/.test(authorization)) {
@@ -110,6 +116,7 @@ export async function resolvePilotRuntime(
         if (row?.owner_id === user.id) {
           allowedUser = user.id;
           canUseAi = row.can_use_ai === true;
+          tenantContext = createSolPilotTenantContext(user.id);
           if (typeof row.model === 'string' && row.model.trim()) model = row.model.trim();
         }
       }
@@ -138,6 +145,7 @@ export async function resolvePilotRuntime(
     env: {
       ...baseEnv,
       SUPABASE_URL: supabaseUrl,
+      SUPABASE_PUBLISHABLE_KEY: supabaseKey,
       SUPABASE_ANON_KEY: supabaseKey,
       JARVIS_ALLOWED_USER_IDS: first(baseEnv.JARVIS_ALLOWED_USER_IDS, allowedUser),
       JARVIS_KNOWLEDGE_ENABLED: first(baseEnv.JARVIS_KNOWLEDGE_ENABLED, 'true'),
@@ -146,12 +154,14 @@ export async function resolvePilotRuntime(
       JARVIS_RUNTIME_REASON: readinessReason,
       OPENROUTER_API_KEY: first(baseEnv.OPENROUTER_API_KEY, providerCredential)
     },
+    tenantContext,
     useGateway,
     gatewayCredential,
     diagnostics: {
       authStatus, pilotStatus, authAttempts, pilotAttempts,
       pilotVerified,
       canUseAi,
+      tenantContextPresent: Boolean(tenantContext),
       providerCredentialPresent,
       gatewayCredentialPresent: Boolean(gatewayCredential),
       gatewayCredentialSource: gateway.source,

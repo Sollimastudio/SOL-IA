@@ -10,12 +10,16 @@ const requiredFiles = [
   'core/audience-intelligence.mjs',
   'core/growth-intelligence.mjs',
   'core/prompt-autopilot.mjs',
+  'core/tenant-context.mjs',
+  'core/profile-packs.mjs',
+  'core/skill-packs.mjs',
   'server/anti-fatigue.mjs',
   'server/continuity-runtime.mjs',
   'server/continuity-cues.mjs',
   'server/pilot-runtime.mjs',
   'server/zero-cost-ai.mjs',
   'src/components/JarvisConversation.tsx',
+  'src/components/JarvisLiveVoice.tsx',
   'src/components/KnowledgeLibrary.tsx',
   'src/components/MemoryVault.tsx',
   'src/components/IntegrationHub.tsx',
@@ -43,7 +47,7 @@ test('active chat remains wired to presence, audience, growth, anti-fatigue and 
   ]) assert.match(chat, new RegExp(marker), `${marker} must stay wired into active chat`);
 });
 
-test('non-negotiable continuity invariants remain centralized and injected', () => {
+test('non-negotiable continuity and tenant invariants remain centralized and injected', () => {
   const invariants = read('core/jarvis-invariants.mjs');
   const continuity = read('server/continuity-runtime.mjs');
   for (const marker of [
@@ -56,7 +60,11 @@ test('non-negotiable continuity invariants remain centralized and injected', () 
     'IMPORTED_SOURCE_IS_NOT_USER_FACT',
     'ASSISTANT_SUGGESTION_IS_NOT_USER_DECISION',
     'EXPLICIT_CORRECTION_PRESERVES_HISTORY_AND_SUPERSEDES_LINKED_PRIOR',
-    'NEW_CAPABILITY_MUST_NOT_REMOVE_EXISTING_CORE_CAPABILITY'
+    'NEW_CAPABILITY_MUST_NOT_REMOVE_EXISTING_CORE_CAPABILITY',
+    'TENANT_BOUNDARY_IS_A_SECURITY_BOUNDARY',
+    'PERSONAL_MEMORY_IS_NOT_ORGANIZATION_MEMORY',
+    'CLIENT_PROFILE_IS_NOT_GLOBAL_DEFAULT',
+    'SOL_PROFILE_IS_EXPLICIT_PILOT_CONFIGURATION'
   ]) assert.ok(invariants.includes(marker), `${marker} must remain a core invariant`);
   assert.match(continuity,/JARVIS_INVARIANTS_DIRECTIVE/);
   assert.match(continuity,/priorEventId/);
@@ -64,15 +72,20 @@ test('non-negotiable continuity invariants remain centralized and injected', () 
   assert.match(continuity,/currentBranch/);
 });
 
-test('deployed health endpoint exposes the compiled continuity intelligence versions', () => {
+test('deployed health endpoint exposes continuity and multi-tenant contract versions', () => {
   const health = read('api/jarvis-runtime-health.ts');
   for (const marker of [
     'JARVIS_INVARIANTS_VERSION',
     'ANTI_FATIGUE_VERSION',
     'GROWTH_INTELLIGENCE_VERSION',
+    'TENANT_CONTEXT_VERSION',
+    'PROFILE_PACKS_VERSION',
+    'SKILL_PACKS_VERSION',
     'durableContinuity',
     'profileDna',
-    'assistantHistorySeparation'
+    'assistantHistorySeparation',
+    'tenantContracts',
+    'clientSpecificProfilesAreExplicit'
   ]) assert.match(health,new RegExp(marker),`${marker} must remain visible in runtime health`);
 });
 
@@ -85,9 +98,10 @@ test('profile corrections keep an explicit supersession chain instead of deletin
   assert.match(migration,/pc\.status='active'/);
 });
 
-test('chat stays the product home and knowledge, vault and integrations stay reachable', () => {
+test('chat stays the product home while Live is additive and knowledge, vault and integrations remain reachable', () => {
   const app = read('src/App.tsx');
-  assert.match(app, /area === 'chat' && <JarvisConversation/);
+  assert.match(app, /area === 'chat' && <>[\s\S]*?<JarvisConversation/);
+  assert.match(app, /<JarvisLiveVoice session=\{session\} mode=\{mode\}/);
   for (const label of ['CONVERSAR', 'CONHECIMENTO', 'COFRE', 'INTEGRAÇÕES']) assert.ok(app.includes(label));
   assert.doesNotMatch(app, /area === 'chat' && \(meteredAiEnabled\s*\?/);
 });

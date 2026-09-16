@@ -1,54 +1,186 @@
-# Audiência Premium e Monetização — Jarvis / Sol.IA
+# Audiência, Mercado e Monetização — Jarvis
 
-## O pedido da Sol em linguagem de produto
+> Atualizado em 16/09/2026. A configuração da Sol continua válida como piloto, mas o motor é parametrizável para creators, agências, empresas e outros objetivos.
 
-Sol não quer apenas alcance. Quer construir uma audiência que preste atenção, permaneça, confie, compre produtos de ticket médio/alto e aceite pagar recorrência por comunidade/conteúdo, sem transformar a presença pública em catálogo de ofertas.
+## 1. O caso Sol
 
-Exemplo dado por Sol: mostrar um sérum facial de R$ 300 no café da manhã. O sistema deve avaliar se esse elemento combina com a audiência e com a história da marca, em vez de presumir que qualquer visualização vira intenção de compra.
+No piloto, Sol não quer apenas alcance. Quer construir audiência que preste atenção, permaneça, confie, compre produtos/serviços adequados e possa aceitar recorrência/comunidade sem transformar sua presença em catálogo de ofertas.
 
-## O que o Jarvis passa a fazer na conversa
+A camada de audiência trabalha junto da Presença Sol e do Loop Tendência → Receita.
 
-A camada `AUDIENCIA_SOL` trabalha junto da `PRESENCA_SOL`. Presença define como Sol é percebida; audiência define para quem o conteúdo é adequado, qual papel cumpre no funil e como medir se atrai as pessoas certas.
-
-Quando Sol pedir conteúdo, copy, estratégia, produto, comunidade ou monetização, o Jarvis deve considerar:
+Quando Sol pedir conteúdo, copy, estratégia, produto, comunidade ou monetização, Jarvis deve considerar:
 
 - oferta e preço;
 - objetivo da peça: descoberta, autoridade, vínculo, desejo, conversão ou retenção;
-- nível de confiança necessário para a compra;
-- sinais reais disponíveis: retenção, salvamentos, respostas, DMs, visitas, cliques, checkout, compra, renovação;
-- coerência entre tema, cenário, estética, objeto mostrado, posicionamento e oferta;
-- diferenças entre Instagram, TikTok e Facebook quando houver métricas reais de cada conta.
+- nível de confiança necessário;
+- sinais reais: retenção, salvamentos, respostas, DMs, visitas, cliques, checkout, compra, renovação;
+- coerência entre tema, cenário, estética, posicionamento e oferta;
+- diferenças entre plataformas quando houver dados reais.
 
-## O que ele não pode fingir
+## 2. O motor genérico
 
-Hoje o Jarvis ainda não está conectado às métricas reais das redes sociais da Sol. Portanto, ele pode planejar e formular hipóteses, mas não declarar que conhece o ticket médio da audiência atual, que um post será entregue a determinado perfil econômico ou que X% comprará.
+No produto comercial, “audiência premium” vira uma configuração de um motor mais amplo: **Audience / Market / Objective Intelligence**.
 
-Não classificar pessoas individualmente como pobres/ricas, inteligentes/burras ou vulneráveis. Para qualificação comercial, usar comportamento voluntário e afinidade demonstrada com categoria, proposta e preço. Não estimular endividamento ou vergonha para fazer alguém comprar.
+Cada tenant define o que procura otimizar.
 
-## Conversão
+Exemplos:
 
-Sem histórico comparável, percentual é cenário, não previsão. Para 10.000 visualizações:
+- creator: audiência qualificada, venda, comunidade, livro, curso;
+- agência: resultado e margem por cliente;
+- e-commerce: demanda, conversão, ticket, margem e retenção;
+- SaaS: aquisição, ativação, retenção e expansão;
+- B2B: leads, pipeline, propostas e receita;
+- empresa: marca, vendas, atendimento, eficiência ou outro KPI legítimo;
+- operação interna: custo, tempo, erro, qualidade ou produtividade.
 
-- 0,1% = 10 compras;
-- 0,5% = 50 compras;
-- 1% = 100 compras.
+O sistema não deve assumir que “viralizar” é o objetivo universal.
 
-Esses números não são benchmark nem promessa. O sistema deverá aprender taxas próprias da Sol por plataforma, formato, tema, CTA, oferta, faixa de preço e período quando os conectores de métricas e vendas existirem.
+## 3. Configuração por tenant/workspace
 
-O funil mínimo a medir é:
+Cada contexto pode declarar:
 
-`alcance → visualização qualificada → visita/clique/DM → checkout/assinatura → compra → renovação`
+- público/mercado desejado;
+- região/canal;
+- produtos/serviços;
+- preços/margens quando conhecidos;
+- objetivo principal;
+- KPIs;
+- prazo;
+- restrições de marca;
+- capacidade operacional;
+- orçamento;
+- dados disponíveis;
+- histórico de experimentos;
+- critérios de aprovação.
 
-## Produto vendável
+Agências podem ter configuração separada para cada cliente, sem contaminar marcas ou métricas.
 
-Este módulo deve ser parametrizável por cliente. O perfil de Sol é uma configuração do piloto, não o padrão de todas as pessoas. No SaaS, cada cliente terá sua própria presença, ofertas, audiência desejada, métricas, limites e aprendizado.
+## 4. O que o Jarvis não pode fingir
 
-## Próximos passos verificáveis
+Sem dados reais, Jarvis pode planejar e formular hipóteses, mas não declarar que conhece:
 
-1. Conectar uma conta social de teste em modo somente leitura e importar métricas permitidas, sem publicar nada.
-2. Criar tabela/estrutura de eventos de desempenho por conteúdo: plataforma, formato, tema, objetivo, data, alcance, retenção, interações, visitas, leads/DMs e vendas atribuíveis quando disponíveis.
-3. Ligar catálogo de ofertas e preços ao conteúdo para medir adequação e conversão por faixa de preço.
-4. Construir painel de hipóteses: hipótese → evidência → teste → resultado → decisão, sem transformar correlação em causalidade.
-5. Só depois habilitar recomendações automáticas de pauta baseadas no que trouxe audiência qualificada e compradores, com aprovação da Sol.
+- ticket médio real;
+- taxa de conversão real;
+- perfil econômico individual;
+- quem uma plataforma entregará;
+- venda futura garantida;
+- causalidade sem teste suficiente.
 
-Nenhuma dessas conexões externas é considerada pronta apenas porque a diretiva de estratégia existe. A entrega atual é o cérebro de decisão e seus contratos; a prova seguinte precisa usar dados reais autorizados.
+Não classificar indivíduos por características sensíveis ou vulnerabilidade. Qualificação comercial deve usar sinais voluntários/agregados e dados permitidos.
+
+## 5. Conversão e funis
+
+O funil depende do tenant.
+
+### Creator/infoproduto
+
+`alcance → visualização qualificada → visita/DM → checkout → compra → renovação`
+
+### Agência
+
+`briefing → produção → aprovação → distribuição/mídia → resultado → margem/retensão do cliente`
+
+### B2B
+
+`conta/lead → interesse → reunião → proposta → negociação → fechamento → expansão`
+
+### SaaS
+
+`visita → cadastro → ativação → hábito → pagamento → retenção → expansão`
+
+### Operação
+
+`problema → intervenção → tempo/custo/erro antes → tempo/custo/erro depois`
+
+Jarvis deve aprender taxas próprias por tenant, canal, período e objetivo.
+
+## 6. Cenário não é previsão
+
+Sem histórico comparável, percentual é cenário matemático, não benchmark/promessa.
+
+Exemplo: 10.000 visualizações com conversão hipotética de 0,1%, 0,5% ou 1% representam cenários diferentes, não uma previsão do resultado.
+
+O produto deve distinguir claramente:
+
+- dado observado;
+- benchmark externo;
+- cenário;
+- hipótese;
+- previsão de terceiro;
+- resultado confirmado.
+
+## 7. Ativos e monetização
+
+O motor deve cruzar oportunidade com o inventário do tenant:
+
+- produtos;
+- serviços;
+- conteúdo;
+- propriedade intelectual;
+- estoque;
+- leads;
+- audiência;
+- parcerias;
+- tecnologia;
+- equipe/capacidade;
+- assinaturas/custos;
+- canais.
+
+Receita não é a única forma de valor. Também podem importar:
+
+- economia;
+- margem;
+- tempo poupado;
+- retenção;
+- autoridade;
+- lista própria;
+- redução de risco;
+- qualidade;
+- aprendizado reutilizável.
+
+## 8. Urgência de caixa
+
+Quando o tenant declara uma necessidade financeira concreta, Jarvis deve priorizar por:
+
+- prazo;
+- caixa confirmado;
+- receita confirmada/prevista com nível de confiança;
+- oferta já vendável;
+- leads/canais disponíveis;
+- tempo até caixa;
+- margem;
+- esforço;
+- risco.
+
+Não confundir faturamento com lucro nem promessa com dinheiro disponível.
+
+## 9. Produto vendável
+
+Esta camada é parametrizável por cliente.
+
+A Sol é uma configuração do piloto. No SaaS, cada tenant terá:
+
+- objetivos;
+- presença/marca;
+- ativos;
+- mercado/audiência;
+- ofertas;
+- métricas;
+- limites;
+- aprendizado;
+- canais;
+- regras de aprovação.
+
+Para agências, cada cliente é um escopo separado dentro do tenant da agência.
+
+## 10. Próximos passos verificáveis
+
+1. conectar fontes sociais/comerciais em leitura primeiro;
+2. criar eventos de desempenho genéricos por tenant/projeto;
+3. ligar catálogo de ativos/ofertas/KPIs ao contexto;
+4. manter painel interno hipótese → evidência → teste → resultado → decisão;
+5. aprender por baseline próprio;
+6. habilitar recomendações automáticas somente dentro de escopo/permissão;
+7. atribuir custo e resultado ao tenant/workspace correto.
+
+Nenhuma conexão é considerada pronta apenas porque a estratégia está documentada. **O motor decide com os dados que realmente possui, não com números imaginários.**

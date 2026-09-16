@@ -1,273 +1,336 @@
-# Jarvis / Sol.IA — Modo de uso
+# Jarvis — Modo de uso
 
-> **Manual do usuário.** Este documento descreve como interagir com o Jarvis no dia a dia e diferencia claramente o que já funciona do que ainda depende de prova física ou integração externa.
+> Manual funcional. Atualizado em 16/09/2026 para distinguir o piloto Sol da experiência futura de outros indivíduos, agências e empresas.
 
-## 1. Regra principal
+## 1. A regra mais importante
 
-Você não precisa aprender prompts, escolher agentes nem memorizar ferramentas. Fale com o Jarvis como falaria com um assessor que conhece seus projetos.
+O usuário não deve precisar saber qual modelo, agente, skill ou API usar.
 
-Exemplos simples:
+Uso normal:
 
-- “Continue de onde paramos no Reposicione-se.”
-- “Tive uma ideia. Guarda como hipótese, não como decisão.”
-- “Isso mudou: agora a decisão correta é esta.”
-- “Encontre nos meus materiais tudo que fala sobre fuga identitária.”
-- “Transforme isso em roteiro de vídeo.”
-- “O que ficou pendente deste projeto?”
-- “Analise o que estou mostrando.”
+> **fale com Jarvis do seu jeito.**
 
-O sistema deve resolver internamente qual memória, fonte, especialista ou ferramenta é necessária.
+Jarvis identifica intenção, escopo, projeto, contexto, ferramentas e especialistas necessários nos bastidores.
 
-## 2. Conversa por texto
+## 2. Escolha do contexto
 
-Na aba **CONVERSAR**, digite normalmente. Em modo privado, o sistema pode usar contexto e memória privados conforme as permissões ativas.
+No piloto atual existe uma única conta principal. No produto multiusuário, Jarvis precisa saber o contexto antes de agir.
 
-Use linguagem natural. Não é necessário escrever comandos técnicos.
+Possíveis contextos:
 
-### Quando quiser apenas explorar
+- pessoal;
+- empresa;
+- workspace;
+- cliente de agência;
+- projeto;
+- marca;
+- modo público/performance.
 
-Diga explicitamente:
+Se houver ambiguidade que muda dados ou ação, Jarvis pergunta uma vez. Se o contexto já está claro pelo workspace/projeto, não repete pergunta inútil.
 
-> “Estou pensando em voz alta. Não trate isso como decisão.”
+## 3. Conversa por texto
 
-Isso ajuda o sistema a classificar a fala como exploração, não posição consolidada.
+Exemplos individuais:
 
-### Quando quiser consolidar algo
+- “Organize o que eu preciso fazer hoje.”
+- “Continue o projeto que paramos ontem.”
+- “Tive uma ideia. Onde isso encaixa?”
+- “Revise esse contrato e organize as dúvidas.”
+- “O que estou pagando e não usando?”
 
-Use frases como:
+Exemplos de agência:
 
-> “Decisão: vamos seguir por este caminho.”
+- “Quais clientes têm algo urgente hoje?”
+- “Essa trend combina com algum dos nossos clientes?”
+- “Prepare as versões para o Cliente A sem misturar a marca do Cliente B.”
+- “Quais campanhas precisam de atenção por custo?”
 
-ou
+Exemplos de empresa:
 
-> “Guarde isso como preferência.”
+- “O que mudou desde a última reunião do Projeto X?”
+- “Quais riscos ameaçam a meta deste mês?”
+- “Resuma os sinais de vendas e suporte.”
+- “Qual processo está gerando retrabalho?”
 
-### Quando algo mudou
+A experiência é a mesma: uma porta, contextos diferentes.
 
-Diga:
+## 4. Despejo de pensamento / captura livre
 
-> “Corrija a versão anterior. A posição atual é…”
+Jarvis deve aceitar entrada incompleta, ramificada ou longa sem exigir organização prévia.
 
-O comportamento esperado é preservar histórico e considerar a versão nova como vigente, sem apagar a antiga.
+A pessoa pode falar/escrever:
 
-## 3. Memória e continuidade
+> “Tenho isso, aquilo, lembrei de outra coisa, esse cliente me preocupa, depois preciso voltar no produto...”
 
-O Jarvis foi projetado para evitar que você precise repetir todo o contexto.
+O sistema deve:
 
-Ele separa:
+- identificar raiz/galhos;
+- extrair delta;
+- separar ideia/decisão/pendência;
+- preservar assuntos abertos;
+- não transformar hipótese em fato;
+- retomar depois sem pedir tudo novamente.
 
-- fala bruta;
-- estado temporário;
-- exploração;
-- decisão;
-- preferência;
-- correção;
-- fonte importada;
-- resposta da própria IA.
+No contexto de equipe, deve também preservar **a quem/qual projeto** a informação pertence.
 
-### Comandos úteis
+## 5. Memória
 
-- “O que você lembra sobre este projeto?”
-- “Qual foi a última decisão?”
-- “O que mudou desde a última vez?”
-- “Quais galhos estão abertos?”
-- “Qual é a raiz deste assunto?”
-- “Continue só do ponto novo, sem me repetir tudo.”
+Nem tudo que é dito deve virar memória permanente.
 
-O sistema não deve transformar resposta da IA em fato sobre você nem material importado em memória pessoal automaticamente.
+Escopos desejados:
 
-## 4. Conhecimento e documentos
+- privado pessoal;
+- workspace/equipe;
+- projeto;
+- cliente;
+- organização;
+- público/referência.
 
-A aba **CONHECIMENTO** é a biblioteca de fontes versionadas do Jarvis.
+Quando alguém diz “guarde isso”, Jarvis deve salvar no escopo adequado ou pedir esclarecimento se compartilhar isso mudaria a privacidade.
 
-Ela serve para livros, mapas, documentos de projeto, materiais de negócio e outras fontes importadas.
+Uma informação privada não é promovida para a empresa automaticamente.
 
-Ao pedir uma análise, você pode dizer:
+## 6. Projetos e continuidade
 
-> “Use apenas minhas fontes do Reposicione-se.”
+Jarvis deve saber:
 
-ou
+- objetivo;
+- estado atual;
+- decisões vigentes;
+- correções;
+- fontes;
+- tarefas;
+- pendências;
+- responsáveis quando houver equipe;
+- próxima ação útil.
 
-> “Compare esta ideia com os documentos da trilogia.”
+Comando simples:
 
-A biblioteca preserva origem e versão. Uma fonte pode estar importada sem estar validada como verdade factual.
+> “Continue de onde paramos.”
 
-## 5. Cofre
+não deveria exigir que o usuário reconte o projeto.
 
-O **COFRE** guarda registros privados estruturados. Ele não é a mesma coisa que histórico visual do chat.
+## 7. Perfil DNA e personalização
 
-O objetivo é preservar informação importante de forma recuperável mesmo quando uma conversa termina.
+Jarvis aprende por uso/correção:
 
-Se houver falha de IA, o sistema pode registrar uma fala privada para não perder o conteúdo, mas deve informar com clareza quando houve apenas captura e não análise.
+- preferência de resposta;
+- linguagem;
+- formato de trabalho;
+- objetivos;
+- prioridades;
+- tom de marca;
+- regras;
+- níveis de risco;
+- métricas relevantes.
 
-## 6. Voz — web atual
+Essas regras são específicas do escopo.
 
-O web app possui reconhecimento de voz em primeiro plano e resposta falada local.
+### Sol
 
-Na versão web, o microfone ainda precisa ser armado manualmente. Depois de autorizado, a frase de ativação é:
+O perfil da Sol inclui suas próprias obras, estilo, produtos, rotina e preferências autorizadas.
 
-> **“Jarvis, tá aí?”**
+### Agência
 
-Após a ativação, a sessão deve permanecer engajada até comando de encerramento; não é necessário repetir “Jarvis” em cada frase.
+A agência pode ter um perfil operacional e cada cliente possuir Perfil de Marca/Objetivo separado.
 
-A resposta inicial prevista é:
+### Empresa
 
-> “Tô aqui. Pode falar.”
+A empresa pode ter Perfil Institucional, perfis de departamento e preferências pessoais separadas.
 
-### Importante
+## 8. Skills
 
-A experiência web não é considerada solução definitiva de mãos-livres. Navegadores no iPhone têm limitações de microfone/background. O cliente nativo iOS foi criado justamente para resolver essa camada.
+Jarvis possui especialistas internos, mas o usuário não precisa administrar o organograma.
 
-## 7. Voz — cliente nativo iPhone
+Se uma pergunta exige pesquisa + jurídico + conteúdo + custos, o Orquestrador pode combinar essas capacidades.
 
-O cliente nativo está implementado no branch atual, mas ainda precisa ser compilado no Xcode e instalado no aparelho real antes de ser considerado operacional.
+Skills ficam disponíveis em detalhes/central para transparência e configuração, não como obrigação de navegação.
 
-Fluxo previsto:
+## 9. Voz
 
-1. configuração única no iPhone;
-2. frase “Jarvis, tá aí?” associada à ação `Iniciar conversa Jarvis`;
-3. Jarvis abre/aciona a sessão;
-4. responde “Tô aqui. Pode falar.”;
-5. você continua conversando normalmente;
-6. Jarvis consulta contexto privado quando autenticado;
-7. usa cérebro local Apple quando disponível;
-8. fala a resposta;
-9. volta a ouvir;
-10. “encerrar” fecha a sessão.
+No piloto Sol existem duas linhas:
 
-O login nativo usa código por e-mail e guarda a sessão no Keychain. Chaves privadas de provedores de IA não devem entrar no iPhone.
+- voz web/local;
+- implementação GPT-Live full-duplex no branch atualizado.
 
-## 8. Voz do Jarvis
+A experiência desejada é fala natural, interrupção e continuidade.
 
-A voz do assistente é diferente da voz pessoal da usuária.
+No produto comercial, voz/persona/wake phrase podem ser configuráveis por tenant quando tecnicamente suportados.
 
-O perfil atual se chama **Veludo** e busca uma voz masculina pt-BR, grave moderada e de cadência calma. No web app, a qualidade depende das vozes instaladas no aparelho.
+A sessão deve indicar microfone ativo e ter encerramento claro. Sessões pagas não devem ficar conectadas silenciosamente sem controles de custo.
 
-A voz pessoal da usuária, quando houver tecnologia aprovada para isso, é reservada para criação de conteúdo mediante pedido explícito. Ela não deve ser usada como voz padrão do Jarvis nem como autenticação.
+## 10. Câmera e visão
 
-## 9. Câmera e videochamada
+Quando a câmera estiver ativa:
 
-O web app possui câmera local e consegue capturar um quadro sob comando para análise.
+- mostrar indicação clara;
+- analisar quadro/stream somente dentro da capacidade instalada;
+- não confundir “preview da câmera” com “IA vendo continuamente”;
+- respeitar escopo público/privado;
+- não usar reconhecimento de identidade como autorização única.
+
+## 11. Live / reunião / apresentação
+
+Jarvis pode evoluir para dois canais:
+
+### Privado
+
+Orientação curta no ouvido/tela:
+
+- “volte para a pergunta”;
+- “essa objeção é importante”;
+- “mostre o dado X”;
+- “CTA agora”;
+- “não responda sem confirmar o fato”.
+
+### Público
+
+Quando explicitamente autorizado, pode participar como coapresentador/assistente.
+
+Privado e público precisam de rotas isoladas para impedir vazamento de informação.
+
+O conceito também serve para reuniões, vendas, suporte e apresentações empresariais, não só lives de creator.
+
+## 12. Radar de novidades
+
+Jarvis deve acompanhar mudanças relevantes e evitar alertar por ruído.
+
+Por padrão, avisar quando houver:
+
+- mudança que afeta custo;
+- risco/segurança;
+- API/modelo/depreciação;
+- oportunidade de ferramenta;
+- mudança de plataforma;
+- sinal de mercado material;
+- tendência com alto encaixe;
+- informação que muda uma decisão.
+
+A relevância é calculada por tenant.
+
+## 13. Tendência → Resultado
+
+Usuário não precisa perguntar “como monetizo essa trend?” toda vez.
+
+Jarvis cruza o sinal com:
+
+- objetivos;
+- ativos;
+- público/mercado;
+- capacidade;
+- prazo;
+- risco;
+- métricas.
+
+Para Sol pode resultar em conteúdo/produto/receita.
+
+Para uma agência pode virar oportunidade para apenas dois de dez clientes.
+
+Para uma empresa pode virar mudança de produto, vendas ou economia.
+
+## 14. Agência: modo multi-cliente
+
+Fluxo desejado:
+
+1. entrar no tenant da agência;
+2. Jarvis sabe quais clientes/workspaces existem;
+3. escolher/entender contexto do cliente;
+4. usar somente marca, ativos, métricas e conectores daquele cliente;
+5. produzir/analisar;
+6. seguir aprovação daquele cliente;
+7. medir resultado sem contaminar outros.
+
+Playbooks podem ser compartilhados; dados confidenciais não.
+
+## 15. Empresa: equipes e papéis
+
+Cada membro deve ver/fazer somente o permitido.
 
 Exemplos:
 
-- “Jarvis, olha isso.”
-- “O que você vê aqui?”
-- “Analise este objeto/documento que estou mostrando.”
+- diretoria vê metas consolidadas;
+- marketing opera canais autorizados;
+- vendas usa CRM;
+- engenharia vê repositórios/logs;
+- cliente/aprovador vê apenas o necessário.
 
-### Estado atual
+Jarvis nunca deve usar “ele está dentro da empresa” como justificativa para acesso universal.
 
-Isso ainda não é visão contínua em streaming. O Jarvis analisa quadros quando solicitado. Uma chamada multimodal contínua, com interpretação permanente do vídeo, é evolução planejada.
+## 16. Ações externas
 
-## 10. Modo ambiente
+Diferenciar:
 
-O modo ambiente foi desenhado para capturar trechos temporários de uma conversa autorizada sem jogar automaticamente fala de terceiros no Cofre.
+- **analisar**;
+- **rascunhar**;
+- **preparar**;
+- **executar**;
+- **confirmar execução**.
 
-Comandos previstos/atuais no web app:
+Publicar, enviar, comprar, excluir, transferir, alterar produção ou executar outra ação sensível exige política/permissão apropriada.
 
-- “Jarvis, analisa a conversa.”
-- “Jarvis, guarda a conversa.”
-- “Jarvis, limpa a conversa.”
+Jarvis deve informar comprovante/estado real, não dizer “feito” por intenção.
 
-Guardar exige pedido explícito. Análise temporária não deve virar memória pessoal automaticamente.
+## 17. Custos e assinaturas
 
-## 11. Modo Performance
+Jarvis deve ajudar a decidir custo-benefício com base em:
 
-O **MODO PERFORMANCE** existe para situações em que o contexto privado não deve ser exposto.
+- o que o tenant já paga;
+- uso real;
+- sobreposição;
+- valor produzido;
+- alternativa existente;
+- custo novo;
+- risco de lock-in;
+- possibilidade de cancelar/substituir.
 
-Regra: o modo público não pode acessar silenciosamente o Cofre privado.
+No multi-tenant, custo de modelos, voz, ferramentas e conectores deve ser atribuível ao tenant/projeto correto.
 
-Use quando estiver produzindo algo que pode ser exibido, apresentado ou compartilhado sem carregar memória íntima para o contexto.
+## 18. Quando algo dá errado
 
-## 12. Live — visão de uso
+O usuário não deve virar suporte técnico do Jarvis.
 
-O modo Live é requisito oficial, mas ainda não está operacional de ponta a ponta.
+O sistema deve tentar identificar camada da falha:
 
-A experiência final prevê dois canais:
+- sessão/permissão;
+- conector;
+- modelo;
+- memória;
+- transporte;
+- frontend;
+- voz;
+- plataforma;
+- custo/limite.
 
-### “Jarvis, comigo” — orientação privada
+Quando conseguir, deve explicar em linguagem simples e preparar correção/teste em ambiente seguro.
 
-Jarvis acompanha a situação e envia instruções curtas apenas para você, preferencialmente pelo fone.
+## 19. O que muda entre clientes
 
-Exemplos:
+Mudam:
 
-- “A pergunta central é outra; volte para X.”
-- “Peça a fonte antes de responder.”
-- “Há muitas perguntas repetindo o mesmo ponto.”
-- “Esse dado precisa ser conferido.”
+- dados;
+- objetivos;
+- personalidade/voz;
+- marcas;
+- projetos;
+- skills;
+- integrações;
+- orçamento;
+- políticas;
+- métricas;
+- rotinas;
+- alertas.
 
-### “Jarvis, entra” — participação pública
+Permanece:
 
-Jarvis fala para a audiência como coapresentador autorizado.
+- Core;
+- continuidade;
+- anti-fadiga;
+- proveniência;
+- segurança;
+- orquestração;
+- capacidade de adaptação;
+- disciplina de evidência.
 
-### “Jarvis, volta comigo”
+## 20. Regra de experiência
 
-A próxima saída volta ao canal privado.
-
-Esses comandos representam a experiência desejada; a mixagem pública/privada no mesmo iPhone e o acesso a chats de plataformas ainda precisam de prova real por plataforma.
-
-## 13. Conteúdo e redes sociais
-
-O objetivo é o Jarvis aprender com conteúdo e métricas das contas autorizadas.
-
-Ele deverá distinguir:
-
-- performance de conteúdo;
-- retenção;
-- temas;
-- ganchos;
-- duração;
-- CTA;
-- horário;
-- resultado comercial;
-- perguntas recorrentes do público.
-
-Atualmente, integrações sociais completas ainda não estão conectadas ao Jarvis. Não presuma que Instagram, TikTok, Facebook ou YouTube estejam sendo monitorados só porque existe arquitetura para isso.
-
-## 14. Comandos de controle recomendados
-
-Use frases simples:
-
-- “Continue.”
-- “Pare.”
-- “Encerrar.”
-- “Não salve isso.”
-- “Guarde isso.”
-- “Isso é decisão.”
-- “Isso é só hipótese.”
-- “Corrija a versão anterior.”
-- “Mostre só o que mudou.”
-- “Volte para a raiz.”
-- “Estacione esse assunto.”
-- “Retome o galho X.”
-- “Quero resposta curta.”
-- “Quero análise profunda.”
-
-## 15. O que fazer quando algo falhar
-
-Não tente resolver tecnicamente sozinha.
-
-Se o Jarvis não responder:
-
-1. observe o status exibido;
-2. não peça vários códigos de login em sequência;
-3. não repita a mesma ação dez vezes;
-4. registre o que aconteceu ou envie print;
-5. o sistema de desenvolvimento deve localizar qual camada falhou: login, memória, modelo, microfone, câmera, conector ou plataforma.
-
-O produto deve evoluir para mostrar isso em autodiagnóstico, em vez de exigir interpretação técnica da usuária.
-
-## 16. Privacidade e autorização
-
-- Microfone e câmera devem ter estado visível.
-- Voz não é senha única para ação sensível.
-- Fala de terceiros não vira memória automaticamente.
-- Modo público não acessa Cofre privado.
-- Publicação, gasto, exclusão e ações externas exigem política de autorização.
-- Credenciais privadas ficam no servidor/Keychain apropriado, nunca em frontend público.
-
-## 17. Regra de experiência
-
-Se usar o Jarvis começar a exigir que você administre prompts, agentes, branches, chaves, APIs ou relatórios para tarefas normais, a experiência está errada.
-
-**Seu papel é falar, decidir, corrigir e autorizar. A complexidade técnica pertence ao sistema.**
+**O cliente não se adapta ao Jarvis. O Jarvis se configura para o trabalho do cliente — sem perder segurança, verdade operacional e continuidade.**

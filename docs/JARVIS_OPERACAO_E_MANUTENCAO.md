@@ -1,60 +1,59 @@
-# Jarvis / Sol.IA — Operação e manutenção
+# Jarvis — Operação e manutenção
 
-> **Runbook técnico.** Este documento orienta manutenção, evolução, testes, deploy, segurança e investigação de falhas sem depender de memória de conversa.
+> **Runbook técnico.** Atualizado em 16/09/2026. Orienta manutenção, evolução, testes, deploy, segurança, multiusuário e investigação de falhas sem depender de memória de conversa.
 
-## 1. Repositório e linha de desenvolvimento
+## 1. Repositório e continuidade de desenvolvimento
 
 Repositório canônico:
 
 `Sollimastudio/SOL-IA`
 
-Branch ativa deste ciclo:
-
-`work/jarvis-neural-conversa-segura-20260908`
-
-PR ativo:
-
-`#6`
-
 Antes de qualquer mudança:
 
-1. consultar o HEAD real do PR;
+1. consultar HEAD/PR/branch ativos reais;
 2. ler `docs/JARVIS_INDICE_DOCUMENTACAO.md`;
 3. ler `docs/CONTINUIDADE_JARVIS.md`;
-4. comparar requisito com o estado atual;
-5. trabalhar no delta;
-6. não abrir novo repositório sem decisão explícita de governança.
+4. ler a arquitetura especializada relevante;
+5. comparar requisito com estado atual;
+6. trabalhar no delta;
+7. não abrir novo repositório sem decisão explícita de governança.
+
+Não hardcodar em documentação operacional uma branch antiga como se continuasse eternamente ativa. O ciclo atual de GPT-Live/personalização usa `work/jarvis-gpt-live-1-20260916`, derivado da linha anterior de continuidade.
 
 ## 2. Componentes principais
 
-- `src/` — frontend React/Vite e experiência web.
-- `api/` — handlers server-side na Vercel.
-- `server/` — runtime, chat, anti-fadiga e adaptadores.
-- `core/` — políticas e inteligência de domínio compartilhada.
-- `supabase/migrations/` — mudanças de banco versionadas.
-- `ios/JarvisNative/` — cliente nativo iOS.
-- `local_studio/` — experimentos e processamento local autorizado.
-- `tests/` — contratos automatizados.
-- `config/` — fontes e configuração versionada, como Capability Radar.
-- `docs/` — documentação de produto, arquitetura, continuidade e operação.
+- `src/` — frontend React/Vite e experiência web;
+- `api/` — handlers server-side;
+- `server/` — runtime, chat, anti-fadiga, políticas e adaptadores;
+- `core/` — inteligência/políticas compartilhadas;
+- `supabase/migrations/` — banco versionado;
+- `ios/JarvisNative/` — cliente nativo iOS;
+- `local_studio/` — processamento local autorizado;
+- `tests/` — contratos automatizados;
+- `config/` — fontes/configuração versionada;
+- `docs/` — documentação canônica.
 
 ## 3. Ambientes
 
-### Desenvolvimento
+### Desenvolvimento/branch
 
-Usado para alterações locais/branch e testes sem promover produção.
+Mudanças isoladas e testes.
 
 ### Preview Vercel
 
-Cada commit no branch pode gerar Preview. A Preview é ambiente de validação, não produção definitiva.
+Validação antes de produção. READY não significa automaticamente “provado no aparelho”.
 
 ### Produção/main
 
-Não promover automaticamente apenas porque uma Preview construiu. Mudanças de segurança, memória, custo, escrita externa ou aplicativo nativo precisam do gate correspondente.
+Promoção exige gates compatíveis com risco.
 
 ### Supabase real
 
-Migrações reais só devem ser aplicadas depois de teste compatível. Mudança DDL deve usar migração versionada e ser registrada no repositório.
+DDL deve usar migração versionada. Alteração que afeta segurança, RLS ou dados exige teste compatível e revisão.
+
+### Futuro multi-tenant
+
+Nunca testar isolamento apenas com um usuário. Antes de operação comercial, criar fixtures/ambientes com no mínimo dois tenants e múltiplos roles.
 
 ## 4. Comandos básicos
 
@@ -64,153 +63,145 @@ npm test
 npm run build
 ```
 
-O `prebuild` atual executa todos os arquivos `tests/*.test.mjs` antes do build da Vercel.
+O `prebuild` executa contratos Node antes do build da Preview.
 
 ## 5. Gates de qualidade
 
-Uma entrega pode envolver tipos diferentes de evidência.
-
 ### Gate A — contratos Node
 
-Protege regras de domínio, privacidade, voz, Core e integrações.
+Domínio, privacidade, Core, integrações, voz.
 
 ### Gate B — TypeScript/build
 
-Confirma que frontend/API compilam.
+Frontend/API compilam.
 
 ### Gate C — banco
 
-Migrações devem ser testadas em PostgreSQL limpo/ambiente isolado quando relevante. Reaplicação deve ser segura quando a migração foi projetada como idempotente.
+Migrações e políticas testadas.
 
 ### Gate D — browser
 
-Fluxos de login/UI/retry precisam de teste em navegador quando aplicável.
+Login, UI, retry, captura e fluxos web.
 
 ### Gate E — Preview
 
-Deployment deve ficar `READY` após passar contratos/build.
+Deployment pronto e comportamento verificável.
 
-### Gate F — prova física
+### Gate F — prova física/externa
 
-Obrigatório para coisas que software de CI não pode certificar:
+Obrigatório para:
 
-- microfone/câmera reais;
-- iPhone;
-- Xcode/signing;
-- Atalhos Vocais;
+- iPhone/Mac/Xcode;
+- microfone/câmera;
+- wake word;
 - tela bloqueada;
 - AirPods;
-- live real;
-- mixagem de áudio;
-- APIs sociais com conta real.
+- live/mixagem;
+- conta social real;
+- APIs externas cujo comportamento não pode ser simulado.
 
-Nunca usar teste estático como substituto de prova física.
+### Gate G — isolamento multi-tenant
+
+Obrigatório antes de vender para múltiplos clientes:
+
+- Tenant A não lê Tenant B;
+- prompts maliciosos não atravessam escopo;
+- busca/cache/embeddings respeitam tenant;
+- jobs/filas mantêm contexto correto;
+- conectores usam credencial correta;
+- roles restringem ações;
+- export/delete/restore são isolados;
+- logs não misturam conteúdo.
 
 ## 6. Segurança e segredos
 
-Nunca colocar em frontend, PWA ou app iOS:
+Nunca colocar em frontend/PWA/app nativo:
 
 - `service_role`;
-- chave privada de provedor de IA;
+- chave privada de IA;
 - token permanente de rede social;
 - segredo OAuth;
 - credencial administrativa.
 
-No web app, usar publishable/anon key apenas para o fluxo permitido por RLS.
+Regras gerais:
 
-No iOS, sessão da usuária deve ficar no Keychain. Segredos de provedor continuam no servidor.
+- Auth antes de dado privado;
+- RLS/autorização por escopo;
+- `owner_id` no piloto pessoal;
+- `tenant_id/workspace_id/client_id` quando a arquitetura comercial exigir;
+- segredo por tenant/conector;
+- modo público sem Cofre privado;
+- logs mínimos;
+- erros redigidos;
+- voz não é autorização suficiente para ação sensível.
 
-Regras:
-
-- `owner_id` + RLS para dados privados;
-- `auth.uid()` como fronteira de leitura/escrita;
-- modo público sem Cofre;
-- logs sem conteúdo íntimo quando um identificador/contagem basta;
-- erros de provedor devem ser classificados e redigidos, sem vazar corpo sensível.
+Não adicionar `tenant_id` como decoração: revisar query, policy, índice, cache, worker, busca semântica e API.
 
 ## 7. Memória e continuidade
 
 Ao alterar memória:
 
-- preservar evento original;
-- não fundir ambiguidade de forma irreversível;
-- correção cria versão/ligação;
-- resposta da IA permanece separada;
-- fonte importada não vira Perfil DNA;
-- recuperação deve respeitar usuário;
-- reenvio/idempotência não pode duplicar silenciosamente.
+- preservar entrada original;
+- não fundir ambiguidade irreversivelmente;
+- correção cria versão;
+- resposta da IA fica separada;
+- fonte importada não vira Perfil DNA automaticamente;
+- recuperação respeita owner/tenant/workspace;
+- idempotência não duplica silenciosamente;
+- promoção de memória privada para compartilhada exige regra/autorização.
 
-Qualquer mudança nesse núcleo exige testes de regressão de continuidade e isolamento.
+## 8. Perfil DNA e configuração
 
-## 8. Custos
+Toda regra/profile claim deve carregar escopo.
 
-Política atual: evitar gasto novo não autorizado.
+No piloto Sol existem claims pessoais/autoriais. No produto genérico, claims podem representar marca, KPI, política, processo, preferência, role etc.
 
-O backend zero-cost deve:
+Conta nova nunca herda `Sol Profile Pack`.
 
-1. consultar catálogo do Gateway;
-2. localizar apenas o modelo candidato dedicado;
-3. confirmar preço de input = 0;
-4. confirmar preço de output = 0;
-5. exigir credencial válida;
-6. só então habilitar chat;
-7. falhar fechado se qualquer verificação não passar.
+## 9. Custos
 
-Não criar fallback pago silencioso.
+Política: não criar gasto silencioso.
 
-Quando modelos premium forem ativados futuramente:
+Quando modelo/ferramenta pago entra:
 
-- registrar custo por tarefa;
-- orçamento/limite;
+- registrar modelo/ferramenta;
 - finalidade;
-- modelo selecionado;
-- política de fallback;
-- autorização de cobrança.
+- tenant/workspace/projeto;
+- custo;
+- limite/orçamento;
+- fallback;
+- autorização.
 
-## 9. Conectores
+GPT-Live deve encerrar corretamente e expor uso/custo quando o provedor fornece confirmação.
 
-### Leitura antes de escrita
+No multi-tenant, custo precisa ser atribuível para evitar que um cliente subsidie outro sem intenção.
 
-Todo novo conector deve começar, quando possível, em read-only.
+## 10. Conectores
 
-### OAuth
+Princípios:
 
-Preferir OAuth/App authorization em vez de pedir token manual à usuária.
+1. leitura antes de escrita quando possível;
+2. OAuth/app authorization preferível a token manual;
+3. escopo mínimo;
+4. proveniência;
+5. credencial vinculada ao tenant correto;
+6. escrita auditável;
+7. ação irreversível com política/confirmação;
+8. comprovante de execução.
 
-### Proveniência
-
-Dados recuperados devem carregar origem suficiente para saber conta, provedor e fonte.
-
-### Escrita
-
-Publicar, enviar mensagem, editar arquivo ou alterar configuração deve ter estado auditável e confirmação conforme risco.
-
-## 10. Integração Google Drive
-
-A infraestrutura OAuth/vault existe, mas conexão multi-conta nativa ainda precisa ser concluída.
-
-Ao implementar:
-
-- conta por autorização separada;
-- refresh token em vault/segredo apropriado;
-- rótulo da conta;
-- escopo mínimo;
-- leitura primeiro;
-- origem da busca na resposta;
-- escrita apenas depois de política explícita.
+Agência com dez clientes significa dez contextos isolados, não um token “mágico” com acesso indistinto.
 
 ## 11. GitHub
 
-O GitHub é fonte de código e parte do conhecimento do Jarvis.
-
 Separar:
 
-- ChatGPT/Codex conectado ao GitHub para desenvolvimento;
+- ChatGPT/Codex usando GitHub para desenvolvimento;
 - Jarvis lendo GitHub como fonte;
 - Jarvis propondo patch;
-- Jarvis escrevendo em branch/PR.
+- Jarvis escrevendo branch/PR;
+- Jarvis promovendo produção.
 
-Esses níveis não são equivalentes e não devem ser declarados prontos por inferência.
+Esses níveis têm permissões/gates diferentes.
 
 ## 12. Cliente nativo iOS
 
@@ -218,68 +209,87 @@ Local:
 
 `ios/JarvisNative/`
 
-Arquivos importantes:
-
-- `project.yml`;
-- `Sources/JarvisNativeApp.swift`;
-- autenticação/contexto/cérebro local em `Sources/`;
-- `PREPARAR-JARVIS.command`;
-- `README-INSTALAR.md`.
-
 Sequência de prova:
 
-1. no Mac, executar `PREPARAR-JARVIS.command`;
-2. gerar projeto com XcodeGen;
-3. compilar no SDK Apple sem assinatura;
-4. corrigir qualquer erro antes de instalar;
-5. abrir Xcode;
-6. assinar com conta Apple da usuária;
-7. instalar no iPhone;
-8. login único;
-9. diagnóstico;
-10. configurar Atalho Vocal;
-11. testar hands-free;
-12. testar tela bloqueada separadamente.
+1. gerar/compilar no Mac;
+2. corrigir erro de SDK;
+3. assinar;
+4. instalar;
+5. login;
+6. diagnóstico;
+7. configurar Atalho Vocal;
+8. testar hands-free;
+9. testar tela bloqueada separadamente.
 
-Não declarar “wake word com tela bloqueada” antes dessa prova.
+Não declarar wake word/background antes de prova real.
 
-## 13. Incidentes: Jarvis não responde
+## 13. GPT-Live / realtime
 
-Investigar por camadas, nesta ordem:
+O branch atual possui implementação de token broker, captura de áudio, sessão full-duplex, transcrição, vozes, custo e delegação.
 
-1. **Sessão** — token existe/é válido?
-2. **Piloto/autorização** — conta está autorizada?
-3. **Modelo/runtime** — provider/zero-cost passou verificação?
-4. **Memória** — consulta privada está disponível?
-5. **Transporte** — API respondeu JSON esperado?
-6. **Frontend** — `busyRef`/estado/retry liberou nova tentativa?
-7. **TTS** — resposta existe, mas áudio falhou?
-8. **Reconhecimento** — fala virou transcrição?
-9. **Plataforma** — iOS suspendeu recurso?
+Antes de promoção:
 
-Não mascarar falha de servidor pedindo novo código de login repetidamente.
+- rodar contratos/build;
+- validar Preview;
+- testar microfone/fala/interrupção em aparelho real;
+- confirmar encerramento/custo;
+- testar perda de rede/reconexão;
+- confirmar que chave privada não chega ao cliente;
+- preservar fallback antigo.
 
-## 14. Incidentes: “ele esqueceu”
+## 14. Incidente: Jarvis não responde
+
+Investigar em ordem:
+
+1. identidade/sessão;
+2. tenant/workspace/role;
+3. autorização piloto/feature flag;
+4. modelo/runtime;
+5. memória/contexto;
+6. conector/ferramenta;
+7. transporte/API;
+8. frontend/estado;
+9. TTS/realtime;
+10. plataforma externa;
+11. limite/custo.
+
+Não mascarar falha pedindo login repetidamente.
+
+## 15. Incidente: “ele esqueceu”
 
 Verificar:
 
-- o dado foi salvo ou apenas falado?
-- foi classificado como exploração/estado temporário?
-- existe evento de continuidade?
-- há versão superseded vigente?
-- a consulta recuperou a fonte relevante?
-- o modelo recebeu o pacote de contexto?
-- a informação estava em conversa ChatGPT mas nunca foi importada para Jarvis?
+- foi salvo?
+- em qual escopo?
+- existe versão/supersessão?
+- a busca consultou o tenant/workspace correto?
+- fonte foi importada?
+- contexto chegou ao modelo?
+- informação estava apenas em conversa externa e nunca entrou no Jarvis?
 
-Não resolver esquecimento copiando indiscriminadamente conversas antigas para Perfil DNA.
+Não resolver esquecimento copiando indiscriminadamente tudo para Perfil DNA.
 
-## 15. Self-healing
+## 16. Incidente multi-tenant: contexto errado
 
-Pipeline futuro obrigatório:
+Tratar como incidente de alta gravidade.
+
+Ações:
+
+1. bloquear fluxo afetado;
+2. identificar query/cache/job responsável;
+3. não ocultar o incidente por “ajuste de prompt”;
+4. corrigir autorização/escopo na camada de dados/ferramenta;
+5. adicionar teste de regressão;
+6. revisar logs/auditoria compatíveis;
+7. seguir política de resposta a incidente quando houver clientes reais.
+
+Prompt não é fronteira de segurança.
+
+## 17. Self-healing
 
 ```text
 feedback/log
-→ issue/tarefa com ID
+→ issue/tarefa
 → reprodução
 → branch isolada
 → patch
@@ -288,38 +298,48 @@ feedback/log
 → evidência
 → aprovação/política
 → promoção
-→ rollback disponível
+→ rollback
 ```
 
-O agente pode automatizar partes desse fluxo. Produção não deve ser alterada sem gate.
+Self-healing pode automatizar diagnóstico/patch/teste, mas produção continua protegida por gates.
 
-## 16. Capability Radar
+Mudança aprendida com um tenant não deve virar mudança global sem processo de produto.
 
-Configuração atual:
+## 18. Radares
 
-`config/capability-radar-sources.json`
+### Capability Radar
 
-O radar deve usar fontes oficiais e comparar mudanças. Não usar post viral como única evidência de mudança de API/modelo.
+Tecnologia/fornecedores do Jarvis.
 
-Quando uma novidade for encontrada:
+### Domain Radar
 
-- registrar data/fonte;
-- impacto potencial;
-- se afeta custo/segurança;
-- se merece experimento;
-- benchmark antes de promoção.
+Mercado/tendências/riscos do tenant.
 
-## 17. Documentação como parte do gate
+Toda descoberta deve ter:
 
-Mudança relevante deve atualizar pelo menos um destes:
+- fonte;
+- data/frescor;
+- impacto;
+- escopo;
+- custo/risco;
+- hipótese de ação;
+- evidência de resultado quando executada.
 
-- `JARVIS_STATUS_CAPACIDADES.md` se a maturidade mudou;
-- `JARVIS_ARQUITETURA_GERAL.md` se a arquitetura mudou;
-- `JARVIS_MODO_DE_USO.md` se a experiência do usuário mudou;
-- `CONTINUIDADE_JARVIS.md` se houve decisão/checkpoint técnico importante.
+## 19. Documentação como gate
 
-Documentação desatualizada é considerada regressão operacional.
+Mudança relevante atualiza pelo menos o documento correspondente:
 
-## 18. Critério de manutenção saudável
+- `JARVIS_STATUS_CAPACIDADES.md` — maturidade;
+- `JARVIS_ARQUITETURA_GERAL.md` — arquitetura;
+- `JARVIS_MODO_DE_USO.md` — experiência;
+- `ARQUITETURA_MULTIUSUARIO_E_PERSONALIZACAO.md` — tenant/personalização;
+- `LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md` — radar/resultado;
+- `CONTINUIDADE_JARVIS.md` — checkpoint técnico importante.
 
-Uma pessoa técnica ou outro agente de IA deve conseguir entrar no projeto, ler a documentação oficial, verificar o HEAD e continuar a construção sem pedir à usuária que conte novamente o que o Jarvis é.
+Documentação desatualizada é regressão operacional.
+
+## 20. Critério de manutenção saudável
+
+Uma pessoa técnica ou agente de desenvolvimento deve conseguir entrar, ler documentação, verificar HEAD e continuar sem pedir que o cliente reconte a visão.
+
+E uma conta nova deve conseguir nascer **sem nenhum dado ou comportamento específico da Sol vazando como padrão**.

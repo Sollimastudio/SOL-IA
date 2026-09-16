@@ -19,6 +19,40 @@ const JARVIS_PERSONA = [
   'A personalidade deve soar masculina e sofisticada no texto, mas nunca alegue ter uma voz, identidade humana ou emoção que o sistema não possua.'
 ].join(' ');
 
+async function liveDelegationAuthorized(request: Request, runtime: Awaited<ReturnType<typeof resolvePilotRuntime>>) {
+  if (request.headers.get('x-jarvis-live-delegation') !== '1') return false;
+  const authorization = request.headers.get('authorization') || '';
+  if (!/^Bearer [^\s]+$/.test(authorization)) return false;
+  const supabaseUrl = runtime.env.SUPABASE_URL || runtime.env.VITE_SUPABASE_URL;
+  const supabaseKey = runtime.env.SUPABASE_PUBLISHABLE_KEY || runtime.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    runtime.env.SUPABASE_ANON_KEY || runtime.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) return false;
+
+  const headers = { apikey: supabaseKey, Authorization: authorization, 'Content-Type': 'application/json' };
+  const call = (url: string) => fetch(url, {
+    method: 'GET', headers, cache: 'no-store', redirect: 'error',
+    signal: AbortSignal.any([request.signal, AbortSignal.timeout(5000)])
+  });
+  try {
+    const auth = await call(`${supabaseUrl}/auth/v1/user`);
+    if (!auth.ok) return false;
+    const user = await auth.json();
+    if (typeof user?.id !== 'string' || !user.id) return false;
+    const params = new URLSearchParams({
+      owner_id: `eq.${user.id}`,
+      select: 'owner_id,can_use_ai,can_use_realtime',
+      limit: '1'
+    });
+    const access = await call(`${supabaseUrl}/rest/v1/solia_pilot_users?${params}`);
+    if (!access.ok) return false;
+    const rows = await access.json();
+    const row = Array.isArray(rows) ? rows[0] : null;
+    return row?.owner_id === user.id && row.can_use_ai === true && row.can_use_realtime === true;
+  } catch {
+    return false;
+  }
+}
+
 function guidedFetch(orientation: ReturnType<typeof analyzeConversation> | null, continuityText: string, baseFetch: typeof fetch): typeof fetch {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -52,11 +86,20 @@ export default {
     const envelope = await readConversationEnvelope(request);
     const orientation = envelope?.mode === 'private' ? analyzeConversation(envelope.history, envelope.message) : null;
     let runtime = await resolvePilotRuntime(request, process.env);
+    const liveDelegation = await liveDelegationAuthorized(request, runtime);
 
-    // Budget-zero beta: never fall through to a priced model. When paid AI is disabled,
-    // use the Gateway only if its live catalog confirms the dedicated candidate has
-    // both input and output price equal to zero at request time.
-    if (process.env.JARVIS_METERED_AI_ENABLED !== 'true') {
+    // Regular chat keeps the zero-cost gate. Only an authenticated pilot row with
+    // can_use_realtime=true may bypass that gate for a GPT-Live delegated task.
+    if (liveDelegation) {
+      runtime = {
+        ...runtime,
+        env: {
+          ...runtime.env,
+          JARVIS_METERED_AI_ENABLED: 'true',
+          JARVIS_CHAT_ENABLED: 'true'
+        }
+      };
+    } else if (process.env.JARVIS_METERED_AI_ENABLED !== 'true') {
       const zeroCost = await verifyZeroCostGatewayModel(globalThis.fetch);
       runtime = applyZeroCostRuntime(runtime, zeroCost);
       const budgetBlock = meteredAiBlockResponse(runtime.env);
@@ -80,6 +123,7 @@ export default {
       explicitOpenRouterPresent: runtimeDiagnostics.explicitOpenRouterPresent,
       zeroCostModelVerified: runtimeDiagnostics.zeroCostModelVerified === true,
       zeroCostModel: runtimeDiagnostics.zeroCostModel ?? null,
+      liveDelegation,
       chatFlagEnabled, blockReason
     }));
 

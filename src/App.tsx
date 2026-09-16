@@ -7,6 +7,7 @@ import { IntegrationHub } from './components/IntegrationHub';
 import { UpdateGuard } from './components/UpdateGuard';
 import { meteredAiEnabled } from './core/budgetPolicy';
 import { JarvisConversation } from './components/JarvisConversation';
+import { JarvisLiveVoice } from './components/JarvisLiveVoice';
 import { KnowledgeLibrary } from './components/KnowledgeLibrary';
 import { MemoryVault } from './components/MemoryVault';
 import { MetaAdsPanel } from './components/MetaAdsPanel';
@@ -81,7 +82,7 @@ export function App() {
       <p className="hero-copy">{area === 'chat'
         ? meteredAiEnabled
           ? 'Você fala do seu jeito. O Jarvis organiza o contexto e coordena os bastidores.'
-          : 'Beta sem gasto novo: o Jarvis tenta responder somente com modelo que o servidor confirme como custo zero. Se isso não estiver disponível, nenhuma IA paga é chamada e sua fala privada pode ser preservada no cofre.'
+          : 'Beta sem gasto novo: o chat comum continua protegido. O GPT‑Live só cobra quando você iniciar explicitamente a sessão de voz natural.'
         : area === 'knowledge'
           ? 'Adicione fontes que o Jarvis poderá consultar sem misturar documento com memória pessoal.'
           : area === 'vault'
@@ -99,8 +100,11 @@ export function App() {
         onClick={() => chooseArea(key)}>{areaLabels[key]}</button>)}
     </nav>
 
-    {area === 'chat' && <JarvisConversation key={session.user.id} session={session} onModeChange={next => { setMode(next); if (next === 'public') setArea('chat'); }}
-      onSaved={() => setMemoryRefreshKey(value => value + 1)} />}
+    {area === 'chat' && <>
+      <JarvisConversation key={session.user.id} session={session} onModeChange={next => { setMode(next); if (next === 'public') setArea('chat'); }}
+        onSaved={() => setMemoryRefreshKey(value => value + 1)} />
+      <JarvisLiveVoice session={session} mode={mode} />
+    </>}
 
     {privateArea && mode === 'private' && <section className="jarvis-drawer" aria-label={areaLabels[area]}>
       <div className="jarvis-drawer-heading">

@@ -56,7 +56,7 @@ async function maybeCaptureBudgetFallback({ response, endpoint, body, userId, si
 
 // Use the SDK's current session, not a token captured when the component rendered.
 // Only the explicit pre-write access contract permits one refresh and POST replay.
-export async function sendAuthenticatedChat({ body, userId, signal, getSession, refreshSession, fetchImpl = globalThis.fetch, endpoint = '/api/jarvis-chat' }) {
+export async function sendAuthenticatedChat({ body, userId, signal, getSession, refreshSession, fetchImpl = globalThis.fetch, endpoint = '/api/jarvis-chat', extraHeaders = {} }) {
   if (!['/api/jarvis-chat', '/api/jarvis-capture'].includes(endpoint)) throw new UnsentMessageError('Destino de envio inválido.');
   async function currentSession(read) {
     signal.throwIfAborted();
@@ -84,7 +84,12 @@ export async function sendAuthenticatedChat({ body, userId, signal, getSession, 
   const post = session => {
     signal.throwIfAborted();
     return fetchImpl(endpoint, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+        ...extraHeaders
+      },
       body, signal
     });
   };

@@ -1,105 +1,239 @@
-# Jarvis — Inteligência Crescente e Capability Radar
+# Jarvis — Inteligência Crescente e Radares
 
-Atualização: 14/09/2026.
+> Atualizado em 16/09/2026. Este documento separa o Radar global da plataforma do Radar de Domínio de cada tenant.
 
-## O que esta camada resolve
+## 1. O problema
 
-O Jarvis não pode congelar a inteligência no dia em que o código foi escrito. Ao mesmo tempo, “usar sempre a novidade” seria perigoso: plataformas mudam, rumores circulam, modelos novos podem ser mais caros ou piores para uma tarefa específica.
+Jarvis não pode congelar a inteligência no dia em que o código foi escrito. Ao mesmo tempo, “usar sempre a novidade” seria perigoso: plataformas mudam, rumores circulam, modelos novos podem ser mais caros/piores e tendências podem ser irrelevantes para determinado cliente.
 
-Esta entrega separa quatro processos:
+A solução separa processos:
 
-1. **detectar novidade** em fontes oficiais;
-2. **validar evidência e frescor**;
-3. **testar impacto em sandbox/benchmark**;
-4. **promover somente a melhoria comprovada**.
+1. detectar sinal;
+2. validar evidência/frescor;
+3. classificar escopo/impacto;
+4. cruzar com objetivos/ativos;
+5. testar quando necessário;
+6. promover/recomendar somente com evidência.
 
-O Capability Radar não altera produção, modelo, estratégia ou orçamento sozinho.
+Nenhum Radar altera produção, estratégia, orçamento ou publicação sozinho.
 
-## O que entrou no produto
+## 2. Capability Radar global
 
-- `core/growth-intelligence.mjs`: política de crescimento contínuo, janelas de frescor, validação de melhor horário e gate de promoção de modelos.
-- `scripts/capability-radar.mjs`: verifica fontes oficiais sem modelo de IA nem chave paga, produz hash e detecta mudança desde a observação anterior.
-- `config/capability-radar-sources.json`: registro explícito das fontes permitidas.
-- `.github/workflows/jarvis-capability-radar.yml`: execução diária e manual; restaura o último estado por cache, gera relatório e preserva artefato para revisão.
-- `tests/growth-intelligence.test.mjs` e `tests/capability-radar.test.mjs`: regras contra horários inventados, evidência velha, promoção automática de modelo e falso “algoritmo mudou”.
-- `api/jarvis-chat.ts`: a política de crescimento foi ligada ao contexto real da conversa junto de Presença Sol, Inteligência de Audiência e Continuidade.
+O Radar global existe para manter **o próprio Jarvis** atual.
 
-## Fonte > rumor
+Monitora fontes oficiais relevantes a:
 
-Hierarquia operacional:
+- modelos de IA;
+- APIs;
+- SDKs;
+- depreciações;
+- preço/limites;
+- voz/visão/vídeo;
+- agentes/ferramentas;
+- segurança;
+- Vercel/Supabase/infraestrutura;
+- Meta/TikTok/YouTube e outras integrações usadas;
+- dependências críticas.
 
-1. documentação/changelog oficial;
-2. dados reais da conta da Sol;
+Componentes do piloto incluem:
+
+- `core/growth-intelligence.mjs`;
+- `scripts/capability-radar.mjs`;
+- `config/capability-radar-sources.json`;
+- workflow dedicado no GitHub;
+- testes contra falso “algoritmo mudou” e promoção automática.
+
+Mudança de hash em página significa **revisar**, não “adotar”.
+
+## 3. Radar de Domínio por tenant
+
+Cada cliente pode configurar outro tipo de Radar: o que acompanha o **mundo relevante para seus objetivos**.
+
+Exemplos:
+
+### Creator
+
+- redes;
+- formatos;
+- assuntos;
+- audiência;
+- produtos;
+- creator economy;
+- concorrência/referências.
+
+### Agência
+
+- mudanças das plataformas;
+- tendências;
+- oportunidades/ameaças;
+- concorrência;
+- comportamento por segmento;
+- quais clientes têm encaixe real com um sinal.
+
+### Empresa
+
+- mercado;
+- clientes;
+- concorrentes;
+- custos;
+- fornecedores;
+- tecnologia;
+- produto;
+- regulamentação quando aplicável;
+- riscos operacionais.
+
+O Radar global pode descobrir algo uma vez. A relevância é calculada separadamente por tenant/workspace/cliente.
+
+## 4. Fonte > rumor
+
+Hierarquia geral:
+
+1. documentação/fonte oficial;
+2. dados reais autorizados do tenant;
 3. experimento controlado próprio;
-4. fonte técnica independente;
-5. relato de criador/comunidade como pista, nunca como atualização confirmada.
+4. fonte técnica/mercado independente confiável;
+5. comunidade/criadores como pista, não confirmação final.
 
-Uma mudança de hash em uma página oficial significa **“revisar”**, não “mudar estratégia”. Páginas podem mudar por razões irrelevantes.
+Para tendências culturais, fontes de comunidade podem ser sinal importante, mas alegações factuais ainda precisam de verificação compatível.
 
-## Algoritmos sociais
+## 5. Plataformas sociais
 
-Não existe uma fórmula pública única que garanta viralização ou permita escolher diretamente “quem verá”. O Jarvis deve tratar ranking como sistema adaptativo e aprender com os sinais permitidos pela plataforma e com os resultados reais da conta.
+Não existe fórmula pública única que garanta viralização.
 
-Princípios oficiais úteis no estado atual:
+Jarvis deve aprender com:
 
-- Instagram/Meta: conteúdo elegível/original e resposta inicial da audiência têm papel nas recomendações; Meta descreveu distribuição inicial para uma audiência pequena e expansão dos conteúdos que performam melhor. Fonte: https://about.fb.com/br/news/2024/04/ajudando-o-criador-de-conteudo-a-encontrar-novos-publicos/
-- Facebook/Meta: em março de 2026 a Meta reforçou maior distribuição/monetização de conteúdo original e redução de conteúdo não original. Fonte: https://about.fb.com/br/news/2026/03/recompensando-criadores-originais-no-facebook/
-- TikTok: o For You é personalizado por sinais de interesse e interação e continua sendo ajustado pelo comportamento do usuário. Fontes: https://newsroom.tiktok.com/how-tiktok-recommends-videos-for-you?lang=en e https://support.tiktok.com/en/getting-started/for-you
+- regras/documentação oficial;
+- dados da conta real;
+- experimentos;
+- retenção/interação;
+- cliques/leads;
+- vendas/resultado final.
 
-Esses princípios não viram “receita secreta”. O Radar existe porque o estado atual pode mudar.
+Princípios oficiais já acompanhados no piloto incluíram originalidade/elegibilidade de conteúdo e personalização do For You. Esses princípios podem mudar; o Radar existe justamente para detectar isso.
 
-## Horário e “picos emocionais”
+## 6. Horário e padrões da audiência
 
-Não foi aceita como regra a ideia de uma tabela universal do tipo “manhã = reflexão, tarde = raiva”. Não há base suficiente para endurecer isso no produto como verdade.
+Não endurecer tabelas universais como verdade.
 
-O Jarvis deverá testar **na audiência real** combinações de:
+Testar no tenant real:
 
 - faixa horária;
-- emoção predominante do conteúdo;
 - tema;
 - formato;
+- emoção/tom quando aplicável;
 - gancho;
-- CTA/oferta;
-- objetivo (alcance, comunidade, lead, venda, retenção etc.).
+- CTA;
+- objetivo;
+- plataforma;
+- público/segmento permitido.
 
-Se uma ferramenta de “melhor horário” retornar apenas zeros ou não houver rede conectada, o sistema responde **“dados insuficientes”**, não inventa um horário.
+Se dados retornarem zeros/insuficientes, responder **dados insuficientes**.
 
-Na verificação de 14/09/2026, a conta Metricool conectada ao ChatGPT retornou a matriz de melhores horários do Instagram totalmente zerada. Portanto ainda não existe evidência de melhor horário da Sol por essa fonte.
+## 7. Modelos sempre atuais, sem trocar por moda
 
-## Modelos sempre atuais, sem trocar por moda
+Novo modelo entra como candidato.
 
-O Radar acompanha lançamentos e depreciações, mas modelo novo entra primeiro como candidato.
+Benchmark por tarefa pode considerar:
 
-Benchmark mínimo por tarefa:
-
-- qualidade/aderência;
-- continuidade/contexto;
-- capacidade de ferramenta;
+- qualidade;
+- aderência;
+- contexto/continuidade;
+- ferramentas;
+- multimodalidade;
 - latência;
 - estabilidade;
 - privacidade;
-- custo.
+- custo;
+- disponibilidade;
+- compatibilidade com política do tenant.
 
-A promoção só acontece se superar os gates definidos. “Mais novo” não é critério suficiente.
+“Mais novo” não é critério suficiente.
 
-Como exemplo de por que o Radar é necessário: as páginas oficiais da OpenAI consultadas em 14/09/2026 já listavam GPT-6 Astra (03/09/2026) e GPT-Live-1 na API (10/09/2026), posteriores a vários modelos mencionados na arquitetura original. Fontes: https://openai.com/research/index/release/ e https://help.openai.com/en/articles/9624314-model-release-notes
+## 8. Roteamento por tenant
 
-Isso **não** significa que o Jarvis trocou automaticamente para esses modelos ou que são os melhores/cabem no orçamento atual.
+Um modelo pode ser ideal para um cliente e inadequado para outro.
 
-## Loop de evolução da Sol
+Exemplo:
 
-Para cada conteúdo relevante, a evolução desejada é:
+- Tenant A prioriza privacidade/local;
+- Tenant B prioriza latência;
+- Tenant C autoriza premium;
+- Tenant D opera com limite rígido de custo.
 
-**hipótese → publicação → métricas → resultado comercial/comunitário → comparação → aprendizado → próxima hipótese.**
+O Model Router deve obedecer a política do tenant antes de “otimizar” por conta própria.
 
-O sistema deve aprender qual combinação funciona para cada objetivo. Viral não é sinônimo de bom; conteúdo menor que gera compradores ou membros duráveis pode vencer.
+## 9. Loop de aprendizado de resultado
 
-## Próximos conectores necessários
+Formato genérico:
 
-O Radar tecnológico já pode rodar no GitHub. O aprendizado social real depende de conectar dados das redes. A Metricool foi conectada ao ChatGPT, mas no momento consultado ainda não havia dados úteis de redes para melhor horário. Quando Instagram/TikTok/Facebook estiverem efetivamente conectados, o Social Intelligence Hub deverá trazer métricas para o mesmo ciclo.
+`hipótese → ação/publicação → métricas → resultado → comparação → aprendizado → próxima hipótese`
 
-Dados de venda/assinatura também precisam ser conectados para distinguir “engajou” de “comprou/renovou”.
+Resultado varia:
 
-## Regra operacional
+- creator: audiência/lead/venda;
+- agência: performance/margem/retenção do cliente;
+- empresa: receita, custo, qualidade, prazo, risco;
+- software: ativação/retenção/incidente;
+- indivíduo: avanço de projetos/objetivos.
 
-**Novidade é sinal. Evidência é aprendizado. Benchmark é promoção. Resultado real é autoridade para mudar o padrão.**
+## 10. Tendência → Ativo → Resultado
+
+O Radar de Domínio alimenta `LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md`.
+
+O nome histórico “receita” permanece porque nasceu no piloto Sol, mas a arquitetura agora entende **resultado** de forma parametrizada.
+
+A pergunta deixa de ser apenas “como vender isso?” e passa a ser:
+
+> “Isso muda alguma coisa relevante para o objetivo deste tenant e qual ativo/ação pode capturar valor ou reduzir risco?”
+
+## 11. Anti-fadiga do Radar
+
+Um sistema que acompanha tudo não pode falar tudo.
+
+Notificar por padrão somente quando houver:
+
+- mudança material;
+- risco;
+- custo;
+- oportunidade com alto encaixe;
+- prazo curto;
+- informação que altera decisão;
+- falha no próprio Jarvis.
+
+O resto vira registro silencioso para comparação futura.
+
+## 12. Personalização e isolamento
+
+Radar deve carregar:
+
+- `tenant/workspace/client`;
+- objetivos/KPIs;
+- fontes permitidas;
+- ativos ligados;
+- histórico de decisões;
+- resultado posterior.
+
+Uma tendência relevante para Cliente A de uma agência não deve virar recomendação automática para Cliente B.
+
+## 13. Evolução do próprio Jarvis
+
+Quando o Radar global encontra nova capacidade:
+
+```text
+sinal
+→ validação
+→ comparação com estado atual
+→ custo/benefício
+→ branch/sandbox
+→ testes/benchmark
+→ Preview
+→ aprovação/política
+→ promoção
+→ rollback
+```
+
+Autodesenvolvimento não significa produção sem controle.
+
+## 14. Regra operacional
+
+**Novidade é sinal. Evidência é aprendizado. Benchmark é promoção. Resultado real é autoridade para mudar o padrão. Escopo correto impede que inteligência vire confusão entre clientes.**

@@ -2,79 +2,102 @@
 
 > **Documento canônico de navegação.** Atualizado em 16/09/2026.
 
-Este índice existe para impedir que o projeto volte a depender de conversas soltas, lembranças ou documentos históricos fora de contexto. Ele separa **documentação oficial atual**, **documentação de arquitetura**, **manuais operacionais** e **registros históricos de desenvolvimento**.
+Este índice existe para impedir que o projeto volte a depender de conversas soltas, lembranças ou documentos históricos fora de contexto. Também impede dois erros de arquitetura: tratar o piloto Sol como template universal ou tratar “multiusuário” como algo que só deve ser pensado depois do produto pronto.
 
 ## Leitura rápida
 
-Se você quer entender o Jarvis como produto, leia nesta ordem:
+Para entender o Jarvis como produto, leia nesta ordem:
 
 1. [`../README.md`](../README.md) — visão executiva e estado geral.
-2. [`JARVIS_PRODUTO_E_VISAO.md`](JARVIS_PRODUTO_E_VISAO.md) — para que foi criado, proposta de valor, princípios e escopo.
-3. [`JARVIS_MODO_DE_USO.md`](JARVIS_MODO_DE_USO.md) — como usar no dia a dia, por texto, voz, câmera, memória e futuramente live.
-4. [`JARVIS_STATUS_CAPACIDADES.md`](JARVIS_STATUS_CAPACIDADES.md) — o que funciona, o que está implementado mas ainda precisa de prova física e o que é roadmap.
+2. [`JARVIS_PRODUTO_E_VISAO.md`](JARVIS_PRODUTO_E_VISAO.md) — propósito, princípios e visão.
+3. [`ARQUITETURA_MULTIUSUARIO_E_PERSONALIZACAO.md`](ARQUITETURA_MULTIUSUARIO_E_PERSONALIZACAO.md) — como o mesmo motor atende pessoas, agências, empresas e novos objetivos sem copiar o perfil da Sol.
+4. [`JARVIS_MODO_DE_USO.md`](JARVIS_MODO_DE_USO.md) — experiência por texto, voz, memória, workspaces e equipes.
+5. [`JARVIS_STATUS_CAPACIDADES.md`](JARVIS_STATUS_CAPACIDADES.md) — o que funciona, o que está implementado aguardando prova e o que é roadmap.
 
-Se você vai manter ou desenvolver o sistema:
+Para manter/desenvolver o sistema:
 
-5. [`JARVIS_ARQUITETURA_GERAL.md`](JARVIS_ARQUITETURA_GERAL.md) — arquitetura técnica e fluxos.
-6. [`JARVIS_OPERACAO_E_MANUTENCAO.md`](JARVIS_OPERACAO_E_MANUTENCAO.md) — operação, testes, segurança, deploy, incidentes e disciplina de evolução.
-7. [`CONTINUIDADE_JARVIS.md`](CONTINUIDADE_JARVIS.md) — histórico técnico e decisões verificáveis do desenvolvimento atual.
+6. [`JARVIS_ARQUITETURA_GERAL.md`](JARVIS_ARQUITETURA_GERAL.md) — arquitetura técnica, tenants, Core, memória, modelos e ferramentas.
+7. [`ARQUITETURA_DE_SKILLS_E_INTERFACES.md`](ARQUITETURA_DE_SKILLS_E_INTERFACES.md) — Core Skills + Skill Packs por tenant.
+8. [`ARQUITETURA_CEREBRO_CRESCENTE_SOCIAL.md`](ARQUITETURA_CEREBRO_CRESCENTE_SOCIAL.md) — inteligência crescente, radares e aprendizado.
+9. [`JARVIS_OPERACAO_E_MANUTENCAO.md`](JARVIS_OPERACAO_E_MANUTENCAO.md) — runbook, testes, segurança, incidentes e gates multi-tenant.
+10. [`CONTINUIDADE_JARVIS.md`](CONTINUIDADE_JARVIS.md) — histórico técnico/checkpoints.
 
 ## Documentos oficiais atuais
 
 | Documento | Finalidade | Público |
 |---|---|---|
-| `README.md` | Capa profissional do projeto | Todos |
-| `JARVIS_PRODUTO_E_VISAO.md` | Definição do produto e motivo de existência | Produto, negócio, engenharia |
-| `JARVIS_MODO_DE_USO.md` | Manual funcional do usuário | Usuário final |
-| `JARVIS_STATUS_CAPACIDADES.md` | Matriz de capacidade e maturidade | Produto, QA, engenharia |
+| `README.md` | Capa profissional do produto | Todos |
+| `JARVIS_PRODUTO_E_VISAO.md` | Definição do produto | Produto, negócio, engenharia |
+| `ARQUITETURA_MULTIUSUARIO_E_PERSONALIZACAO.md` | Tenants, workspaces, agências, empresas e personalização | Produto, engenharia, negócio |
+| `JARVIS_MODO_DE_USO.md` | Manual funcional | Usuário final/produto |
+| `JARVIS_STATUS_CAPACIDADES.md` | Matriz de maturidade | Produto, QA, engenharia |
 | `JARVIS_ARQUITETURA_GERAL.md` | Arquitetura de sistema | Engenharia |
 | `JARVIS_OPERACAO_E_MANUTENCAO.md` | Runbook técnico | Engenharia/operação |
-| `CONTINUIDADE_JARVIS.md` | Registro de decisões e checkpoints | Engenharia/IA de desenvolvimento |
+| `CONTINUIDADE_JARVIS.md` | Decisões/checkpoints | Engenharia/IA de desenvolvimento |
 
-## Arquiteturas especializadas que continuam válidas
+## Arquiteturas especializadas válidas
 
-- [`ARQUITETURA_ANTIFADIGA_ADAPTATIVA.md`](ARQUITETURA_ANTIFADIGA_ADAPTATIVA.md) — raiz/galhos, delta, repetição, loops, continuidade e autocorreção supervisionada.
-- [`ARQUITETURA_CEREBRO_CRESCENTE_SOCIAL.md`](ARQUITETURA_CEREBRO_CRESCENTE_SOCIAL.md) — modelos substituíveis, inteligência crescente, Capability Radar e inteligência social.
-- [`INTELIGENCIA_CRESCENTE_E_RADAR.md`](INTELIGENCIA_CRESCENTE_E_RADAR.md) — fontes oficiais, algoritmo, modelos, evidência, benchmark e aprendizado contínuo.
-- [`LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md`](LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md) — radar permanente de atenção, cruzamento com ativos da Sol, trend-jacking responsável, monetização, urgência de caixa e aprendizado por resultado.
-- [`AUDIENCIA_PREMIUM_E_MONETIZACAO.md`](AUDIENCIA_PREMIUM_E_MONETIZACAO.md) — audiência qualificada, conversão, produtos, métricas e monetização sem métricas vaidosas.
-- [`ARQUITETURA_DE_SKILLS_E_INTERFACES.md`](ARQUITETURA_DE_SKILLS_E_INTERFACES.md) — habilidades e fronteiras de interface.
-- [`PROGRAMA_DE_CONSTRUCAO_JARVIS.md`](PROGRAMA_DE_CONSTRUCAO_JARVIS.md) — programa de construção e critérios de aceite.
-- [`VOZ_CONTINUA_E_VIDEOCHAMADA.md`](VOZ_CONTINUA_E_VIDEOCHAMADA.md) — requisitos históricos de voz e chamada, quando presente no branch.
-- `ios/JarvisNative/README-INSTALAR.md` — instalação e prova física do cliente nativo iOS.
+- [`ARQUITETURA_ANTIFADIGA_ADAPTATIVA.md`](ARQUITETURA_ANTIFADIGA_ADAPTATIVA.md) — raiz/galhos/delta, continuidade e autocorreção supervisionada.
+- [`ARQUITETURA_CEREBRO_CRESCENTE_SOCIAL.md`](ARQUITETURA_CEREBRO_CRESCENTE_SOCIAL.md) — modelos substituíveis, Radar global/domínio e inteligência crescente.
+- [`ARQUITETURA_DE_SKILLS_E_INTERFACES.md`](ARQUITETURA_DE_SKILLS_E_INTERFACES.md) — Core Skills, Skill Packs, interfaces e papéis.
+- [`INTELIGENCIA_CRESCENTE_E_RADAR.md`](INTELIGENCIA_CRESCENTE_E_RADAR.md) — fontes oficiais, algoritmos, modelos, evidência e benchmark.
+- [`LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md`](LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md) — tendência → ativo → resultado, parametrizado por tenant.
+- [`AUDIENCIA_PREMIUM_E_MONETIZACAO.md`](AUDIENCIA_PREMIUM_E_MONETIZACAO.md) — audiência/mercado/objetivos, funis e monetização parametrizável.
+- [`PROGRAMA_DE_CONSTRUCAO_JARVIS.md`](PROGRAMA_DE_CONSTRUCAO_JARVIS.md) — programa histórico de construção e critérios de aceite; ler junto dos documentos atuais para não congelar decisões antigas.
+- [`VOZ_CONTINUA_E_VIDEOCHAMADA.md`](VOZ_CONTINUA_E_VIDEOCHAMADA.md) — requisitos históricos de voz/chamada.
+- `ios/JarvisNative/README-INSTALAR.md` — instalação/prova do cliente iOS.
+
+## Piloto Sol x produto Jarvis
+
+Regra canônica:
+
+- **Sol** = primeiro tenant/perfil piloto profundo;
+- **Sol Profile Pack** = obras, produtos, presença, linguagem, rotinas e skills específicas dela;
+- **Jarvis Core** = tecnologia/metodologia reutilizável;
+- **conta nova** = começa sem dados, opinião, marca, produtos ou preferências da Sol;
+- **agência** = tenant com múltiplos clientes/workspaces isolados;
+- **empresa** = tenant com membros/roles/workspaces/políticas próprios.
+
+Não transformar requisito pessoal do piloto em default global sem análise de produto.
 
 ## Regra de precedência
 
-Quando houver conflito entre documentos:
+Quando houver conflito:
 
-1. comportamento comprovado pelo código e testes atuais;
+1. comportamento comprovado pelo código/testes atuais;
 2. `JARVIS_STATUS_CAPACIDADES.md`;
-3. `JARVIS_ARQUITETURA_GERAL.md` e `JARVIS_PRODUTO_E_VISAO.md`;
+3. `JARVIS_ARQUITETURA_GERAL.md`, `JARVIS_PRODUTO_E_VISAO.md` e `ARQUITETURA_MULTIUSUARIO_E_PERSONALIZACAO.md`;
 4. documentos especializados atuais;
-5. documentos históricos/checkpoints antigos;
-6. mensagens de conversas antigas.
+5. checkpoints/históricos antigos;
+6. mensagens antigas.
 
-Documento antigo não transforma requisito em capacidade pronta. Um recurso só deve ser apresentado como operacional quando houver evidência compatível com seu tipo: teste de código, teste de integração ou prova no aparelho/plataforma real.
+Documento antigo não transforma requisito em capacidade pronta. Documento novo também não transforma arquitetura em implementação.
 
 ## Convenções de status
 
 - **OPERACIONAL** — implementado e verificado no ambiente compatível.
-- **IMPLEMENTADO / AGUARDA PROVA FÍSICA** — código existe e testes estáticos passaram, mas falta aparelho/plataforma real.
-- **PARCIAL** — parte da experiência funciona; a promessa completa ainda não.
-- **PLANEJADO** — requisito aceito e arquitetado, ainda não entregue.
-- **BLOQUEADO POR TERCEIRO** — depende de permissão, API, credencial, revisão ou limitação de plataforma externa.
+- **PARCIAL** — parte funciona; promessa completa ainda não.
+- **IMPLEMENTADO / AGUARDA PROVA** — código existe; falta integração/aparelho/plataforma/Preview correspondente.
+- **ARQUITETURA OFICIAL** — decisão de produto aceita; não equivale a operação pronta.
+- **PLANEJADO** — requisito aceito, ainda não entregue.
+- **BLOQUEADO POR TERCEIRO** — depende de API, permissão, credencial ou limitação externa.
 
 ## Regra para futuras IAs e desenvolvedores
 
-Antes de propor uma reconstrução, criar outro repositório ou pedir novamente à usuária a visão do Jarvis:
+Antes de propor reconstrução, criar repositório ou pedir novamente a visão do Jarvis:
 
 1. ler este índice;
-2. ler o README;
-3. consultar `CONTINUIDADE_JARVIS.md` e o PR ativo;
-4. verificar o HEAD real do branch;
-5. comparar requisito com o que já existe;
-6. trabalhar no delta, não recomeçar o projeto.
+2. ler README;
+3. ler Produto e Visão;
+4. ler Multiusuário e Personalização;
+5. consultar Continuidade e HEAD real;
+6. comparar requisito com o que existe;
+7. trabalhar no delta.
 
-Para qualquer trabalho de tendência, conteúdo, crescimento ou monetização, ler também `LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md` e cruzar o radar externo com os ativos já existentes antes de propor novas estruturas.
+Para tendência/crescimento/monetização: ler `LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md`.
 
-**O objetivo da documentação é o mesmo do produto: reduzir carga mental e preservar continuidade.**
+Para qualquer feature nova: perguntar **“isso é global do Core, Skill Pack, configuração de tenant, configuração de workspace ou regra específica da Sol?”** antes de codificar.
+
+Para dados: perguntar **“qual é o escopo e quem está autorizado?”** antes de buscar/gravar.
+
+**O objetivo da documentação é o mesmo do produto: reduzir carga mental, preservar continuidade e impedir que personalização vire vazamento ou hardcode.**

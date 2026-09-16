@@ -4,6 +4,7 @@ declare const __JARVIS_BUILD__: string;
 
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
+  readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;
   readonly VITE_SECURE_MEMORY_ENABLED?: string;
 }

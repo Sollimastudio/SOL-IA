@@ -1,5 +1,8 @@
 import { JARVIS_INVARIANTS_VERSION } from '../core/jarvis-invariants.mjs';
 import { GROWTH_INTELLIGENCE_VERSION } from '../core/growth-intelligence.mjs';
+import { TENANT_CONTEXT_VERSION } from '../core/tenant-context.mjs';
+import { PROFILE_PACKS_VERSION } from '../core/profile-packs.mjs';
+import { SKILL_PACKS_VERSION } from '../core/skill-packs.mjs';
 import { ANTI_FATIGUE_VERSION } from '../server/anti-fatigue.mjs';
 
 export default {
@@ -23,9 +26,14 @@ export default {
         invariantsVersion: JARVIS_INVARIANTS_VERSION,
         antiFatigueVersion: ANTI_FATIGUE_VERSION,
         growthIntelligenceVersion: GROWTH_INTELLIGENCE_VERSION,
+        tenantContextVersion: TENANT_CONTEXT_VERSION,
+        profilePacksVersion: PROFILE_PACKS_VERSION,
+        skillPacksVersion: SKILL_PACKS_VERSION,
         durableContinuity: true,
         profileDna: true,
-        assistantHistorySeparation: true
+        assistantHistorySeparation: true,
+        tenantContracts: true,
+        clientSpecificProfilesAreExplicit: true
       },
       gateway: {
         explicitKeyPresent,

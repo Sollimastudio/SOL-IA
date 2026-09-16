@@ -1,6 +1,6 @@
 # Jarvis / Sol.IA — Índice oficial de documentação
 
-> **Documento canônico de navegação.** Atualizado em 15/09/2026.
+> **Documento canônico de navegação.** Atualizado em 16/09/2026.
 
 Este índice existe para impedir que o projeto volte a depender de conversas soltas, lembranças ou documentos históricos fora de contexto. Ele separa **documentação oficial atual**, **documentação de arquitetura**, **manuais operacionais** e **registros históricos de desenvolvimento**.
 
@@ -35,6 +35,9 @@ Se você vai manter ou desenvolver o sistema:
 
 - [`ARQUITETURA_ANTIFADIGA_ADAPTATIVA.md`](ARQUITETURA_ANTIFADIGA_ADAPTATIVA.md) — raiz/galhos, delta, repetição, loops, continuidade e autocorreção supervisionada.
 - [`ARQUITETURA_CEREBRO_CRESCENTE_SOCIAL.md`](ARQUITETURA_CEREBRO_CRESCENTE_SOCIAL.md) — modelos substituíveis, inteligência crescente, Capability Radar e inteligência social.
+- [`INTELIGENCIA_CRESCENTE_E_RADAR.md`](INTELIGENCIA_CRESCENTE_E_RADAR.md) — fontes oficiais, algoritmo, modelos, evidência, benchmark e aprendizado contínuo.
+- [`LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md`](LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md) — radar permanente de atenção, cruzamento com ativos da Sol, trend-jacking responsável, monetização, urgência de caixa e aprendizado por resultado.
+- [`AUDIENCIA_PREMIUM_E_MONETIZACAO.md`](AUDIENCIA_PREMIUM_E_MONETIZACAO.md) — audiência qualificada, conversão, produtos, métricas e monetização sem métricas vaidosas.
 - [`ARQUITETURA_DE_SKILLS_E_INTERFACES.md`](ARQUITETURA_DE_SKILLS_E_INTERFACES.md) — habilidades e fronteiras de interface.
 - [`PROGRAMA_DE_CONSTRUCAO_JARVIS.md`](PROGRAMA_DE_CONSTRUCAO_JARVIS.md) — programa de construção e critérios de aceite.
 - [`VOZ_CONTINUA_E_VIDEOCHAMADA.md`](VOZ_CONTINUA_E_VIDEOCHAMADA.md) — requisitos históricos de voz e chamada, quando presente no branch.
@@ -71,5 +74,7 @@ Antes de propor uma reconstrução, criar outro repositório ou pedir novamente 
 4. verificar o HEAD real do branch;
 5. comparar requisito com o que já existe;
 6. trabalhar no delta, não recomeçar o projeto.
+
+Para qualquer trabalho de tendência, conteúdo, crescimento ou monetização, ler também `LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md` e cruzar o radar externo com os ativos já existentes antes de propor novas estruturas.
 
 **O objetivo da documentação é o mesmo do produto: reduzir carga mental e preservar continuidade.**

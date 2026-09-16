@@ -12,6 +12,7 @@ const requiredFiles = [
   'core/prompt-autopilot.mjs',
   'core/tenant-context.mjs',
   'core/profile-packs.mjs',
+  'core/skill-packs.mjs',
   'server/anti-fatigue.mjs',
   'server/continuity-runtime.mjs',
   'server/continuity-cues.mjs',
@@ -71,15 +72,20 @@ test('non-negotiable continuity and tenant invariants remain centralized and inj
   assert.match(continuity,/currentBranch/);
 });
 
-test('deployed health endpoint exposes the compiled continuity intelligence versions', () => {
+test('deployed health endpoint exposes continuity and multi-tenant contract versions', () => {
   const health = read('api/jarvis-runtime-health.ts');
   for (const marker of [
     'JARVIS_INVARIANTS_VERSION',
     'ANTI_FATIGUE_VERSION',
     'GROWTH_INTELLIGENCE_VERSION',
+    'TENANT_CONTEXT_VERSION',
+    'PROFILE_PACKS_VERSION',
+    'SKILL_PACKS_VERSION',
     'durableContinuity',
     'profileDna',
-    'assistantHistorySeparation'
+    'assistantHistorySeparation',
+    'tenantContracts',
+    'clientSpecificProfilesAreExplicit'
   ]) assert.match(health,new RegExp(marker),`${marker} must remain visible in runtime health`);
 });
 

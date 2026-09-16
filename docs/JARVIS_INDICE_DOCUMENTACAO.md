@@ -43,9 +43,13 @@ Para manter/desenvolver o sistema:
 - [`INTELIGENCIA_CRESCENTE_E_RADAR.md`](INTELIGENCIA_CRESCENTE_E_RADAR.md) — fontes oficiais, algoritmos, modelos, evidência e benchmark.
 - [`LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md`](LOOP_CONTINUO_TENDENCIA_PARA_RECEITA.md) — tendência → ativo → resultado, parametrizado por tenant.
 - [`AUDIENCIA_PREMIUM_E_MONETIZACAO.md`](AUDIENCIA_PREMIUM_E_MONETIZACAO.md) — audiência/mercado/objetivos, funis e monetização parametrizável.
-- [`PROGRAMA_DE_CONSTRUCAO_JARVIS.md`](PROGRAMA_DE_CONSTRUCAO_JARVIS.md) — programa histórico de construção e critérios de aceite; ler junto dos documentos atuais para não congelar decisões antigas.
+- [`PROGRAMA_DE_CONSTRUCAO_JARVIS.md`](PROGRAMA_DE_CONSTRUCAO_JARVIS.md) — programa de construção e critérios de aceite atualizados.
 - [`VOZ_CONTINUA_E_VIDEOCHAMADA.md`](VOZ_CONTINUA_E_VIDEOCHAMADA.md) — requisitos históricos de voz/chamada.
 - `ios/JarvisNative/README-INSTALAR.md` — instalação/prova do cliente iOS.
+
+## Checkpoints recentes
+
+- [`ENTREGA_ARQUITETURA_MULTIUSUARIO_2026-09-16.md`](ENTREGA_ARQUITETURA_MULTIUSUARIO_2026-09-16.md) — consolida a mudança de produto: plataforma adaptativa, Sol como primeiro Profile Pack, Agency/Company Packs, isolamento e gates multi-tenant.
 
 ## Piloto Sol x produto Jarvis
 

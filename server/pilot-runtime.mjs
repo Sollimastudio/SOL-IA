@@ -1,3 +1,5 @@
+import { createSolPilotTenantContext } from '../core/tenant-context.mjs';
+
 const DEFAULT_SUPABASE_URL = 'https://rkkpbmzrucaghrojujvb.supabase.co';
 const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_XhsUjBPVRtC-0DBfMNDQTA_FaK8XFj8';
 const DEFAULT_MODEL = 'alibaba/qwen3.8-flash';
@@ -94,6 +96,7 @@ export async function resolvePilotRuntime(
   let canUseAi = false;
   let model = first(baseEnv.JARVIS_MODEL, DEFAULT_MODEL);
   let accessReason = 'session_missing';
+  let tenantContext = null;
   let authStatus = null, pilotStatus = null, authAttempts = 0, pilotAttempts = 0;
 
   if (/^Bearer [^\s]+$/.test(authorization)) {
@@ -113,6 +116,7 @@ export async function resolvePilotRuntime(
         if (row?.owner_id === user.id) {
           allowedUser = user.id;
           canUseAi = row.can_use_ai === true;
+          tenantContext = createSolPilotTenantContext(user.id);
           if (typeof row.model === 'string' && row.model.trim()) model = row.model.trim();
         }
       }
@@ -150,12 +154,14 @@ export async function resolvePilotRuntime(
       JARVIS_RUNTIME_REASON: readinessReason,
       OPENROUTER_API_KEY: first(baseEnv.OPENROUTER_API_KEY, providerCredential)
     },
+    tenantContext,
     useGateway,
     gatewayCredential,
     diagnostics: {
       authStatus, pilotStatus, authAttempts, pilotAttempts,
       pilotVerified,
       canUseAi,
+      tenantContextPresent: Boolean(tenantContext),
       providerCredentialPresent,
       gatewayCredentialPresent: Boolean(gatewayCredential),
       gatewayCredentialSource: gateway.source,

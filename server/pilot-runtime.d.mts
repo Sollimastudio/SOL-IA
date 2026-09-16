@@ -1,3 +1,5 @@
+import type { TenantContext } from '../core/tenant-context.mjs';
+
 export function resolvePilotRuntime(
   request: Request,
   baseEnv?: Record<string, string | undefined>,
@@ -6,6 +8,7 @@ export function resolvePilotRuntime(
   options?: { resolveProvider?: boolean }
 ): Promise<{
   env: Record<string, string | undefined>;
+  tenantContext: TenantContext | null;
   useGateway: boolean;
   gatewayCredential: string;
   diagnostics: {
@@ -15,6 +18,7 @@ export function resolvePilotRuntime(
     pilotAttempts: number;
     pilotVerified: boolean;
     canUseAi: boolean;
+    tenantContextPresent: boolean;
     providerCredentialPresent: boolean;
     gatewayCredentialPresent: boolean;
     gatewayCredentialSource: 'env' | 'oidc_helper' | 'none';

@@ -25,7 +25,8 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 | Separação resposta da IA x memória humana | OPERACIONAL | Histórico de assistente em tabela própria |
 | Jarvis Core v1 read-only | OPERACIONAL | Endpoint privado recupera continuidade, perfil, histórico e conhecimento sem escrita/modelo |
 | Loops/pendências como sistema formal completo | PARCIAL | Sinais raiz/galho existem; gestão completa de loops ainda evolui |
-| Escopos tenant/workspace/client/project | ARQUITETURA OFICIAL | Modelo documentado; banco piloto ainda é majoritariamente single-owner |
+| Escopos tenant/workspace | PARCIAL / CONTRATOS IMPLEMENTADOS | `core/tenant-context.mjs` cria contexto explícito e falha fechado em cross-tenant/cross-workspace; banco piloto ainda é majoritariamente single-owner |
+| Memória pessoal x organizacional | PARCIAL / CONTRATO IMPLEMENTADO | `classifyDataScope` impede promoção silenciosa de memória pessoal; persistência multi-tenant completa ainda futura |
 
 ## 2. Conhecimento e fontes
 
@@ -61,7 +62,7 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 | Wake phrase web “Jarvis, tá aí?” | PARCIAL | Só com sessão já autorizada/ativa |
 | Resposta “Tô aqui. Pode falar.” | IMPLEMENTADA | Código/testes; reteste físico recomendado |
 | Conversa contínua web antiga | PARCIAL | Sessão engajada existe; limitações do navegador permanecem |
-| GPT-Live full-duplex no branch | IMPLEMENTADO / AGUARDA PROVA | Token broker, captura PCM, interrupção, transcrição, escolha de voz, custo e delegação foram codificados; ainda falta validação de Preview/aparelho real antes de chamar operacional |
+| GPT-Live full-duplex no branch | IMPLEMENTADO / PREVIEW VERDE / AGUARDA PROVA FÍSICA | Broker autenticado, captura PCM, interrupção, transcrição, escolha de voz, custo e delegação compilam e passam contratos; falta prova real no aparelho antes de chamar operacional |
 | Cliente nativo iOS hands-free | IMPLEMENTADO / AGUARDA PROVA FÍSICA | App Intent, áudio, Speech, Keychain, contexto e cérebro local estão no branch |
 | Atalho Vocal “Jarvis, tá aí?” sem toque | IMPLEMENTADO / AGUARDA PROVA FÍSICA | Requer instalar/configurar no iPhone |
 | Tela bloqueada | NÃO COMPROVADO | Teste separado obrigatório |
@@ -119,7 +120,7 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 | Social Intelligence com métricas reais | PARCIAL/PLANEJADO | Depende de contas/conectores |
 | Motor de monetização/objetivos genérico | ARQUITETURA OFICIAL | Precisa dados reais por tenant para operar plenamente |
 | Testes de regressão | OPERACIONAL | Prebuild executa contratos Node |
-| Gate de Preview | OPERACIONAL no fluxo atual | Preview depende dos contratos/build |
+| Gate de Preview | OPERACIONAL | Preview atual ficou READY com contratos e build passando |
 | Autodiagnóstico web/runtime | PARCIAL | Health checks existentes |
 | Autorreparo completo | PLANEJADO | Detectar → reproduzir → patch → branch → testes → Preview → aprovação → rollback |
 | Alteração automática de produção | PROIBIDA POR PADRÃO | Não é objetivo do self-healing |
@@ -129,12 +130,13 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 | Capacidade | Status | Evidência/limite |
 |---|---|---|
 | Produto parametrizável por tenant | ARQUITETURA OFICIAL | Definido em `ARQUITETURA_MULTIUSUARIO_E_PERSONALIZACAO.md` |
-| Sol como Profile Pack e não default global | ARQUITETURA OFICIAL | Nova regra de produto/documentação |
-| Core Skills + Skill Packs | ARQUITETURA OFICIAL | Skill registry atual ainda é piloto e precisa generalização progressiva |
+| Tenant context em código | PARCIAL / IMPLEMENTADO COMO CONTRATO | `core/tenant-context.mjs` exige tenant/workspace/user explícitos para a nova camada |
+| Sol como Profile Pack e não default global | PARCIAL / IMPLEMENTADO COMO CONTRATO | `core/profile-packs.mjs`: default global é `core-default`; `sol-pilot` só entra explicitamente |
+| Profile Packs Agency/Company | IMPLEMENTADO COMO METADADO / NÃO OPERACIONAL | Registry existe; não significa workflow completo de agência/empresa |
+| Core Skills + Skill Packs | ARQUITETURA OFICIAL | Skill registry atual ainda carrega capacidades do piloto e precisa generalização progressiva |
 | Workspaces/projetos/clientes múltiplos | PLANEJADO | Entidades/documentação definidas; UI/banco comercial ainda não |
-| Agência multi-cliente isolada | PLANEJADO | Exige tenant/workspace/client + RBAC + testes cross-tenant |
+| Agência multi-cliente isolada | PLANEJADO | Exige persistência tenant/workspace/client + RBAC + testes de banco |
 | Empresa com membros/roles | PLANEJADO | RBAC/ABAC comercial ainda não implementado |
-| Memória pessoal x organizacional | ARQUITETURA OFICIAL | Escopos definidos; persistência completa futura |
 | Billing/metering por tenant | PLANEJADO | Custos ainda não atribuídos comercialmente por tenant |
 | White-label | POSSIBILIDADE FUTURA | Não é requisito do primeiro lançamento |
 | Multi-tenant comercial isolado | PLANEJADO | Não chamar pronto antes de prova de isolamento, exportação e roles |
@@ -150,27 +152,35 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 | Voz como autenticação única | NÃO PERMITIDO | Pode ser apenas sinal adicional |
 | Passkey/Face ID para ações sensíveis | PLANEJADO | |
 | Ações irreversíveis sem aprovação | NÃO LIBERADAS | |
-| Isolamento `tenant_id/workspace_id` comercial | PLANEJADO | Owner-only atual não equivale a arquitetura multi-tenant final |
-| Testes adversariais cross-tenant | PLANEJADO/OBRIGATÓRIO | Gate antes de venda multiempresa |
+| Isolamento `tenant_id/workspace_id` comercial | PARCIAL NO CONTRATO / NÃO NO BANCO | Helpers falham fechado; esquema persistente comercial ainda não migrado |
+| Testes sintéticos cross-tenant/cross-workspace | OPERACIONAL NO CONTRATO | Casos de negação passam no Preview |
+| Testes adversariais reais de banco cross-tenant | PLANEJADO/OBRIGATÓRIO | Gate antes de venda multiempresa |
 
 ## 11. Evidência de testes
 
-O checkpoint anterior à expansão Realtime registrou **189/189 contratos Node passando** em Preview.
+No commit `5cb897d6f5de38ca7a088049d9d1ed3af4f699cc`, a Preview Vercel do branch `work/jarvis-gpt-live-1-20260916` ficou **READY**.
 
-Depois desse checkpoint houve novas mudanças no branch, incluindo GPT-Live e documentação multiusuário. Portanto, **189/189 não deve ser apresentado como certificação dessas alterações novas**. Elas precisam do próximo ciclo de testes/build/Preview correspondente.
+Evidência da mesma build:
 
-Hardware Apple, live real, contas externas e multi-tenant comercial exigem provas adicionais; teste estático não substitui essas evidências.
+- **200/200 contratos Node passando**;
+- novos contratos de tenant/profile passando;
+- broker GPT-Live passando seus contratos;
+- TypeScript `tsc -b` aprovado;
+- Vite production build aprovado;
+- deployment concluído pela Vercel.
+
+Isto certifica os contratos e a compilação do branch, **não** certifica hardware Apple, qualidade de áudio real, live real, contas externas nem multi-tenant comercial em banco.
 
 ## 12. Próxima sequência oficial
 
-1. rodar contratos/build/Preview do branch atualizado, incluindo GPT-Live;
-2. provar voz realtime em aparelho real;
-3. continuar prova nativa Mac/iPhone;
-4. expandir conectores em leitura;
-5. transformar Radar/Opportunity Cards em pipeline persistente;
-6. generalizar Perfil DNA/skills para tenant-aware sem quebrar o piloto;
-7. introduzir workspaces/clientes/roles de forma incremental;
-8. criar testes cross-tenant antes de dados reais de múltiplas organizações;
+1. provar GPT-Live em aparelho/navegador real e medir áudio, interrupção e encerramento;
+2. continuar a prova nativa Mac/iPhone;
+3. introduzir `tenant-context` progressivamente nas novas services/repositories, sem alterar ainda os registros atuais do piloto;
+4. desenhar a primeira migração persistente `tenant/workspace/member` em ambiente isolado, com estratégia de compatibilidade para dados atuais;
+5. criar testes de banco cross-tenant antes de aplicar migração comercial;
+6. expandir conectores em leitura e torná-los tenant-aware;
+7. transformar Radar/Opportunity Cards em pipeline persistente;
+8. generalizar skills atuais sem remover o Sol Profile Pack;
 9. adicionar metering/custos por tenant;
 10. somente então declarar operação comercial multi-tenant pronta.
 

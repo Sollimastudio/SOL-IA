@@ -1,107 +1,197 @@
 # Programa de construção do Jarvis
 
-Data: 13/09/2026. Núcleo: `Sollimastudio/SOL-IA`. Execução na branch da PR #6; não reiniciar o projeto.
+Data original: 13/09/2026. Atualização de arquitetura: 16/09/2026. Núcleo: `Sollimastudio/SOL-IA`. Não reiniciar o projeto; trabalhar por delta.
 
-Este documento transforma o pedido da Sol em trabalho técnico e critérios de aceite. Complementa [o adendo de continuidade](https://github.com/Sollimastudio/SOL-IA/pull/6#issuecomment-5654738092), `CONTINUIDADE_JARVIS.md`, `QUEIXAS_E_ACEITE_MOBILE_2026-09-13.md` e as arquiteturas existentes. Os novos detalhes refinam requisitos anteriores; não certificam capacidades entregues.
+Este documento transforma requisitos do piloto Sol em trabalho técnico e critérios de aceite. Complementa `CONTINUIDADE_JARVIS.md`, `JARVIS_PRODUTO_E_VISAO.md`, `ARQUITETURA_MULTIUSUARIO_E_PERSONALIZACAO.md`, `JARVIS_STATUS_CAPACIDADES.md` e as arquiteturas especializadas. Novos detalhes refinam requisitos anteriores; não certificam capacidades entregues.
+
+## Atualização estrutural — 16/09/2026
+
+A visão comercial deixa de ser “pegar o Jarvis da Sol e abrir cadastro para outras pessoas”.
+
+Decisão:
+
+- o **Core é reutilizável**;
+- Sol é o primeiro perfil piloto profundo;
+- os dados/obras/produtos/rotinas da Sol formam configuração própria, não defaults globais;
+- todo novo componente deve ser desenhado com escopo `tenant/workspace/project/client/user` em mente;
+- Skill Packs substituem hardcode de nicho;
+- agência precisa poder administrar clientes isolados;
+- empresa precisa poder administrar membros/roles/departamentos;
+- Radar e Loop Tendência → Resultado são parametrizados pelo objetivo do tenant;
+- multi-tenant comercial só será declarado pronto após isolamento, RBAC, metering e testes cross-tenant.
+
+**Multiusuário comercial continua uma etapa futura; pensamento tenant-aware passa a ser restrição desde agora.**
 
 ## Responsabilidades e forma de trabalho
 
-Sol define a intenção, seu ponto de vista e o que uma boa experiência precisa permitir. A engenharia assume especificação, prompts internos, escolha técnica fundamentada, código, testes, integração, registro de decisões e retomada. Não exigir conhecimento técnico, gerenciamento de agentes, lembrança de links ou repetição do histórico pela Sol.
+O cliente define intenção, objetivos, limites e o que uma boa experiência precisa permitir. A engenharia assume especificação, prompts internos, escolha técnica fundamentada, código, testes, integração, registro de decisões e retomada. Não exigir conhecimento técnico, gerenciamento de agentes, lembrança de links ou repetição do histórico.
 
-Codex é um agente de IA de desenvolvimento, capaz de analisar e alterar os recursos aos quais tem acesso durante o trabalho. Não é uma equipe humana permanentemente operante nem um serviço 24 horas já instalado no Jarvis. Operação contínua exige serviços próprios, tarefas persistentes e mecanismos de recuperação.
+No piloto, Sol ocupa esse papel. Em agência/empresa, políticas podem distribuir aprovação entre donos, administradores, membros e clientes aprovadores.
 
-“Profissional e definitivo” significa uma base mantida, verificável, recuperável e evolutiva. Não significa ausência absoluta de falhas, lucro garantido, vigilância universal ou fim da manutenção.
+Codex/ChatGPT podem atuar como oficina de desenvolvimento sobre recursos conectados. Isso não equivale a um worker permanente já instalado dentro do Jarvis. Operação contínua exige serviços próprios, tarefas persistentes e recuperação.
 
-Fluxo de cada entrega: problema observado → requisito existente e novidade → mudança delimitada → teste técnico → comportamento real quando necessário → evidência → próxima tarefa registrada. Ao retomar, consultar o estado salvo antes de pedir contexto à Sol.
+“Profissional e definitivo” significa base mantida, verificável, recuperável e evolutiva. Não significa ausência absoluta de falhas, lucro garantido, vigilância universal ou fim da manutenção.
 
-## Novidades desta mensagem
+Fluxo de entrega:
 
-1. A conversa cotidiana e os pedidos de evolução devem migrar para dentro do Jarvis. Sol deve poder dizer “corrija isto” no produto e acompanhar o resultado sem atuar como intermediária entre ferramentas.
-2. Internamente: registrar solicitação com ID, ligá-la ao requisito/defeito anterior, produzir especificação, preparar patch isolado, testar, disponibilizar Preview, informar resultado e manter rollback. Propor essa capacidade não a torna executora hoje.
-3. Engenharia de prompts pertence ao sistema. Não criar um personagem “engenheiro de prompts” que exige outra conversa da Sol. Modelos/especialistas recebem tarefas e contexto adequados nos bastidores.
-4. Live no mesmo telefone: ouvir chamada da Sol; receber comentários permitidos; responder em voz para o público OU orientar somente Sol. Dois aparelhos podem ser uma etapa transitória, não o objetivo final.
-5. História de criação do Jarvis: tentativas, dificuldades, decisões, mudanças de direção e evidências ao longo do tempo. Narrativa pública usa somente material autorizado e não inventa datas, número de tentativas ou capacidades.
-6. Legado: acervo da vida e das obras com autoria, originais, versões, cronologia, relações, exportação e recuperação; possibilidade futura de acesso por pessoas designadas. Planejar acesso de sucessores sem compartilhar credenciais.
-7. Visão comercial ampla: coordenar funções de equipe, prospectar e operar dentro de autorizações, aprender com resultados observados. Avaliar valor entregue e custo de operação antes de escalar; não prometer resultado financeiro.
-8. A auditoria de históricos permanece parcial. Repositórios acessíveis, conversas recuperadas e arquivos localizados não cobrem todas as contas nem repositórios excluídos. Não quantificar porcentagem de cobertura sem inventário.
+`problema observado → requisito + novidade → mudança delimitada → teste → comportamento real quando necessário → evidência → documentação/status → próxima tarefa`
 
-## Relações editoriais relatadas agora
+Ao retomar, consultar o estado salvo antes de pedir contexto novamente.
 
-Fonte: fala direta da Sol nesta conversa em 13/09/2026; relações representam seu relato e ponto de vista, não uma cronologia editorial fechada.
+## Requisitos consolidados do piloto
+
+1. A conversa cotidiana e pedidos de evolução devem migrar para dentro do Jarvis quando a infraestrutura permitir. O usuário deve poder dizer “corrija isto” e acompanhar resultado sem atuar como ponte técnica entre ferramentas.
+2. Pedidos de engenharia: ID → requisito/defeito → especificação → patch isolado → testes → Preview → resultado → rollback.
+3. Prompt engineering é infraestrutura, não outro personagem para o usuário administrar.
+4. Live no mesmo telefone permanece objetivo do piloto: ouvir contexto autorizado, orientar privadamente e/ou participar publicamente com rotas separadas.
+5. História de criação do Jarvis deve preservar fatos verificáveis e não inventar datas/tentativas/capacidades.
+6. Legado/acervo precisa de autoria, originais, versões, cronologia, exportação e recuperação.
+7. Visão comercial deve medir valor entregue e custo antes de escala; não prometer resultado financeiro.
+8. Auditoria de históricos/repositórios é parcial enquanto não houver inventário completo.
+
+## Generalização para outros clientes
+
+As capacidades acima são reinterpretadas por objetivo.
+
+### Individual/creator
+
+Continuidade pessoal, criação, negócios, rotina, ativos, conteúdo, monetização, tecnologia.
+
+### Agência
+
+- operação interna;
+- múltiplos clientes;
+- brand profiles separados;
+- calendário/campanhas/criativos/mídia;
+- aprovações;
+- métricas e custo/margem por conta;
+- Radar que avalia uma trend por cliente.
+
+### Empresa
+
+- objetivos/KPIs;
+- projetos;
+- departamentos;
+- conhecimento institucional;
+- vendas/marketing/suporte/engenharia/operação;
+- roles;
+- auditoria;
+- risco/custo.
+
+### Novo setor
+
+Configurar perfil, objetivos, fontes, skills, conectores e critérios de sucesso sem fork do produto.
+
+## Relações editoriais do piloto Sol
+
+Essas relações pertencem ao tenant/perfil da Sol e **não entram em contas novas**.
 
 | Elemento | Relação relatada | Cuidado de continuidade |
 |---|---|---|
-| Feminicídio Emocional | Projeto nascido da experiência que Sol descreve por esse termo | Preservar autoria e distinção entre relato, conceito autoral e enquadramentos externos |
-| Posicione-se / Reposicione-se | Reflexão surgida ao escrever a obra anterior; posicionamento e uma escola de posicionamento | Não fundir automaticamente nome do método, títulos de livros e revisões |
-| Fuga Identitária | Relação que Sol estabelece com dificuldades contemporâneas de posicionamento | Manter tese autoral e fontes separadas, sem inventar manuscrito concluído |
-| Jarvis | Construção feita para apoiar sua forma de pensar, criação e continuidade | Registrar tentativas verificadas e origem de cada decisão |
+| Feminicídio Emocional | Projeto nascido da experiência descrita por Sol | Preservar autoria e separar relato, conceito autoral e fontes externas |
+| Posicione-se / Reposicione-se | Reflexão/obra ligada a posicionamento | Não fundir automaticamente método, títulos e revisões |
+| Fuga Identitária | Tese autoral relacionada a dificuldades contemporâneas de posicionamento | Preservar tese e fontes sem inventar manuscrito concluído |
+| Jarvis | Sistema criado para apoiar sua forma de pensar, criação e continuidade | Registrar tentativas verificadas e origem das decisões |
 
-A busca de continuidade recuperou referências anteriores a `Morte em Vida`, `Reposicione-se` e `Método Posicione-se`, inclusive em 13/06/2026, além de arquivos indicados como `Reposicione-se FINAL v3.docx` e documentos de cronologia. São pistas de inventário; os manuscritos completos não foram auditados nesta rodada. A interpretação atual da Sol não deve ser substituída por elogios ou inferências de assistentes antigos. Não reproduzir biografia íntima no prompt global.
+Esses dados são exemplo de profundidade de personalização, não esquema obrigatório de produto.
 
 ## Arquitetura e ordem de entrega
 
-| Etapa | Construção | Critério de aceite | Estado |
+| Etapa | Construção | Critério de aceite | Estado/observação |
 |---|---|---|---|
-| 0. Uso cotidiano | Ícone, acesso estável, renovação de sessão e recuperação de erro | Abrir no iPhone, fechar/retomar e continuar sem novo login por falha de servidor | Abertura pelo ícone confirmada por relato de Sol; sessão prolongada e proteção contra terceiros pendentes |
-| 1. Fala natural | Prompt interno versionado e interpretação contextual | Requisição usa a diretiva, mantém papéis e permissões; modelo real atende variações sem exigir prompt técnico | Ligação implementada nesta alteração; qualidade real pendente |
-| 2. Continuidade | Eventos originais, decisões corrigíveis, tópicos e tarefas duráveis | Retomar após reinício com fonte, decisão vigente e próximo passo; detalhe e correção não duplicam projeto | Próxima entrega de engenharia; não implementada por este documento |
-| 3. Acervo | Inventário, importação rastreável, originais e relações entre obras | Importar sem duplicar nem sobrescrever; reabrir original, localizar versão e restaurar cópia | Biblioteca textual parcial existente; acervo integral não importado |
-| 4. Execução | Fila persistente, workers e conectores com estados | Tarefa sobrevive ao fechamento; tentativa interrompida recupera sem duplicar ação; comprovante do resultado | Pendente |
-| 5. Voz e live | Sessão de áudio, interrupção, chat público, rotas público/privado | Transmissão teste no mesmo iPhone com áudio correto para cada destinatário | Prova técnica pendente por plataforma |
-| 6. Evolução dentro do Jarvis | Entrada de pedidos → tarefa → patch isolado → avaliação → Preview | Um defeito enviado pelo Jarvis gera entrega rastreável; promoção pelo controle aprovado | Pendente |
-| 7. Produto e legado | Isolamento de clientes, custos, exportação, recuperação e acesso delegado | Conta nova não recebe dados de Sol; restauro e exportação independem do fornecedor do modelo | Pendente |
+| 0. Uso cotidiano | acesso estável, sessão, recuperação de erro | abrir/retomar sem reset indevido | piloto em evolução |
+| 1. Fala natural | interpretação contextual + voz | conversa sem exigir prompt técnico | web/realtime em evolução; provas pendentes |
+| 2. Continuidade | eventos, decisões, tópicos, tarefas duráveis | retomar com fonte, decisão vigente e próximo passo | infraestrutura já avançou além do estado original deste programa |
+| 3. Acervo | inventário, originais, relações | importar sem duplicar/sobrescrever e restaurar | biblioteca parcial |
+| 4. Execução | fila persistente, workers, conectores | tarefa sobrevive ao fechamento e não duplica ação | pendente |
+| 5. Voz/live | áudio, interrupção, público/privado | prova real no dispositivo/plataforma | GPT-Live implementado em branch; live completa pendente |
+| 6. Evolução dentro do Jarvis | pedido → tarefa → patch → Preview | defeito enviado pelo produto gera entrega rastreável | pendente/parcial fora do app |
+| 7. Fundamento multiusuário | tenant/workspace/client/role, Profile/Skill Packs | novas features não hardcodam Sol | arquitetura oficial; implementação incremental |
+| 8. Produto multi-tenant | isolamento real, RBAC, metering, billing/export | duas+ organizações sem vazamento; agência multi-cliente | pendente |
+| 9. Legado/delegação | exportação, recuperação, acesso designado | continuidade independente de fornecedor | pendente |
 
-Etapas têm dependências, não datas prometidas. Usar entregas pequenas com critérios finais claros; não trocar indefinidamente de repositório, interface ou fornecedor.
+Etapas têm dependências, não datas prometidas. Usar entregas pequenas, evitar troca indefinida de repositório/interface/fornecedor.
 
-Base proposta: aplicação atual em Vercel; Supabase/PostgreSQL para dados e estado, Storage privado para originais, busca textual e semântica para recuperar contexto; fila durável e worker para tarefas além da requisição web. O modelo interpreta e produz; o banco conserva; o executor realiza; testes e registros comprovam. Trocar modelo não deve apagar a memória.
+Base: aplicação em Vercel; Supabase/PostgreSQL para estado; storage privado para originais; busca textual/semântica; workers/fila para tarefas longas; modelos para interpretar/produzir; executor para agir; testes/auditoria para comprovar.
 
-Prompt não substitui esses componentes. Inicialmente melhorar instruções/contexto e medir resultados; decidir sobre modelos adicionais ou treinamento específico somente com erros e exemplos documentados.
+## Checklist de continuidade
 
-## Próxima entrega de continuidade: procedimento verificável
+Em ambiente seguro/fixtures:
 
-Preparar primeiro em banco descartável/ambiente isolado, com dados fictícios:
+- [ ] evento possui dono/tenant, origem, ID e data;
+- [ ] reenvio com mesmo ID não duplica;
+- [ ] mesmo ID com conteúdo diferente gera conflito;
+- [ ] paráfrase não funde objetivos sem evidência;
+- [ ] correção cria revisão e preserva anterior;
+- [ ] resposta da IA não vira fato/decisão humana;
+- [ ] checkpoint conserva raiz, galhos, pendências e próximo passo;
+- [ ] reinício recupera contexto sem depender do histórico do navegador;
+- [ ] recuperação não fica limitada artificialmente às últimas memórias;
+- [ ] falha deixa estado honesto;
+- [ ] conta/tenant diferente não lê nem altera registros;
+- [ ] modo público não recebe dado privado;
+- [ ] export/restauração preservam relações/versões;
+- [ ] evidência distingue fixture, integração e teste físico.
 
-- [ ] Evento original possui dono, origem, ID estável e data da captura.
-- [ ] Reenvio com mesmo ID não duplica; mesmo ID com conteúdo diferente gera conflito explícito.
-- [ ] Paráfrase é ligada ao objetivo existente quando houver evidência suficiente; ambiguidade não produz fusão irreversível.
-- [ ] Detalhe novo complementa o objetivo; correção cria revisão e mantém o texto anterior.
-- [ ] Mensagem da IA não vira fato sobre Sol nem decisão aprovada.
-- [ ] Checkpoint conserva assunto principal, ramificações, pendências, decisão vigente e próxima tarefa.
-- [ ] Após reiniciar cliente e servidor, recuperar decisão e fonte sem histórico da conversa enviado pelo navegador.
-- [ ] Recuperar evento relevante que esteja fora das últimas 50 memórias.
-- [ ] Falha/interrupção deixa estado pendente ou desconhecido honesto, sem falsa confirmação.
-- [ ] Conta diferente não lê nem altera registros; modo público não recebe dados privados.
-- [ ] Exportação e restauração preservam originais, relações e revisões.
-- [ ] Evidência distingue fixture, chamada real e teste físico.
+## Checklist multi-tenant obrigatório
 
-Migração, política de retenção e eventual custo de serviço devem estar concretos e revisados antes da ativação real. Este documento não aplica migração de produção nem autoriza importação ampla de dados pessoais.
+Antes de comercialização para várias organizações:
 
-## Live: prova de viabilidade obrigatória
+- [ ] Tenant A não consulta Tenant B;
+- [ ] cache/embeddings/busca respeitam tenant;
+- [ ] jobs mantêm tenant/workspace;
+- [ ] segredos/conectores são isolados;
+- [ ] roles restringem ações;
+- [ ] memória pessoal não vira institucional automaticamente;
+- [ ] agência mantém clientes isolados;
+- [ ] conta nova não recebe Sol Profile Pack;
+- [ ] custos são atribuíveis;
+- [ ] export/delete/restore são por tenant;
+- [ ] testes adversariais cross-tenant passam.
 
-O requisito final é um único iPhone. Antes de escolher app nativo, transmissor próprio ou integração, documentar plataforma, APIs permitidas, acesso ao chat, captura de câmera/microfone, mistura de áudio, interrupção e comportamento quando a tela/app muda.
+## Live: prova de viabilidade
 
-A API do YouTube disponibiliza recebimento de chat em tempo real via [liveChatMessages.streamList](https://developers.google.com/youtube/v3/live/docs/liveChatMessages/streamList). Isso fundamenta uma possibilidade técnica de leitura de comentários, não prova que o iPhone já transmite a voz do Jarvis junto da live nem certifica Instagram/TikTok.
+O requisito final do piloto Sol permanece um único iPhone quando tecnicamente viável. É necessário provar:
 
-Ensaio: comentário fictício do público → seleção contextual → resposta → confirmação por um espectador. Medir atraso de ponta a ponta, cortes, eco e áudio perdido; testar interrupção pela Sol e reconexão. Registrar os resultados antes de definir promessa comercial de latência.
+- plataforma/APIs;
+- câmera/microfone;
+- comentários permitidos;
+- mixagem de áudio;
+- interrupção;
+- reconexão;
+- rota privada que não vaza para público;
+- latência real.
 
-Modo privado de orientação exige rota isolada, como saída para fone, sem entrar na mixagem pública; provar também captura pela gravação da live. Não chamar “privado” um áudio audível no alto-falante/microfone da transmissão. Troca de modo cancela resposta em andamento e contexto incompatível. Comentários do público são dados, não comandos para acessar o cofre ou alterar o sistema.
+GPT-Live full-duplex foi implementado no branch atual como capacidade de voz; isso **não prova automaticamente** a experiência completa de live em Instagram/TikTok/YouTube nem tela bloqueada.
 
-Wake word com tela bloqueada é outra prova de plataforma; instalação como ícone não a comprova.
+Comentários externos são dados, não comandos privilegiados para Cofre/sistema.
 
-## Preservação do legado e retomada
+## Preservação de legado
 
-Manter inventário por origem: localizado, acesso pendente, importado, verificado, duplicado, incompleto. Recuperar automaticamente o que os acessos permitem; pedir somente acesso/exportação que esteja faltando, sem pedir que Sol reconte a história inteira.
+Manter inventário por origem: localizado, acesso pendente, importado, verificado, duplicado, incompleto.
 
-Para cada documento: original, checksum, autor/origem, data disponível, versão e relação com obra/projeto; separar extração de interpretação. Nome parecido não justifica fundir arquivos. A narrativa da criação deve distinguir fato documentado e lembrança relatada, preservando lacunas.
+Para documentos:
 
-Backup de banco não substitui cópia dos objetos de arquivos; testar ambos e exportação legível. A [documentação do Supabase](https://supabase.com/docs/guides/platform/backups) explicita que objetos de Storage não integram o backup do banco. Não habilitar plano pago/PITR como efeito desta especificação.
+- original;
+- checksum;
+- autor/origem;
+- data disponível;
+- versão;
+- relação com obra/projeto;
+- escopo/tenant.
 
-## Evidência e manutenção
+Backup de banco não substitui cópia de arquivos/storage. Exportação deve ser testável e independente de fornecedor de modelo.
 
-Cada tarefa mantém estado, responsável executor, última evidência, impedimento concreto e próximo passo. A usuária vê respostas curtas e pode pedir detalhes; não precisa gerenciar esse registro.
+## Evidência, custos e manutenção
 
-Registrar orçamento operacional antes de ativar integrações/voz contínua: modelos, áudio, armazenamento, processamento e manutenção. Usar limites, alertas e cancelamento; não há orçamento aprovado nem estimativa fechada nesta rodada.
+Cada tarefa relevante mantém estado, executor, evidência, impedimento e próximo passo. Usuário pode ver resumo curto e pedir detalhes.
 
-A entrega de agora conecta instruções ao chat e registra este programa. Não é o diário integral, não é a equipe executora e não transfere automaticamente esta conversa do ChatGPT para o banco do Jarvis.
+Registrar custos antes de ativar escala: modelos, voz, vídeo, armazenamento, conectores, workers, processamento e manutenção.
 
-Atualização de orçamento e segurança: ler `ORCAMENTO_ZERO_VOZ_E_SEGURANCA.md`; nenhuma API paga nova autorizada. Geração remota pausada por padrão; captura sem modelo e leitura com voz local são a entrega imediata.
+### Atualização de autorização de custo
+
+A política histórica era bloquear nova IA paga por padrão. Em 16/09/2026, a Sol autorizou especificamente a implementação/teste de GPT-Live para o piloto. Essa autorização **não deve ser interpretada como liberação ilimitada de todo modelo pago**. O restante continua seguindo política de custo/autorização e limites.
+
+## Regra final
+
+**O programa não constrói “um Jarvis igual para todo mundo”. Constrói um motor capaz de aprender o contexto certo de cada cliente sem misturar identidades, dados, objetivos ou custos.**

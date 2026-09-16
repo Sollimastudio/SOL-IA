@@ -26,6 +26,7 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 | Jarvis Core v1 read-only | OPERACIONAL | Endpoint privado recupera continuidade, perfil, histórico e conhecimento sem escrita/modelo |
 | Loops/pendências como sistema formal completo | PARCIAL | Sinais raiz/galho existem; gestão completa de loops ainda evolui |
 | Escopos tenant/workspace | PARCIAL / CONTRATOS IMPLEMENTADOS | `core/tenant-context.mjs` cria contexto explícito e falha fechado em cross-tenant/cross-workspace; banco piloto ainda é majoritariamente single-owner |
+| Runtime do piloto com tenant explícito | IMPLEMENTADO / PREVIEW VERDE | Membership validada cria `personal:<user>` + workspace primário + `sol-pilot`; autorização de IA continua separada do pertencimento |
 | Memória pessoal x organizacional | PARCIAL / CONTRATO IMPLEMENTADO | `classifyDataScope` impede promoção silenciosa de memória pessoal; persistência multi-tenant completa ainda futura |
 
 ## 2. Conhecimento e fontes
@@ -130,10 +131,10 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 | Capacidade | Status | Evidência/limite |
 |---|---|---|
 | Produto parametrizável por tenant | ARQUITETURA OFICIAL | Definido em `ARQUITETURA_MULTIUSUARIO_E_PERSONALIZACAO.md` |
-| Tenant context em código | PARCIAL / IMPLEMENTADO COMO CONTRATO | `core/tenant-context.mjs` exige tenant/workspace/user explícitos para a nova camada |
+| Tenant context em código | PARCIAL / IMPLEMENTADO COMO CONTRATO | `core/tenant-context.mjs` exige tenant/workspace/user explícitos; runtime do piloto já recebe o adapter compatível |
 | Sol como Profile Pack e não default global | PARCIAL / IMPLEMENTADO COMO CONTRATO | `core/profile-packs.mjs`: default global é `core-default`; `sol-pilot` só entra explicitamente |
 | Profile Packs Agency/Company | IMPLEMENTADO COMO METADADO / NÃO OPERACIONAL | Registry existe; não significa workflow completo de agência/empresa |
-| Core Skills + Skill Packs | ARQUITETURA OFICIAL | Skill registry atual ainda carrega capacidades do piloto e precisa generalização progressiva |
+| Core Skills + Skill Packs | PARCIAL / REGISTRY GENÉRICO IMPLEMENTADO | `core/skill-packs.mjs` define Core Skills neutras e packs de pessoa, creator, agência, empresa, vendas, engenharia, finanças etc.; skills legadas do piloto serão migradas progressivamente |
 | Workspaces/projetos/clientes múltiplos | PLANEJADO | Entidades/documentação definidas; UI/banco comercial ainda não |
 | Agência multi-cliente isolada | PLANEJADO | Exige persistência tenant/workspace/client + RBAC + testes de banco |
 | Empresa com membros/roles | PLANEJADO | RBAC/ABAC comercial ainda não implementado |
@@ -158,13 +159,15 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 
 ## 11. Evidência de testes
 
-No commit `5cb897d6f5de38ca7a088049d9d1ed3af4f699cc`, a Preview Vercel do branch `work/jarvis-gpt-live-1-20260916` ficou **READY**.
+No commit `05863a432eab0ed3e0df3535f21addddb2f5bd95`, a Preview Vercel do branch `work/jarvis-gpt-live-1-20260916` ficou **READY**.
 
 Evidência da mesma build:
 
-- **200/200 contratos Node passando**;
-- novos contratos de tenant/profile passando;
-- broker GPT-Live passando seus contratos;
+- **207/207 contratos Node passando**;
+- contratos GPT-Live passando;
+- contratos tenant/workspace e Profile Packs passando;
+- contratos de Skill Packs genéricos passando;
+- runtime do piloto vinculado a tenant explícito com testes de membership/negação;
 - TypeScript `tsc -b` aprovado;
 - Vite production build aprovado;
 - deployment concluído pela Vercel.

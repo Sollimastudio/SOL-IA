@@ -16,6 +16,17 @@ test('uses the latest SDK token for every send', async () => {
   assert.deepEqual(seen, ['Bearer first', 'Bearer renewed']);
 });
 
+test('adds explicit application headers without replacing auth or content type', async () => {
+  let headers;
+  await sendAuthenticatedChat(options({
+    extraHeaders: { 'X-Jarvis-Live-Delegation': '1' },
+    fetchImpl: async (_url, init) => { headers = init.headers; return Response.json({ ok: true }); }
+  }));
+  assert.equal(headers.Authorization, 'Bearer current');
+  assert.equal(headers['Content-Type'], 'application/json');
+  assert.equal(headers['X-Jarvis-Live-Delegation'], '1');
+});
+
 test('refreshes once and replays only an explicit rejection before any write', async () => {
   let token = 'expired', refreshes = 0; const seen = [];
   const response = await sendAuthenticatedChat(options({ getSession: async () => session(token),

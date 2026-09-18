@@ -79,6 +79,9 @@ export function createGptLiveClient({
   let silentGain = null;
   let started = false;
   let closing = false;
+  let closed = false;
+  let connecting = false;
+  let connectionController = null;
   let muted = false;
   let finalUsageConfirmed = false;
   let nextPlaybackTime = 0;
@@ -88,6 +91,19 @@ export function createGptLiveClient({
   const playbackSources = new Set();
   const delegationIds = new Set();
   const transcriptFragments = [];
+
+  function assertOpening() {
+    if (closing || closed || connectionController?.signal.aborted) {
+      throw new DOMException('A abertura da conversa foi cancelada.', 'AbortError');
+    }
+  }
+
+  function reportUsage(event, final) {
+    const seconds = event?.usage?.seconds;
+    if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0) return false;
+    try { onUsage(seconds, { final }); } catch { /* UI callbacks never own transport */ }
+    return true;
+  }
 
   function setStatus(value) {
     try { onStatus(value); } catch { /* UI callbacks never own transport */ }
@@ -167,6 +183,11 @@ export function createGptLiveClient({
   }
 
   function finishClose() {
+    closed = true;
+    closing = true;
+    connecting = false;
+    started = false;
+    connectionController?.abort();
     clearTimeout(closeTimer);
     clearTimeout(idleTimer);
     releaseAudio();
@@ -233,8 +254,11 @@ export function createGptLiveClient({
     try {
       text = typeof raw === 'string' ? raw : raw instanceof Blob ? await raw.text() : new TextDecoder().decode(raw);
     } catch { return; }
+    if (closed) return;
     let event;
     try { event = JSON.parse(text); } catch { return; }
+    if (!event || typeof event !== 'object') return;
+    if (closing && event.type !== 'session.closed' && event.type !== 'session.usage.updated') return;
 
     if (event.type === 'session.started') {
       started = true;
@@ -268,14 +292,11 @@ export function createGptLiveClient({
       return;
     }
     if (event.type === 'session.usage.updated') {
-      const seconds = Number(event?.usage?.seconds);
-      if (Number.isFinite(seconds)) onUsage(seconds, { final: false });
+      reportUsage(event, false);
       return;
     }
     if (event.type === 'session.closed') {
-      const seconds = Number(event?.usage?.seconds);
-      if (Number.isFinite(seconds)) onUsage(seconds, { final: true });
-      finalUsageConfirmed = true;
+      finalUsageConfirmed = reportUsage(event, true);
       started = false;
       closing = true;
       setStatus('disconnected');
@@ -293,7 +314,7 @@ export function createGptLiveClient({
     const AudioContextCtor = browserAudioContext();
     if (!AudioContextCtor) throw new Error('Este navegador não oferece áudio em tempo real compatível.');
 
-    microphone = await navigator.mediaDevices.getUserMedia({
+    const acquiredMicrophone = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
         noiseSuppression: true,
@@ -302,12 +323,20 @@ export function createGptLiveClient({
       },
       video: false
     });
+    // Permission can resolve after the user already pressed stop or left the page.
+    if (closing || closed || connectionController?.signal.aborted) {
+      acquiredMicrophone.getTracks().forEach(track => track.stop());
+      assertOpening();
+    }
+    microphone = acquiredMicrophone;
     audioContext = new AudioContextCtor();
     await audioContext.resume();
+    assertOpening();
     if (!audioContext.audioWorklet || typeof AudioWorkletNode === 'undefined') {
       throw new Error('O navegador precisa de AudioWorklet para a conversa GPT‑Live.');
     }
     await audioContext.audioWorklet.addModule('/gpt-live-capture-processor.js');
+    assertOpening();
     sourceNode = audioContext.createMediaStreamSource(microphone);
     captureNode = new AudioWorkletNode(audioContext, 'jarvis-gpt-live-capture');
     silentGain = audioContext.createGain();
@@ -322,34 +351,47 @@ export function createGptLiveClient({
   }
 
   async function connect() {
-    if (socket || closing) throw new Error('Já existe uma tentativa de conversa ao vivo em andamento.');
+    if (socket || connecting || closing || closed) throw new Error('Já existe uma tentativa de conversa ao vivo em andamento.');
     if (!accessToken) throw new Error('Sua sessão precisa estar ativa antes de abrir o GPT‑Live.');
+    connecting = true;
+    connectionController = new AbortController();
     setStatus('connecting');
     try {
       await prepareMicrophone();
+      assertOpening();
       const response = await fetchImpl(LIVE_TOKEN_URL, {
         method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: connectionController.signal
       });
+      assertOpening();
       const payload = await response.json().catch(() => null);
+      assertOpening();
       if (!response.ok || !payload?.token || !payload?.expiresAt) {
         throw new Error(payload?.error || 'Não consegui obter autorização para o GPT‑Live.');
       }
-      if (Date.now() >= Number(payload.expiresAt) * 1000) throw new Error('A autorização de voz expirou antes da conexão.');
+      if (!Number.isFinite(Number(payload.expiresAt)) || Date.now() >= Number(payload.expiresAt) * 1000) throw new Error('A autorização de voz expirou antes da conexão.');
 
-      socket = new WebSocketImpl(LIVE_WS_URL, [
+      const currentSocket = new WebSocketImpl(LIVE_WS_URL, [
         'ai-gateway-realtime.v1',
         `ai-gateway-auth.${payload.token}`
       ]);
+      socket = currentSocket;
+      connecting = false;
       socket.addEventListener('open', () => {
+        if (socket !== currentSocket || closing || closed) return;
         send(buildGptLiveSessionStart({ voice, instructions }));
       });
-      socket.addEventListener('message', event => { void handleMessage(event.data); });
+      socket.addEventListener('message', event => {
+        if (socket === currentSocket && !closed) void handleMessage(event.data);
+      });
       socket.addEventListener('error', () => {
+        if (socket !== currentSocket || closing || closed) return;
         reportError(new Error('A conexão de voz encontrou uma falha de transporte.'));
       });
       socket.addEventListener('close', () => {
+        if (socket !== currentSocket) return;
         const wasClosing = closing;
         socket = null;
         started = false;
@@ -358,10 +400,11 @@ export function createGptLiveClient({
         finishClose();
       });
     } catch (error) {
+      const cancelled = closing || closed || connectionController?.signal.aborted;
+      try { socket?.close(); } catch { /* no-op */ }
       socket = null;
-      started = false;
-      closing = false;
-      releaseAudio();
+      finishClose();
+      if (cancelled) return;
       setStatus('error');
       reportError(error);
       throw error;
@@ -369,11 +412,13 @@ export function createGptLiveClient({
   }
 
   async function close() {
+    if (closed) return;
     if (closing) return new Promise(resolve => {
       const previous = closeResolve;
       closeResolve = () => { previous?.(); resolve(); };
     });
     closing = true;
+    connectionController?.abort();
     setStatus('closing');
     stopCapture();
     clearTimeout(idleTimer);
@@ -387,7 +432,6 @@ export function createGptLiveClient({
     }
     return new Promise(resolve => {
       closeResolve = resolve;
-      send({ type: 'session.close' });
       closeTimer = setTimeout(() => {
         try { socket?.close(); } catch { /* no-op */ }
         socket = null;
@@ -395,11 +439,14 @@ export function createGptLiveClient({
         setStatus('disconnected');
         finishClose();
       }, 5000);
+      send({ type: 'session.close' });
     });
   }
 
   function disconnect() {
+    if (closed) return;
     closing = true;
+    connectionController?.abort();
     clearTimeout(closeTimer);
     clearTimeout(idleTimer);
     try { socket?.close(); } catch { /* no-op */ }

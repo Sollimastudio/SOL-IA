@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSupabaseHealthMonitorHandler, summarizeSupabaseHealthAdvisors } from '../server/supabase-health-monitor.mjs';
-const env={SUPABASE_URL:'https://rkkpbmzrucaghrojujvb.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test',SUPABASE_PROJECT_REF:'rkkpbmzrucaghrojujvb'};
+const env={SUPABASE_URL:'https://rkkpbmzrucaghrojujvb.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test',SUPABASE_PROJECT_REF:'rkkpbmzrucaghrojujvb',JARVIS_ALLOWED_USER_IDS:'user-1'};
 const req=()=>new Request('https://jarvis.test/api/jarvis-supabase-health',{headers:{Authorization:'Bearer test-session'}});
 const res=(status,body)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
 function harness({authorized=true,advisor={results:[]}}={}) {

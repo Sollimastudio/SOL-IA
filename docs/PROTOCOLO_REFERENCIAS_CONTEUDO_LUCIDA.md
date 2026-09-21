@@ -88,3 +88,11 @@ E1–E7 estão definidos na fonte canônica. Entregar primeiro referência acess
 Prova de integração mínima: uma cliente teste responde por voz ao episódio 3; LÚCIDA recupera sua versão, responde à questão, respeita memória desligada/ligada e não cruza contas; perguntas agregadas geram proposta de nova pauta; mapa só chega à Sol com autorização; interrupção no episódio 4 retoma os restantes.
 
 A validação desta entrega cobre documentação, links internos, IDs MM01–MM17 e preservação de arquivos. Não altera o status das funções em execução.
+
+## 7. Requisitos integrais no SOL-IA e continuidade — 21/09/2026
+
+Para que a próxima execução não dependa apenas de um link entre repositórios, o SOL-IA passa a conter [um espelho integral e versionado dos requisitos MM01–MM17](REQUISITOS_SOL_REFERENCIAS_LUCIDA_2026-09-21.md). O cabeçalho identifica origem, commit e blob da fonte canônica; o corpo é preservado integralmente. Comparar a fonte atual antes de alterar requisitos.
+
+O [mapa das multifacetas](JARVIS_MULTIFACETAS_E_ORQUESTRACAO.md) conecta esse percurso às funções já existentes, sem reduzir Jarvis ao Minutos Magnetus ou trocar registros anteriores. O [prompt de execução](PROMPT_EXECUCAO_REFERENCIAS_MULTIFACETAS_LUCIDA.md) especifica E1–E7, entregáveis e aceite para a próxima sessão técnica.
+
+A complementação é documental. O vídeo inicial continua sem conteúdo verificado; não se afirma que houve transcrição, treinamento de modelos, indexação no runtime, coleta de respostas ou implantação.

@@ -27,6 +27,18 @@ export function createSeriesState(brief) {
   return { schema: REFERENCE_SCHEMA, brief, status: 'received', reference: null, plan: null, episodes: [], revisions: [],
     approved: null, delivery: null, attempts: {}, lastError: null, nextStep: 'acquire', scope: 'private_editorial' };
 }
+export function createBranchState(parent, topic) {
+  if (!parent.state.plan?.branches.includes(topic)) throw new ReferenceError('invalid_branch', 'Escolha uma pauta já registrada nesta série.');
+  const brief = parseBrief({ title: string(topic, 'a nova pauta', 1000).slice(0, 200), count: parent.state.brief.count,
+    objective: `Desenvolver esta proposta editorial, distinguindo hipótese de evidência: ${topic}`,
+    voice: parent.state.brief.voice,
+    source: { kind: 'text', rights: 'author_owned', title: 'Proposta editorial derivada, ainda não aprovada',
+      text: `Esta é uma proposta editorial do Jarvis, não uma transcrição ou nova evidência da fonte original. Série de origem: ${parent.state.brief.title}. Pauta: ${topic}. Contexto proposto: ${parent.state.plan.opportunity}. Incertezas: ${parent.state.plan.uncertainties.join('; ')}. Precisa de revisão da Sol e de novas fontes quando houver afirmações factuais.` } });
+  const state = createSeriesState(brief);
+  state.lineage = { parentId: parent.id, parentRevision: parent.revision, rootId: parent.state.lineage?.rootId || parent.id,
+    parentReferenceDigest: parent.state.reference?.digest || null, topic, basis: 'editorial_proposal_unverified' };
+  return state;
+}
 export function nextStep(state) {
   if (['cancelled', 'blocked', 'uncertain'].includes(state.status)) return null;
   if (!state.reference) return 'acquire';

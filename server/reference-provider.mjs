@@ -48,12 +48,13 @@ export function mediaAdapterFromEnv(env, fetchImpl = fetch) {
   const url = configuredEndpoint(env.JARVIS_MEDIA_ADAPTER_URL);
   return async ({ url: sourceUrl, kind, signal }) => {
     const response = await fetchImpl(url, { method: 'POST', redirect: 'error', headers: { Authorization: `Bearer ${env.JARVIS_MEDIA_ADAPTER_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: sourceUrl, kind, maxCharacters: 45000, allowPaid: false }), signal: AbortSignal.any([signal, AbortSignal.timeout(45000)]) });
-    if (!response.ok) return { status: 'blocked', code: `adapter_http_${response.status}` };
+      body: JSON.stringify({ url: sourceUrl, kind, maxCharacters: 45000, allowPaid: false }), signal: AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(60000)]) });
     const reader = response.body?.getReader(); if (!reader) throw new Error('adapter_empty');
     const chunks = []; let size = 0;
     try { for (;;) { const { value, done } = await reader.read(); if (done) break; size += value.length; if (size > 100000) { await reader.cancel(); throw new Error('adapter_limit'); } chunks.push(value); } } finally { reader.releaseLock(); }
-    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    const result = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    if (!response.ok) return { status: 'blocked', code: /^[a-z0-9_]{1,80}$/.test(result.code) ? result.code : `adapter_http_${response.status}` };
+    return result;
   };
 }
 export function lucidaDeliveryFromEnv(env, fetchImpl = fetch) {

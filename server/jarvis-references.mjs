@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { ReferenceError, parseBrief, createSeriesState, nextStep, editorialBundle, string } from '../core/reference-series.mjs';
+import { ReferenceError, parseBrief, createSeriesState, createBranchState, nextStep, editorialBundle, string } from '../core/reference-series.mjs';
 import { acquireReference } from './reference-acquisition.mjs';
 import { createReferenceStore } from './reference-store.mjs';
 import { advanceReference, approveSeries, reviseEpisode, deliverSeries } from './reference-workflow.mjs';
@@ -51,6 +51,13 @@ export function createReferencesHandler({ env = {}, fetchImpl = fetch, resolveRu
       if (!Number.isInteger(body.revision) || row.revision !== body.revision) throw new ReferenceError('revision_conflict', 'A série mudou. Atualize antes de continuar.', 409);
       if (body.action === 'recover') return json(200, { ok: true, job: publicRow(await store.recover(id, row.revision)) });
       if (row.lease_id) throw new ReferenceError('job_busy', 'Esta série está processando uma etapa. Atualize para acompanhar.', 409);
+      if (body.action === 'branch') {
+        const childId = uuid(body.childId);
+        if (childId === row.id) throw new ReferenceError('invalid_branch', 'A nova pauta precisa de uma tarefa própria.');
+        const state = createBranchState(row, string(body.topic, 'a pauta', 1000));
+        const hash = createHash('sha256').update(JSON.stringify({ brief: state.brief, lineage: state.lineage })).digest('hex');
+        return json(201, { ok: true, job: publicRow(await store.create(childId, hash, state)) });
+      }
       if (body.action === 'export') return json(200, { ok: true, bundle: editorialBundle(id, row.state) });
       if (body.action === 'delete') { await store.delete(id, row.revision); return json(200, { ok: true, deleted: id, note: 'A exclusão local não retira versões já recebidas pela LÚCIDA.' }); }
       let updated;

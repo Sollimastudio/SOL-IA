@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { parseBrief, createSeriesState, validatePlan, validateEpisode, editorialBundle, generationMessages, nextStep } from '../core/reference-series.mjs';
+import { parseBrief, createSeriesState, createBranchState, validatePlan, validateEpisode, editorialBundle, generationMessages, nextStep } from '../core/reference-series.mjs';
 import { captionSegments, acquireReference, referenceUrl, publicAddress, publicFetch } from '../server/reference-acquisition.mjs';
 import { advanceReference, approveSeries, reviseEpisode, deliverSeries } from '../server/reference-workflow.mjs';
 import { createReferencesHandler } from '../server/jarvis-references.mjs';
@@ -17,6 +17,16 @@ function memoryStore() {
   };
 }
 const generator = async ({ step }) => ({ value: step === 'plan' ? plan() : episode(Number(step.split(':')[1])), model: 'synthetic-test-provider' });
+test('new editorial branches preserve parent version and root without claiming a new source or changing prior work', async () => {
+  const state = createSeriesState(parseBrief(brief)); state.reference = await acquireReference(brief.source); state.plan = validatePlan(plan(), state);
+  state.plan.branches = ['Como desenvolver uma prática de pausa?']; const parent = { id, revision: 8, state }; const original = structuredClone(parent);
+  const child = createBranchState(parent, state.plan.branches[0]);
+  assert.equal(child.lineage.rootId, id); assert.equal(child.lineage.parentRevision, 8); assert.equal(child.approved, null); assert.equal(child.episodes.length, 0); assert.match(child.brief.source.text, /não uma transcrição/);
+  assert.deepEqual(parent, original); assert.throws(() => createBranchState(parent, 'Pauta não registrada'));
+  child.plan = { branches: ['Um próximo assunto'], opportunity: 'Hipótese', uncertainties: [] };
+  const grandchild = createBranchState({ id: '22222222-2222-4222-8222-222222222220', revision: 2, state: child }, child.plan.branches[0]);
+  assert.equal(grandchild.lineage.rootId, id); assert.notEqual(grandchild.lineage.parentId, id);
+});
 test('captions preserve temporal evidence; acquisition distinguishes captions from listening', async () => {
   const result = await acquireReference(brief.source); assert.equal(result.segments[1].start, 5); assert.equal(result.coverage.captions, true); assert.equal(result.coverage.audio, false);
   assert.throws(() => captionSegments('a title is not a transcript'));

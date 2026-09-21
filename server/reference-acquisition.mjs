@@ -23,7 +23,7 @@ export function referenceUrl(value) {
     throw new ReferenceError('unsafe_url', 'Este destino não pode ser consultado pelo serviço de referências.');
   url.hash = '';
   if (url.hostname === 'youtu.be') { const id = url.pathname.slice(1); if (/^[\w-]{11}$/.test(id)) return new URL(`https://www.youtube.com/watch?v=${id}`); }
-  if (/(^|\.)youtube\.com$/.test(url.hostname) && url.searchParams.has('v')) return new URL(`https://www.youtube.com/watch?v=${encodeURIComponent(url.searchParams.get('v'))}`);
+  if (/(^|\.)youtube\.com$/.test(url.hostname) && url.pathname === '/watch' && url.searchParams.has('v')) return new URL(`https://www.youtube.com/watch?v=${encodeURIComponent(url.searchParams.get('v'))}`);
   for (const key of [...url.searchParams.keys()]) if (/^(utm_|si$|is$)/i.test(key)) url.searchParams.delete(key);
   return url;
 }
@@ -54,6 +54,30 @@ export async function publicFetch(value, { signal, maxBytes = 250000, resolve = 
 const decode = text => text.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
 const cleanHtml = html => decode(html.replace(/<(script|style|nav|header|footer)\b[^>]*>[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ')).replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
 const seconds = value => value.replace(',', '.').split(':').reduce((n, part) => n * 60 + Number(part), 0);
+// Read a JSON literal only; never execute scripts supplied by a reference page.
+export function youtubeCaptionTrack(html) {
+  const marker = /(?:var\s+)?ytInitialPlayerResponse\s*=\s*\{/g.exec(html);
+  if (!marker) return null;
+  const start = marker.index + marker[0].length - 1;
+  let depth = 0, quoted = false, escaped = false;
+  for (let i = start; i < html.length && i - start < 900000; i++) {
+    const c = html[i];
+    if (quoted) { if (escaped) escaped = false; else if (c === '\\') escaped = true; else if (c === '"') quoted = false; continue; }
+    if (c === '"') quoted = true;
+    else if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) {
+      let player; try { player = JSON.parse(html.slice(start, i + 1)); } catch { return null; }
+      if (player.playabilityStatus?.status !== 'OK') return null;
+      const tracks = player.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+      if (!Array.isArray(tracks)) return null;
+      const track = tracks.find(t => /^pt(?:-|$)/.test(t.languageCode) && t.baseUrl) || tracks.find(t => t.baseUrl);
+      if (!track) return null;
+      const url = referenceUrl(track.baseUrl); url.searchParams.set('fmt', 'vtt');
+      return { url: url.href, automatic: track.kind === 'asr', language: String(track.languageCode || '').slice(0, 20) };
+    }
+  }
+  return null;
+}
 export function captionSegments(text) {
   const chunks = text.replace(/\r/g, '').split(/\n\s*\n/), segments = [];
   for (const chunk of chunks) {
@@ -78,6 +102,7 @@ export function referencePacket({ text, title, url = null, method, temporal = fa
 }
 export async function acquireReference(source, { signal, readPublic = publicFetch, mediaAdapter } = {}) {
   const attempts = [];
+  let mediaBlock = null;
   if (source.text) return { ...referencePacket({ text: source.text, title: source.title, method: 'user_provided', temporal: source.kind === 'captions', kind: source.kind }), attempts: [{ method: 'user_provided', status: 'ok' }] };
   let url;
   try { url = referenceUrl(source.url).href; } catch (error) { return { status: 'blocked', code: error.code, reason: error.message, attempts, segments: [] }; }
@@ -88,6 +113,15 @@ export async function acquireReference(source, { signal, readPublic = publicFetc
       const contentType = String(response.headers['content-type'] || '').toLowerCase();
       const text = response.bytes.toString('utf8');
       const youtube = /(^|\.)youtube\.com$/.test(new URL(url).hostname);
+      if (youtube && source.kind !== 'channel' && contentType.includes('text/html')) {
+        const track = youtubeCaptionTrack(text);
+        if (track) {
+          const captions = await readPublic(track.url, { signal });
+          attempts.push({ method: 'youtube_public_captions', status: captions.status });
+          if (captions.status === 200) return { ...referencePacket({ text: captions.bytes.toString('utf8'), title: source.title, url, method: 'youtube_public_captions', temporal: true, kind: 'video',
+            limitations: [`Faixa pública ${track.language || 'sem idioma informado'}; ${track.automatic ? 'legenda automática' : 'origem declarada pelo player'}.`] }), attempts };
+        }
+      }
       if (!youtube && source.kind !== 'channel' && /text\/(plain|markdown|vtt)|application\/x-subrip/.test(contentType))
         return { ...referencePacket({ text, title: source.title, url: response.url, method: 'public_https', temporal: /vtt|subrip/.test(contentType) || /^WEBVTT/.test(text), kind: source.kind }), attempts };
       if (!youtube && source.kind !== 'channel' && contentType.includes('text/html')) {
@@ -111,6 +145,8 @@ export async function acquireReference(source, { signal, readPublic = publicFetc
         const packet = referencePacket({ text: string(result.transcript, 'a transcrição do conector', 45000, 40), title: result.title || source.title, url, method: 'authorized_media_adapter', temporal: result.format === 'vtt', kind: source.kind });
         packet.status = result.status; packet.coverage.audio = result.audioProcessed === true;
         packet.coverage.visuals = false; // Visual evidence needs its own validated pipeline, not a provider's boolean.
+        if (result.sourceSha256 && /^[a-f0-9]{64}$/.test(result.sourceSha256)) packet.mediaDigest = result.sourceSha256;
+        if (result.model?.repository && /^[a-f0-9]{40}$/.test(result.model.revision)) packet.recognition = { repository: String(result.model.repository).slice(0, 100), revision: result.model.revision, reviewRequired: true };
         packet.limitations = ['Resultado do conector configurado; cobertura visual não verificada.', ...(Array.isArray(result.limitations) ? result.limitations.filter(x => typeof x === 'string').slice(0, 10) : [])];
         if (source.kind === 'channel') {
           if (!Array.isArray(result.sample) || !result.sample.length || result.sample.length > 10) throw new ReferenceError('invalid_sample', 'A análise do canal precisa identificar a amostra.');
@@ -120,8 +156,21 @@ export async function acquireReference(source, { signal, readPublic = publicFetc
         attempts.push({ method: 'authorized_media_adapter', status: 'ok' }); return { ...packet, attempts };
       }
       attempts.push({ method: 'authorized_media_adapter', status: String(result?.code || 'no_transcript').slice(0, 80) });
+      const limits = {
+        media_duration_limit: 'O processador conectado aceita até três minutos por arquivo. A fonte não foi cortada nem transcrita parcialmente.',
+        media_size_limit: 'A mídia ultrapassa o limite de 12 MB deste processador.',
+        source_too_large: 'A mídia ultrapassa o limite de tamanho desta aquisição.',
+        direct_media_required: 'O endereço não forneceu um arquivo direto de áudio/vídeo nem legendas públicas utilizáveis.',
+        channel_sample_required: 'A análise de canal precisa de uma amostra identificada; este processador ainda não coleta essa amostra.',
+        model_integrity_failed: 'Os pesos locais de transcrição não estão disponíveis com a integridade exigida.',
+        no_speech_detected: 'O processador não reconheceu fala nesta mídia; nenhuma transcrição foi inventada.',
+        processor_deadline: 'O reconhecimento ultrapassou o tempo disponível. A fonte continua salva para retomada.',
+        worker_busy: 'O processador de mídia está ocupado. A fonte continua salva para retomada.'
+      };
+      if (Object.hasOwn(limits, result?.code)) mediaBlock = { code: result.code, reason: limits[result.code] };
     } catch { attempts.push({ method: 'authorized_media_adapter', status: 'adapter_failed' }); }
   }
+  if (mediaBlock) return { status: 'blocked', ...mediaBlock, url, attempts, segments: [], coverage: { text: false, captions: false, audio: false, visuals: false, wholeChannel: false } };
   if (!mediaAdapter && attempts.length === 1 && ['EAI_AGAIN', 'ENOTFOUND', 'ENETUNREACH', 'ECONNREFUSED', 'transport_failed', 'ABORT_ERR'].includes(attempts[0].status))
     return { status: 'blocked', code: 'source_network_unavailable', url, reason: `A conexão com a fonte falhou (${attempts[0].status}). O conteúdo não foi lido; o link está salvo para retomada.`, attempts, segments: [], coverage: { text: false, captions: false, audio: false, visuals: false, wholeChannel: false } };
   return { status: 'blocked', code: mediaAdapter ? 'content_unavailable' : 'media_connector_required', url,

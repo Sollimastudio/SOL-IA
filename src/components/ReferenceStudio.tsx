@@ -15,6 +15,7 @@ export function ReferenceStudio({ session, incoming, onConsumed }: { session: Se
   const [status, setStatus] = useState(''), [busy, setBusy] = useState(false), [access, setAccess] = useState(''), [entitlement, setEntitlement] = useState('');
   const [editing, setEditing] = useState<string | null>(null), [script, setScript] = useState('');
   const [themes, setThemes] = useState<Array<{ topic: string; people: number; proposal: string }>>([]);
+  const pendingBranch = useRef<{ parentId: string; topic: string; childId: string } | null>(null);
   const lifetime = useRef<AbortController>(new AbortController()), running = useRef(false), pendingCreate = useRef<{ id: string; brief: unknown } | null>(null), incomingStarted = useRef<string | null>(null);
   async function api(body?: Record<string, unknown>, id?: string) {
     const current = await getCurrentSession();
@@ -83,6 +84,8 @@ export function ReferenceStudio({ session, incoming, onConsumed }: { session: Se
     <details><summary>O que a audiência está perguntando</summary><p>Relatório da última semana completa, com temas autorizados e grupos de pelo menos cinco pessoas.</p><button disabled={busy} onClick={() => void run(async () => { const value = await api({ action: 'insights' }); setThemes(value.report.themes); setStatus(value.report.themes.length ? 'Temas coletivos disponíveis para revisão.' : 'Ainda não há grupos elegíveis suficientes. Nenhuma demanda foi inventada.'); })}>Consultar dúvidas recorrentes</button>{themes.map(theme => <article key={theme.topic}><p>{theme.proposal} · {theme.people} pessoas</p><button disabled={busy} onClick={() => { setKind('text'); setSource(`Relatório agregado consentido da última semana completa. Tema: ${theme.topic}. Pessoas distintas: ${theme.people}. Hipótese editorial: ${theme.proposal}. Sem comprovação de compras ou receita.`); setObjective(theme.proposal); }}>Preparar novo conteúdo a partir deste tema</button></article>)}</details>
     <div className="reference-actions"><button disabled={busy} onClick={() => void run(async () => {
       await refresh();
+      const branch = pendingBranch.current;
+      if (branch) { const result = await api(undefined, branch.childId); setJob(result.job); pendingBranch.current = null; return; }
       const pending = pendingCreate.current;
       if (pending) { const result = await api(undefined, pending.id); setJob(result.job); pendingCreate.current = null; onConsumed?.(); }
       else if (job) setJob((await api(undefined, job.id)).job);
@@ -92,7 +95,12 @@ export function ReferenceStudio({ session, incoming, onConsumed }: { session: Se
       <h3>{job.state.brief.title}</h3><p><strong>{labels[job.state.status] || job.state.status}</strong> · {job.state.episodes.length}/{job.state.brief.count} roteiros</p>
       {job.state.reference?.reason && <p>{job.state.reference.reason}</p>}
       {job.state.reference?.coverage && <p>Conteúdo obtido: {job.state.reference.coverage.captions ? 'legendas' : job.state.reference.status === 'ready' ? 'texto' : 'ainda não confirmado'}. Áudio processado: {job.state.reference.coverage.audio ? 'sim' : 'não'}. Imagens analisadas: {job.state.reference.coverage.visuals ? 'sim' : 'não'}.</p>}
-      {job.state.plan && <details><summary>Compreensão e oportunidades</summary><p>{job.state.plan.summary}</p><p>{job.state.plan.opportunity}</p><p>Próximo passo: {job.state.plan.priority}</p><ul>{job.state.plan.branches.map((branch, i) => <li key={i}>{branch}</li>)}</ul></details>}
+      {job.state.plan && <details><summary>Compreensão e oportunidades</summary><p>{job.state.plan.summary}</p><p>{job.state.plan.opportunity}</p><p>Próximo passo: {job.state.plan.priority}</p><ul>{job.state.plan.branches.map((branch, i) => <li key={i}>{branch}<button disabled={busy} onClick={() => void run(async () => {
+        const pending = pendingBranch.current;
+        if (pending && (pending.parentId !== job.id || pending.topic !== branch)) throw new Error('Confira a pauta ainda sem confirmação antes de abrir outra.');
+        const next = pending || { parentId: job.id, topic: branch, childId: crypto.randomUUID() }; pendingBranch.current = next;
+        await action('branch', next); pendingBranch.current = null; setStatus('Nova pauta salva e ligada à série original. Continue quando quiser desenvolvê-la.');
+      })}>Abrir esta pauta preservando a origem</button></li>)}</ul></details>}
       <div className="reference-actions">
         {!job.busy && ['planning', 'drafting', 'received'].includes(job.state.status) && <button disabled={busy} onClick={() => void run(() => generate(job))}>Continuar de onde parou</button>}
         {!job.busy && ['blocked', 'uncertain'].includes(job.state.status) && <button disabled={busy} onClick={() => void run(async () => { const data = await action('retry', { confirmRetry: true }); if (data) await generate(data.job); })}>Retomar a etapa após conferir o aviso</button>}

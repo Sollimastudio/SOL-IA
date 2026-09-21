@@ -151,3 +151,10 @@ Permanecem as pendências de voz/login/segurança e os gates do produto. A frent
 ## 10. Escopo desta complementação
 
 Somente documentação, espelho integral de requisitos e prompt. Nenhum registry, prompt de runtime, corpus, código, banco, conta externa, cobrança ou produção é alterado. Não se declara que “treinamento” ou integração já estejam ativos.
+
+
+## Execução adicional E1–E7 — 21/09/2026
+
+A implementação e a matriz MM01–MM17 estão em [ENTREGA_REFERENCIAS_LUCIDA_2026-09-21.md](ENTREGA_REFERENCIAS_LUCIDA_2026-09-21.md). Base preservada: PR #8, `f75f63988dbdc461af08067a4be55a0f9e828e89`. Há código para tarefas duráveis, roteiros, ponte editorial e continuidade consentida na LÚCIDA; os 234 testes do Jarvis e a compilação passaram localmente. A contraparte Magnetus3 passou 25 testes unitários e 22 de integração HTTP, incluindo os seis novos. Os dados e o provedor usados nessas provas são sintéticos.
+
+Vídeo inicial não lido; aquisição audiovisual/ASR, voz Telegram, qualidade editorial real, navegador/iPhone e ativação externa continuam pendentes. Nenhum gate anterior foi fechado por esta entrega. Não houve migração remota, publicação, envio a clientes, novo gasto ou treinamento de pesos. Ler o relatório antes de retomar; não reduzir Jarvis às funções editoriais.

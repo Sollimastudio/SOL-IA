@@ -4,6 +4,7 @@ import { createVoiceSession } from '../core/voiceSession.mjs';
 import { JARVIS_VOICE_PROFILE, prepareJarvisSpeech } from '../core/jarvisSpeech';
 import { getCurrentSession, refreshCurrentSession } from '../services/authService';
 import { sendAuthenticatedChat, UnsentMessageError } from '../services/authenticatedChat.mjs';
+import type { ReferenceIntent } from './ReferenceStudio';
 
 type Mode = 'private' | 'public';
 type Turn = { role: 'user' | 'assistant'; content: string; specialist?: string; isError?: boolean; modelUsed?: string };
@@ -122,8 +123,9 @@ async function prepareAttachment(file: File): Promise<ChatAttachment> {
   throw new Error(`${file.name}: nesta etapa o chat aceita imagens, TXT, Markdown, CSV e JSON. PDF e DOCX entram na próxima camada de importação.`);
 }
 
-export function JarvisConversation({ session, onModeChange, onSaved }: {
+export function JarvisConversation({ session, onModeChange, onSaved, onReference }: {
   session: Session | null; onModeChange(mode: Mode): void; onSaved(): void;
+  onReference?(intent: ReferenceIntent): void;
 }) {
   const [mode, setMode] = useState<Mode>('private');
   const [text, setText] = useState('');
@@ -360,6 +362,13 @@ export function JarvisConversation({ session, onModeChange, onSaved }: {
     const currentAttachments = options.forcedAttachments ?? attachments;
     const normalizedMessage = message.trim() || (currentAttachments.length ? 'Analise os anexos desta mensagem.' : '');
     if (!session?.access_token || !normalizedMessage || busyRef.current || attachmentBusy) return;
+    const referenceLink = normalizedMessage.match(/https:\/\/[^\s<>]+/)?.[0];
+    if (mode === 'private' && onReference && referenceLink && !currentAttachments.length &&
+      (normalizedMessage === referenceLink || /\b(entenda|transcreva|analise|leia|crie|serie|roteiros|referencia)\b/.test(normalizeVoiceCommand(normalizedMessage)))) {
+      stopHardware();
+      onReference({ id: crypto.randomUUID(), message: normalizedMessage, url: referenceLink.replace(/[.,;)]+$/, '') });
+      return;
+    }
     const id = ++requestEpoch.current;
     const controller = new AbortController(); request.current = controller;
     busyRef.current = true; setBusy(true); setListening(false);

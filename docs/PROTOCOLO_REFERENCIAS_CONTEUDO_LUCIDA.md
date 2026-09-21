@@ -96,3 +96,10 @@ Para que a próxima execução não dependa apenas de um link entre repositório
 O [mapa das multifacetas](JARVIS_MULTIFACETAS_E_ORQUESTRACAO.md) conecta esse percurso às funções já existentes, sem reduzir Jarvis ao Minutos Magnetus ou trocar registros anteriores. O [prompt de execução](PROMPT_EXECUCAO_REFERENCIAS_MULTIFACETAS_LUCIDA.md) especifica E1–E7, entregáveis e aceite para a próxima sessão técnica.
 
 A complementação é documental. O vídeo inicial continua sem conteúdo verificado; não se afirma que houve transcrição, treinamento de modelos, indexação no runtime, coleta de respostas ou implantação.
+
+
+## Execução adicional E1–E7 — 21/09/2026
+
+A implementação e a matriz MM01–MM17 estão em [ENTREGA_REFERENCIAS_LUCIDA_2026-09-21.md](ENTREGA_REFERENCIAS_LUCIDA_2026-09-21.md). Base preservada: PR #8, `f75f63988dbdc461af08067a4be55a0f9e828e89`. Há código para tarefas duráveis, roteiros, ponte editorial e continuidade consentida na LÚCIDA; os 234 testes do Jarvis e a compilação passaram localmente. A contraparte Magnetus3 passou 25 testes unitários e 22 de integração HTTP, incluindo os seis novos. Os dados e o provedor usados nessas provas são sintéticos.
+
+Vídeo inicial não lido; aquisição audiovisual/ASR, voz Telegram, qualidade editorial real, navegador/iPhone e ativação externa continuam pendentes. Nenhum gate anterior foi fechado por esta entrega. Não houve migração remota, publicação, envio a clientes, novo gasto ou treinamento de pesos. Ler o relatório antes de retomar; não reduzir Jarvis às funções editoriais.

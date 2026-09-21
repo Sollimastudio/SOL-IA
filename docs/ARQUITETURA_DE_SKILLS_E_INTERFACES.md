@@ -245,3 +245,10 @@ A plataforma pode ter dezenas de especialistas internos e ainda oferecer ao usu�
 A Sol não administra dez agentes. Uma agência não administra cinquenta bots por cliente. Uma empresa não precisa escolher qual LLM responde cada departamento.
 
 **Jarvis coordena o organograma invisível.**
+
+## 11. Aplicação Sol: Visionário, referências e LÚCIDA — 21/09/2026
+
+Aplicar o [protocolo de referências e conteúdo](PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md).
+Visionário/Visionária (`visionaria` legado) cruza fontes verificadas, ativos e demanda para propor oportunidades. Executive coordena Research/Media/Knowledge, Content/Publisher, Growth/Analytics e LÚCIDA; Sol não precisa escolher esses papéis.
+LÚCIDA editorial ajuda a criar; LÚCIDA de atendimento consulta conteúdo aprovado e acompanha a pessoa no escopo autorizado. Os dois contextos não compartilham dados privados indiscriminadamente.
+O registry e o avaliador lexical existentes são base parcial. Execução multiagente durável, ingestão de vídeo e retorno Telegram exigem implementação e evidência próprias.

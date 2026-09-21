@@ -105,3 +105,8 @@ Para qualquer feature nova: perguntar **“isso é global do Core, Skill Pack, c
 Para dados: perguntar **“qual é o escopo e quem está autorizado?”** antes de buscar/gravar.
 
 **O objetivo da documentação é o mesmo do produto: reduzir carga mental, preservar continuidade e impedir que personalização vire vazamento ou hardcode.**
+
+## Diretriz adicional — referências, Visionário e LÚCIDA (21/09/2026)
+
+[PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md](PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md) é leitura obrigatória antes de desenvolver ingestão de links, séries/copy, Minutos Magnetus, aprendizado de respostas ou conexão Jarvis–LÚCIDA.
+Inclui auditoria do código e requisitos MM01–MM17. É complemento do loop de crescimento, não novo núcleo nem capacidade operacional já ativada.

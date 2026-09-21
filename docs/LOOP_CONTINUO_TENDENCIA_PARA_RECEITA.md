@@ -360,3 +360,8 @@ Exemplo empresa:
 > “A mudança do fornecedor afeta custo e integração do Produto X. O impacto estimado é este; preparei um teste e uma alternativa.”
 
 **Padrão final:** o mundo muda → Jarvis percebe → valida → cruza com o contexto correto → reduz ruído → recomenda/age dentro da autorização → mede → aprende → repete.
+
+## Aplicação detalhada: referências e Minutos Magnetus — 21/09/2026
+
+O [protocolo de referências, conteúdo e LÚCIDA](PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md) concretiza este loop para o piloto Sol: aquisição de fonte, Visionário, séries/copy, respostas identificadas, conhecimento atualizado, mapa individual, insights agregados e pontes para ofertas reais.
+É aditivo, com limites de custo e checkpoints; “loop infinito” editorial não autoriza execução ou publicação ilimitada.

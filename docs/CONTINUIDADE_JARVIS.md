@@ -1,3 +1,5 @@
+> **Checkpoint documental adicional — 21/09/2026:** Sol pediu preservar e incorporar MM01–MM17: referências por link, Visionário, séries autorais, LÚCIDA, respostas Telegram, aprendizado e mapa pré-mentoria. Ler [PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md](PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md). A inspeção usou o candidato PR #8 em `0cc1e4a79a370333dccf9c99cffc8688e28d2366`, além de main e fontes canônicas. Este registro adiciona documentação à branch do candidato; não muda prioridades de voz/login, código, banco ou produção. As referências antigas a PR #6 abaixo são históricas e não substituem a conferência do HEAD atual.
+
 # Jarvis / Sol.IA — continuidade verificável
 
 ## Ponto único de trabalho

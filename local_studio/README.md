@@ -128,3 +128,8 @@ Esse comando mede duração, pico, RMS, amostras próximas ao limite digital e j
 Produz uma referência sem redução de ruído (apenas conversão para WAV mono/24 kHz), uma cópia completa experimental com filtro de graves de 65 Hz e atenuação espectral leve de ruído, e um relatório JSON. A cópia tratada não substitui a referência do modelo nem o original. Não remove pausas, não muda velocidade/tom, não comprime automaticamente e não promete melhora perceptiva sem comparação auditiva. Arquivos totalmente silenciosos não recebem referência; ausência de trecho elegível é explícita.
 
 Preserva o hash da origem, exige pasta nova e só disponibiliza o pacote após conferir durações. Até 30 minutos por entrada; sem API e sem treinamento de modelo. Antes de usar um trecho como identidade vocal, conferir fala limpa, uma pessoa falando, ausência de música e limites de frase. O JSON marca essas avaliações como pendentes.
+
+
+## Continuação separada: reconhecimento de fala (21/09/2026)
+
+O módulo `transcription.py` agora reconhece áudio autorizado em CPU, com pesos ASR próprios e separados do clone. Há um worker HTTP autenticado, ainda sem hospedagem externa configurada. Isso atualiza apenas a ausência histórica de transcrição/servidor para esta nova função; não integra síntese, avatar ou voz pessoal ao chat. Instruções e limites: [operação ASR](../docs/ASR_LOCAL_OPERACAO.md); [prova e pendências](../docs/CONTINUACAO_ASR_TELEGRAM_2026-09-21.md).

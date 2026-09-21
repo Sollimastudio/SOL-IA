@@ -9,6 +9,7 @@ import { meteredAiEnabled } from './core/budgetPolicy';
 import { JarvisConversation } from './components/JarvisConversation';
 import { JarvisLiveVoice } from './components/JarvisLiveVoice';
 import { KnowledgeLibrary } from './components/KnowledgeLibrary';
+import { ReferenceStudio, type ReferenceIntent } from './components/ReferenceStudio';
 import { MemoryVault } from './components/MemoryVault';
 import { MetaAdsPanel } from './components/MetaAdsPanel';
 import { ReadOnlySources } from './components/ReadOnlySources';
@@ -30,6 +31,7 @@ export function App() {
   const [mode, setMode] = useState<'private' | 'public'>('private');
   const [area, setArea] = useState<Area>('chat');
   const [memoryRefreshKey, setMemoryRefreshKey] = useState(0);
+  const [referenceIntent, setReferenceIntent] = useState<ReferenceIntent | null>(null);
   useEffect(() => {
     let mounted = true;
     let authEventReceived = false;
@@ -50,6 +52,7 @@ export function App() {
   useEffect(() => {
     setMode('private');
     setArea('chat');
+    setReferenceIntent(null);
   }, [session?.user.id]);
 
   if (!authResolved || !session || !isSecureMemoryEnabled || !isSupabaseConfigured) {
@@ -102,6 +105,7 @@ export function App() {
 
     {area === 'chat' && <>
       <JarvisConversation key={session.user.id} session={session} onModeChange={next => { setMode(next); if (next === 'public') setArea('chat'); }}
+        onReference={intent => { setReferenceIntent(intent); setArea('knowledge'); }}
         onSaved={() => setMemoryRefreshKey(value => value + 1)} />
       <JarvisLiveVoice session={session} mode={mode} />
     </>}
@@ -111,7 +115,7 @@ export function App() {
         <div><span className="eyebrow">JARVIS · GAVETA</span><h2>{areaLabels[area]}</h2></div>
         <button className="button button-secondary" type="button" onClick={() => setArea('chat')}>VOLTAR PARA CONVERSAR</button>
       </div>
-      {area === 'knowledge' && <KnowledgeLibrary key={session.user.id} session={session} />}
+      {area === 'knowledge' && <><ReferenceStudio key={`references:${session.user.id}`} session={session} incoming={referenceIntent} onConsumed={() => setReferenceIntent(null)} /><KnowledgeLibrary key={session.user.id} session={session} /></>}
       {area === 'vault' && <MemoryVault key={session.user.id} session={session} refreshKey={memoryRefreshKey} />}
       {area === 'integrations' && <>
         <IntegrationHub />

@@ -122,3 +122,19 @@ Complementação solicitada por Sol, sem substituir os documentos anteriores:
 | [PROMPT_EXECUCAO_REFERENCIAS_MULTIFACETAS_LUCIDA.md](PROMPT_EXECUCAO_REFERENCIAS_MULTIFACETAS_LUCIDA.md) | Continuar a implementação por E1–E7, com preservação do projeto, critérios de aceite e evidências |
 
 Os novos arquivos complementam Produto e Visão, Skills e Interfaces, Loop, Protocolo, Status e Continuidade. O espelho de requisitos conserva a fonte canônica identificada; verificar versões posteriores antes de implementar. Não substituir o inventário completo por uma lista apenas das funções de conteúdo.
+
+
+## Execução adicional E1–E7 — 21/09/2026
+
+A implementação e a matriz MM01–MM17 estão em [ENTREGA_REFERENCIAS_LUCIDA_2026-09-21.md](ENTREGA_REFERENCIAS_LUCIDA_2026-09-21.md). Base preservada: PR #8, `f75f63988dbdc461af08067a4be55a0f9e828e89`. Há código para tarefas duráveis, roteiros, ponte editorial e continuidade consentida na LÚCIDA; os 234 testes do Jarvis e a compilação passaram localmente. A contraparte Magnetus3 passou 25 testes unitários e 22 de integração HTTP, incluindo os seis novos. Os dados e o provedor usados nessas provas são sintéticos.
+
+Vídeo inicial não lido; aquisição audiovisual/ASR, voz Telegram, qualidade editorial real, navegador/iPhone e ativação externa continuam pendentes. Nenhum gate anterior foi fechado por esta entrega. Não houve migração remota, publicação, envio a clientes, novo gasto ou treinamento de pesos. Ler o relatório antes de retomar; não reduzir Jarvis às funções editoriais.
+
+
+## Continuação de implementação — ASR e Telegram (21/09/2026)
+
+[CONTINUACAO_ASR_TELEGRAM_2026-09-21.md](CONTINUACAO_ASR_TELEGRAM_2026-09-21.md) registra o delta sobre a PR #11: ASR CPU real de áudio curto com prova controlada, leitura de legendas públicas, transcrição Telegram consentida/revisável na contraparte e novas pautas com raiz/pai persistidos. O histórico acima conserva o estado observado na entrega anterior; a ausência de executor ASR daquela data foi superada localmente, sem afirmar ativação externa.
+
+238 testes Node e build Jarvis; 25 testes históricos do estúdio mais quatro de limites de transcrição; Magnetus3 com 25 unitários e 25 de integração HTTP. A inferência real usou áudio sintético próprio; Telegram/modelo editorial nas integrações continuam controlados. Vídeo solicitado, cobertura visual, amostra executora de canal, catálogo/perfil aprovado, qualidade editorial real, navegador/iPhone e conexão externa continuam pendentes conforme a matriz MM01–MM17 atualizada.
+
+Próxima execução: [PROMPT_CONTINUACAO_ASR_REFERENCIAS.md](PROMPT_CONTINUACAO_ASR_REFERENCIAS.md). Operação: [ASR_LOCAL_OPERACAO.md](ASR_LOCAL_OPERACAO.md). Nenhuma faceta foi removida e E1–E7 não foram declaradas integralmente homologadas.

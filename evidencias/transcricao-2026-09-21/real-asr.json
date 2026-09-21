@@ -1,0 +1,53 @@
+{
+  "at": "2026-09-21T20:56:31.517Z",
+  "input": "new synthetic flite/slt speech, not Sol and not the requested video",
+  "expected": "This is a synthetic recording. Take a slow breath before you answer. You can choose the time for your response.",
+  "speech": {
+    "httpStatus": 200,
+    "seconds": 5.482,
+    "result": {
+      "status": "ready",
+      "format": "vtt",
+      "transcript": "WEBVTT\n\n00:00:00.000 --> 00:00:06.750\nThis is a synthetic recording, take a slow breath before you answer, you can choose the time for your response.",
+      "text": "This is a synthetic recording, take a slow breath before you answer, you can choose the time for your response.",
+      "segments": [
+        {
+          "id": "s1",
+          "start": 0,
+          "end": 6.75,
+          "text": "This is a synthetic recording, take a slow breath before you answer, you can choose the time for your response."
+        }
+      ],
+      "audioProcessed": true,
+      "sourceSha256": "72fe58696f980da4161b6fe51577e3e5d5a56744054a79f372489c1e96ee4d35",
+      "duration": 6.75,
+      "language": "en",
+      "model": {
+        "repository": "Systran/faster-whisper-tiny",
+        "revision": "d90ca5fe260221311c53c58e660288d3deb8d356",
+        "device": "cpu",
+        "computeType": "int8"
+      },
+      "reviewRequired": true,
+      "visualsProcessed": false,
+      "limitations": [
+        "Reconhecimento automático local: revise palavras, nomes e números antes de aprovar.",
+        "Somente áudio, até 180 segundos e 12 MB; imagens, gestos e canal inteiro não foram analisados."
+      ]
+    },
+    "sourceSha256": "72fe58696f980da4161b6fe51577e3e5d5a56744054a79f372489c1e96ee4d35"
+  },
+  "silence": {
+    "httpStatus": 422,
+    "seconds": 1.309,
+    "result": {
+      "status": "blocked",
+      "code": "no_speech_detected"
+    },
+    "sourceSha256": "e2800cf60047bc8db6adbef0162f39d3eeef863925f7d734d7ac53f52b08ff85"
+  },
+  "limits": [
+    "Real CPU ASR through local authenticated HTTP; no remote bot or source retrieval in this proof.",
+    "English controlled input only; no acceptance of Portuguese real-world accuracy, images, long audio or Sol voice identity."
+  ]
+}

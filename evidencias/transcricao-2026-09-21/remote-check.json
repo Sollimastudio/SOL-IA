@@ -1,0 +1,15 @@
+{
+  "repository": "Sollimastudio/SOL-IA",
+  "implementationSha": "78cbc2713746df6b7c886b0fb3abbadae76da7ea",
+  "pr": 11,
+  "filesVerified": 27,
+  "actionRun": 35654529859,
+  "actionJob": 106514738204,
+  "actionConclusion": "failure",
+  "steps": [],
+  "jobLog": "404 BlobNotFound",
+  "cause": "not_determined",
+  "vercelCommitStatus": "success",
+  "vercelDescription": "Deployment has completed",
+  "browserValidated": false
+}

@@ -1,0 +1,2 @@
+# Install explicitly in an isolated environment, never during web builds.
+faster-whisper==1.2.1

@@ -69,3 +69,13 @@ O vídeo `okmV674zkd4` continua **não lido**. A tentativa externa não retornou
 Não foram configurados bot real, hospedagem HTTPS do worker, segredos, migração remota, provedor editorial ou publicação. Usar o modelo local não contrata uma API; também não torna hospedagem e operação gratuitas. Não houve novo gasto de API, envio a clientes, publicação no Telegram ou implantação em produção.
 
 Próximo trabalho: seguir [PROMPT_CONTINUACAO_ASR_REFERENCIAS.md](PROMPT_CONTINUACAO_ASR_REFERENCIAS.md), começando pela prova integrada em ambiente de teste autorizado, cobertura visual/amostra de canal e contexto autoral/catálogo. E1–E7 permanecem **parciais**, com implementações executáveis e limites discriminados; não estão integralmente homologadas.
+
+
+## Conferência remota do commit de implementação
+
+Implementação salva em `78cbc2713746df6b7c886b0fb3abbadae76da7ea`, na PR #11. Os 27 arquivos desta continuação foram conferidos por hash Git, e todos os blobs externos ao delta permanecem iguais à árvore anterior.
+
+[GitHub Actions](https://github.com/Sollimastudio/SOL-IA/actions/runs/35654529859) terminou em `failure` antes de iniciar etapas (`steps=[]`, sem runner identificado). O endpoint de logs retornou `404 BlobNotFound`; a causa não foi determinada. Não equivale a uma falha de teste reproduzida, mas o CI remoto permanece reprovado e precisa ser resolvido antes da integração.
+
+O status GitHub da Vercel para esse SHA informa `success`/“Deployment has completed”. Isso comprova a compilação Preview, não autenticação, migração, transcrição externa, navegação ou homologação de iPhone. Nenhum novo acesso de produto foi apresentado como pronto.
+Evidência resumida: `evidencias/transcricao-2026-09-21/remote-check.json`. Este registro posterior acrescenta documentação sem alterar o código que foi testado.

@@ -1,3 +1,5 @@
+> **Checkpoint documental adicional — 21/09/2026:** Sol pediu preservar e incorporar MM01–MM17: referências por link, Visionário, séries autorais, LÚCIDA, respostas Telegram, aprendizado e mapa pré-mentoria. Ler [PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md](PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md). A inspeção usou o candidato PR #8 em `0cc1e4a79a370333dccf9c99cffc8688e28d2366`, além de main e fontes canônicas. Este registro adiciona documentação à branch do candidato; não muda prioridades de voz/login, código, banco ou produção. As referências antigas a PR #6 abaixo são históricas e não substituem a conferência do HEAD atual.
+
 # Jarvis / Sol.IA — continuidade verificável
 
 ## Ponto único de trabalho
@@ -151,3 +153,18 @@ Atualização de prioridade em 13/09/2026: a Sol já enviou o teste fictício e 
 Wake word local/tela bloqueada, identificação de voz, interrupção natural, conversa audiovisual, live no mesmo telefone, tarefas 24h, ferramentas executoras, revisão clínica/jurídica adequada, clone autorizado e cobrança multiusuário. Não declarar concluídas por existir interface ou um teste simulado.
 
 A arquitetura de voz futura pode usar detector local de wake word em cliente compatível e voz em tempo real; a solução exata só deve ser escolhida após prova no iPhone e análise de privacidade. Clone de voz/avatar fica em fase posterior com consentimento e biblioteca de identidade separada da memória íntima.
+
+## Checkpoint adicional — multifacetas e prompt de execução (21/09/2026)
+
+Pedido de Sol: acrescentar todas as informações novas à documentação do Jarvis, preservar o material anterior, confirmar a documentação das multifacetas e entregar um prompt para o que falta fazer.
+
+Base conferida: `1355a9bc5c7d420b7c15139c609a2d051a50258f`, branch `work/audit-jarvis-ecosystem-20260918`, PR #8. A documentação anterior de multifacetas já existe em Produto e Visão, Skills e Interfaces e registries. O PR #8 está empilhado sobre outra branch de desenvolvimento; conferir HEAD e base antes de implementar ou integrar.
+
+Complementos:
+- [Mapa das multifacetas e da orquestração](JARVIS_MULTIFACETAS_E_ORQUESTRACAO.md): inventário completo dos 11 especialistas históricos, 13 Core Skills, 16 Skill Packs, perfis e roteamentos, sem confundir declaração com execução.
+- [Requisitos integrais MM01–MM17](REQUISITOS_SOL_REFERENCIAS_LUCIDA_2026-09-21.md): espelho integral da fonte canônica de `universo-relacione-se`, com identificação de versão.
+- [Prompt de execução](PROMPT_EXECUCAO_REFERENCIAS_MULTIFACETAS_LUCIDA.md): primeiro E1–E3 (referência, oportunidade, nove roteiros e conhecimento consultável pela LÚCIDA); depois E4–E7 (respostas, aprendizado, mentoria e novos galhos/resultados).
+
+README, índice, arquitetura de skills e protocolo receberam apenas acréscimos para tornar o material encontrável. O texto anterior deste checkpoint e dos demais arquivos foi preservado. Registries, código, corpus, runtime, banco e produção não foram modificados nesta complementação.
+
+Próxima sessão: ler o prompt completo, conferir o estado atual, inventariar o delta e implementar com evidências. Preservar as pendências anteriores; documentação nova não conclui voz, login, iPhone nem integrações. Fonte não acessada continua identificada como não verificada.

@@ -222,16 +222,16 @@ export function JarvisLiveVoice({ session, mode }: { session: Session; mode: Mod
         ? <button className="button live-start" type="button" onClick={() => void startLive()}>INICIAR VOZ NATURAL</button>
         : <>
           <button className="button button-secondary" type="button" disabled={status !== 'connected'} onClick={toggleMute}>{muted ? 'REATIVAR MICROFONE' : 'SILENCIAR MICROFONE'}</button>
-          <button className="button live-stop" type="button" onClick={() => void stopLive()}>ENCERRAR E PARAR COBRANÇA</button>
+          <button className="button live-stop" type="button" onClick={() => void stopLive()}>ENCERRAR CONVERSA</button>
         </>}
     </div>
 
     <div className="live-meter" role="status">
       <span>Sessão: <strong>{formatDuration(connectedSeconds)}</strong></span>
       <span>Preço da voz: <strong>US$ 0,05/min</strong></span>
-      <span>Custo confirmado: <strong>{usageSeen ? `US$ ${providerCost.toFixed(3)}` : 'aguardando provedor'}</strong>{finalUsage ? ' · final' : ''}</span>
+      <span>Uso informado pela sessão: <strong>{usageSeen ? `US$ ${providerCost.toFixed(3)}` : 'aguardando provedor'}</strong>{finalUsage ? ' · encerramento informado' : ''}</span>
     </div>
-    {active && <p className="live-cost-note">Silêncio e microfone mudo também contam enquanto a sessão estiver conectada. Ao esconder esta tela ou ficar 3 minutos sem fala detectada, o Jarvis encerra a conexão.</p>}
+    {active && <p className="live-cost-note">Silêncio e microfone mudo também contam enquanto a sessão estiver conectada. Ao esconder esta tela ou ficar 3 minutos sem fala detectada, o Jarvis solicita o encerramento. O valor final depende da confirmação e conciliação do provedor.</p>}
 
     {(inputCaption || outputCaption) && <div className="live-captions" aria-live="polite">
       {inputCaption && <p><strong>VOCÊ</strong> {inputCaption}</p>}

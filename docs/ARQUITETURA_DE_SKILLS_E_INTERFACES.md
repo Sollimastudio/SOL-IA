@@ -245,3 +245,20 @@ A plataforma pode ter dezenas de especialistas internos e ainda oferecer ao usu�
 A Sol não administra dez agentes. Uma agência não administra cinquenta bots por cliente. Uma empresa não precisa escolher qual LLM responde cada departamento.
 
 **Jarvis coordena o organograma invisível.**
+
+## 11. Aplicação Sol: Visionário, referências e LÚCIDA — 21/09/2026
+
+Aplicar o [protocolo de referências e conteúdo](PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md).
+Visionário/Visionária (`visionaria` legado) cruza fontes verificadas, ativos e demanda para propor oportunidades. Executive coordena Research/Media/Knowledge, Content/Publisher, Growth/Analytics e LÚCIDA; Sol não precisa escolher esses papéis.
+LÚCIDA editorial ajuda a criar; LÚCIDA de atendimento consulta conteúdo aprovado e acompanha a pessoa no escopo autorizado. Os dois contextos não compartilham dados privados indiscriminadamente.
+O registry e o avaliador lexical existentes são base parcial. Execução multiagente durável, ingestão de vídeo e retorno Telegram exigem implementação e evidência próprias.
+
+## 12. Inventário explícito e preservação das multifacetas — 21/09/2026
+
+O [mapa das multifacetas e da orquestração](JARVIS_MULTIFACETAS_E_ORQUESTRACAO.md) registra os 11 IDs históricos, 13 Core Skills e 16 Skill Packs encontrados nos registries, além de perfis e IDs do roteador. Esses níveis não são uma contagem de agentes autônomos em execução.
+
+O novo fluxo combina competências sob a coordenação de Jarvis; preserva as funções pessoal, cotidiana, editorial, audiovisual, pública/live, comercial, técnica e de memória. A faceta Visionário/Visionária mantém sua identidade e ganha um contrato verificável de oportunidades. LÚCIDA recebe contexto e conhecimento aprovados conforme seu papel, sem herdar dados de outros escopos.
+
+Preservar a invariante existente `NEW_CAPABILITY_MUST_NOT_REMOVE_EXISTING_CORE_CAPABILITY`. O mapa especifica entradas, saídas, estado, ferramentas, custos, retomada e evidência da orquestração; nenhum desses resultados é comprovado só pelo registry.
+
+Leitura complementar: [requisitos integrais MM01–MM17](REQUISITOS_SOL_REFERENCIAS_LUCIDA_2026-09-21.md) e [prompt de execução](PROMPT_EXECUCAO_REFERENCIAS_MULTIFACETAS_LUCIDA.md).

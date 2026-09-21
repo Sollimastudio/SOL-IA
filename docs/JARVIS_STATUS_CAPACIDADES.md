@@ -188,3 +188,22 @@ Isto certifica os contratos e a compilação do branch, **não** certifica hardw
 10. somente então declarar operação comercial multi-tenant pronta.
 
 **Regra:** uma capacidade só muda de status quando a evidência correspondente existe.
+
+## 13. Referências, Minutos Magnetus e LÚCIDA — inspeção em 21/09/2026
+
+Complemento restrito a esta frente; as demais linhas mantêm suas datas/evidências originais.
+Fonte: [protocolo e auditoria de arquivos/SHAs](PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md).
+
+| Capacidade | Estado observado | Delta |
+|---|---|---|
+| Visionário | PARCIAL — classificador por palavras | Compreensão da fonte e oportunidade persistente |
+| Diretrizes de audiência/crescimento | INTEGRADAS AO PROMPT DO CANDIDATO | Não equivalem a coleta real de métricas/respostas |
+| Vídeo por URL, transcrição e análise de canal/música | PLANEJADO — conector completo não identificado no escopo | Aquisição autorizada, transcrição, cobertura e retomada |
+| Série autoral com perguntas e grafo de continuidade | ESPECIFICAÇÃO MM01–MM17 | Geração/revisão persistente, nove roteiros no piloto |
+| Episódio publicado conhecido pela LÚCIDA | ESPECIFICAÇÃO | Pacote versionado, indexação e avaliação |
+| Telegram: respostas por texto/voz e identidade | PLANEJADO | Bot/app, mapeamento, consentimento e eventos |
+| Insights de queixas/dúvidas para Sol | ESPECIFICAÇÃO | Agregação elegível e feedback ao Visionário |
+| Mapa pré-mentoria | ESPECIFICAÇÃO PRÉVIA REUTILIZADA | Integrar handoff autorizado e provar entrega |
+| Loop completo até receita | NÃO COMPROVADO | Integração ponta a ponta e métricas reais |
+
+Nenhuma dessas novas capacidades foi ativada pela alteração de documentação.

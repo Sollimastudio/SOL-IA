@@ -105,3 +105,20 @@ Para qualquer feature nova: perguntar **“isso é global do Core, Skill Pack, c
 Para dados: perguntar **“qual é o escopo e quem está autorizado?”** antes de buscar/gravar.
 
 **O objetivo da documentação é o mesmo do produto: reduzir carga mental, preservar continuidade e impedir que personalização vire vazamento ou hardcode.**
+
+## Diretriz adicional — referências, Visionário e LÚCIDA (21/09/2026)
+
+[PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md](PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md) é leitura obrigatória antes de desenvolver ingestão de links, séries/copy, Minutos Magnetus, aprendizado de respostas ou conexão Jarvis–LÚCIDA.
+Inclui auditoria do código e requisitos MM01–MM17. É complemento do loop de crescimento, não novo núcleo nem capacidade operacional já ativada.
+
+## Mapa explícito das multifacetas e prompt de execução — 21/09/2026
+
+Complementação solicitada por Sol, sem substituir os documentos anteriores:
+
+| Documento | Uso |
+|---|---|
+| [JARVIS_MULTIFACETAS_E_ORQUESTRACAO.md](JARVIS_MULTIFACETAS_E_ORQUESTRACAO.md) | Encontrar todas as facetas históricas, Core Skills, Skill Packs, perfis e roteamentos já registrados; preservar as funções ao acrescentar o novo fluxo |
+| [REQUISITOS_SOL_REFERENCIAS_LUCIDA_2026-09-21.md](REQUISITOS_SOL_REFERENCIAS_LUCIDA_2026-09-21.md) | Consultar MM01–MM17 integralmente no SOL-IA, com origem/versionamento e distinção entre solicitação e operação |
+| [PROMPT_EXECUCAO_REFERENCIAS_MULTIFACETAS_LUCIDA.md](PROMPT_EXECUCAO_REFERENCIAS_MULTIFACETAS_LUCIDA.md) | Continuar a implementação por E1–E7, com preservação do projeto, critérios de aceite e evidências |
+
+Os novos arquivos complementam Produto e Visão, Skills e Interfaces, Loop, Protocolo, Status e Continuidade. O espelho de requisitos conserva a fonte canônica identificada; verificar versões posteriores antes de implementar. Não substituir o inventário completo por uma lista apenas das funções de conteúdo.

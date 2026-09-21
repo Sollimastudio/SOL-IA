@@ -265,3 +265,13 @@ Documentos principais:
 Toda nova capacidade deve reduzir trabalho mental ou operacional, preservar continuidade, respeitar o escopo correto e manter estado verificável.
 
 **Jarvis não deve virar mais um sistema para o cliente administrar. Ele deve ser o sistema que ajuda o cliente a administrar a complexidade dele.**
+
+## Multifacetas e continuidade de conteúdo — complemento de 21/09/2026
+
+A documentação das multifacetas já existia e permanece preservada. Para localizar os especialistas, competências, pacotes e o novo fluxo solicitado por Sol:
+
+- [Mapa das multifacetas e da orquestração](docs/JARVIS_MULTIFACETAS_E_ORQUESTRACAO.md) — inventário dos registros existentes e contrato de evolução;
+- [Requisitos integrais de referências, séries e LÚCIDA](docs/REQUISITOS_SOL_REFERENCIAS_LUCIDA_2026-09-21.md) — cópia versionada completa de MM01–MM17 dentro do SOL-IA;
+- [Prompt para a próxima execução](docs/PROMPT_EXECUCAO_REFERENCIAS_MULTIFACETAS_LUCIDA.md) — ordem, entregáveis e critérios de prova.
+
+Este complemento documenta a evolução e não comprova que ingestão de vídeo, aprendizado, retorno Telegram ou integrações já estejam ativos.

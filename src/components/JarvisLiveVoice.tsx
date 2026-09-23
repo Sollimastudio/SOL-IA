@@ -10,10 +10,7 @@ import {
 } from '../core/gptLiveClient.mjs';
 import {
   createGeminiLiveClient,
-  GEMINI_LIVE_VOICES,
-  type GeminiLiveClient,
-  type GeminiLiveDelegation,
-  type GeminiLiveTranscript
+  GEMINI_LIVE_VOICES
 } from '../core/geminiLiveClient.mjs';
 import { getCurrentSession, refreshCurrentSession } from '../services/authService';
 import { sendAuthenticatedChat } from '../services/authenticatedChat.mjs';
@@ -22,9 +19,10 @@ import '../live-voice.css';
 type Mode = 'private' | 'public';
 type LiveStatus = 'idle' | 'connecting' | 'connected' | 'closing' | 'disconnected' | 'error';
 type LiveProvider = 'gemini' | 'openai';
-type AnyLiveClient = GptLiveClient | GeminiLiveClient;
-type AnyLiveDelegation = GptLiveDelegation | GeminiLiveDelegation;
-type AnyLiveTranscript = GptLiveTranscript | GeminiLiveTranscript;
+type AnyLiveClient = GptLiveClient;
+type AnyLiveDelegation = GptLiveDelegation;
+type AnyLiveTranscript = GptLiveTranscript;
+type ActiveLiveStatus = Exclude<LiveStatus, 'idle'>;
 
 const LIVE_INSTRUCTIONS = [
   'Você é Jarvis, assessor pessoal da Sol em uma conversa por voz ao vivo.',
@@ -163,7 +161,7 @@ export function JarvisLiveVoice({ session, mode }: { session: Session; mode: Mod
         accessToken: fresh.access_token,
         voice,
         instructions: LIVE_INSTRUCTIONS,
-        onStatus: (next: LiveStatus) => {
+        onStatus: (next: ActiveLiveStatus) => {
           setStatus(next === 'disconnected' ? 'disconnected' : next);
           if (next === 'connected') connectedAt.current = Date.now();
           if (next === 'disconnected' || next === 'error') setMuted(false);

@@ -1,7 +1,12 @@
 const DEFAULT_SUPABASE_URL = 'https://rkkpbmzrucaghrojujvb.supabase.co';
 const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_XhsUjBPVRtC-0DBfMNDQTA_FaK8XFj8';
-const LIVE_MODEL = 'openai/gpt-live-1';
-const CLIENT_SECRET_URL = 'https://ai-gateway.vercel.sh/v1/realtime/client-secrets';
+const LIVE_MODEL = 'gpt-live-1';
+const OPENAI_LIVE_URL = 'https://api.openai.com/v1/live/sessions';
+const LEGACY_CLIENT_SECRET_URL = 'https://ai-gateway.vercel.sh/v1/realtime/client-secrets';
+const LIVE_VOICES = new Set([
+  'marin', 'alloy', 'ash', 'ballad', 'beacon', 'bossa', 'cedar', 'cinder', 'coral', 'delta', 'echo',
+  'gleam', 'meridian', 'quartz', 'ripple', 'sage', 'shimmer', 'stone', 'tempo', 'verse', 'vesper', 'willow'
+]);
 
 const reply = (status, payload) => Response.json(payload, {
   status,
@@ -31,6 +36,10 @@ export async function resolveLiveGatewayCredential(env = {}, oidcResolver = defa
   }
 }
 
+export function resolveOpenAIProjectKey(env = {}) {
+  return first(env.OPENAI_API_KEY || env.OPENAI_PROJECT_API_KEY);
+}
+
 async function safeJson(response) {
   try { return await response.json(); } catch { return null; }
 }
@@ -42,6 +51,35 @@ async function fetchWithDeadline(fetchImpl, url, init, requestSignal, timeoutMs 
     redirect: 'error',
     signal: AbortSignal.any([requestSignal, AbortSignal.timeout(timeoutMs)])
   });
+}
+
+async function readLiveRequest(request) {
+  if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) return null;
+  let body;
+  try { body = await request.json(); } catch { return null; }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const sdp = typeof body.sdp === 'string' ? body.sdp.trim() : '';
+  if (!sdp) return null;
+  if (sdp.length > 120000) throw new Error('sdp_too_large');
+  const voice = LIVE_VOICES.has(body.voice) ? body.voice : 'marin';
+  const instructions = typeof body.instructions === 'string' ? body.instructions.trim().slice(0, 8000) : '';
+  return { sdp, voice, instructions };
+}
+
+async function stableSafetyIdentifier(userId) {
+  const bytes = new TextEncoder().encode(`jarvis-live:${userId}`);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function openAILiveError(status) {
+  if (status === 401 || status === 403) {
+    return { code: 'openai_live_not_authorized', message: 'O GPT‑Live ainda não está autorizado nesta chave de projeto da OpenAI.' };
+  }
+  if (status === 429) {
+    return { code: 'openai_live_rate_limited', message: 'O GPT‑Live atingiu um limite temporário da conta. Aguarde um pouco e tente novamente.' };
+  }
+  return { code: 'openai_live_failed', message: 'A OpenAI não conseguiu criar a sessão de voz agora.' };
 }
 
 export function createJarvisLiveTokenHandler({
@@ -86,7 +124,7 @@ export function createJarvisLiveTokenHandler({
       }
       user = await safeJson(auth);
       if (typeof user?.id !== 'string' || !user.id) throw new Error('invalid_user');
-    } catch (error) {
+    } catch {
       if (request.signal.aborted) return reply(499, { ok: false, errorCode: 'request_cancelled', error: 'A abertura da conversa foi cancelada.' });
       return reply(503, { ok: false, errorCode: 'auth_unavailable', error: 'Não consegui verificar sua sessão agora.' });
     }
@@ -112,6 +150,68 @@ export function createJarvisLiveTokenHandler({
       return reply(403, { ok: false, errorCode: 'realtime_not_authorized', error: 'O modo GPT‑Live não está habilitado para esta conta.' });
     }
 
+    let liveRequest;
+    try { liveRequest = await readLiveRequest(request); }
+    catch { return reply(413, { ok: false, errorCode: 'live_offer_too_large', error: 'A negociação de áudio ficou grande demais para iniciar.' }); }
+
+    if (liveRequest) {
+      const openAIKey = resolveOpenAIProjectKey(env);
+      if (!openAIKey) {
+        return reply(503, {
+          ok: false,
+          errorCode: 'openai_project_key_missing',
+          error: 'GPT‑Live está pronto no Jarvis, mas falta configurar a chave de projeto da OpenAI no servidor.'
+        });
+      }
+
+      let response;
+      try {
+        response = await fetchWithDeadline(fetchImpl, OPENAI_LIVE_URL, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${openAIKey}`,
+            'Content-Type': 'application/json',
+            'OpenAI-Safety-Identifier': await stableSafetyIdentifier(user.id)
+          },
+          body: JSON.stringify({
+            session: {
+              model: LIVE_MODEL,
+              store: false,
+              delegation: { type: 'client' },
+              audio: { output: { voice: liveRequest.voice } },
+              instructions: liveRequest.instructions
+            },
+            transport: { type: 'webrtc', sdp: liveRequest.sdp }
+          })
+        }, request.signal, 15000);
+      } catch {
+        return reply(502, { ok: false, errorCode: 'openai_live_unavailable', error: 'A conexão com o GPT‑Live não respondeu a tempo.' });
+      }
+
+      if (!response.ok) {
+        const problem = openAILiveError(response.status);
+        console.info('[JARVIS_LIVE_SAFE]', JSON.stringify({ stage: 'create_webrtc_session', ok: false, status: response.status }));
+        return reply(502, { ok: false, errorCode: problem.code, error: problem.message, providerStatus: response.status });
+      }
+
+      const created = await safeJson(response);
+      const sessionId = first(created?.session?.id);
+      const answerSdp = first(created?.transport?.sdp);
+      if (!sessionId || !answerSdp) {
+        return reply(502, { ok: false, errorCode: 'openai_live_invalid_response', error: 'A OpenAI devolveu uma sessão de voz incompleta.' });
+      }
+
+      console.info('[JARVIS_LIVE_SAFE]', JSON.stringify({ stage: 'create_webrtc_session', ok: true, model: LIVE_MODEL }));
+      return reply(201, {
+        ok: true,
+        model: LIVE_MODEL,
+        session: { id: sessionId },
+        transport: { type: 'webrtc', sdp: answerSdp },
+        pricing: { usdPerSessionHour: 3, usdPerMinute: 0.05 }
+      });
+    }
+
+    // Compatibility path for older clients and synthetic tests only.
     const gatewayCredential = await resolveLiveGatewayCredential(env, oidcResolver);
     if (!gatewayCredential) {
       return reply(503, { ok: false, errorCode: 'gateway_credential_missing', error: 'A conexão segura com o provedor de voz ainda não está disponível.' });
@@ -119,17 +219,17 @@ export function createJarvisLiveTokenHandler({
 
     let minted;
     try {
-      const response = await fetchWithDeadline(fetchImpl, CLIENT_SECRET_URL, {
+      const response = await fetchWithDeadline(fetchImpl, LEGACY_CLIENT_SECRET_URL, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${gatewayCredential}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ model: LIVE_MODEL, routeKind: 'live' })
+        body: JSON.stringify({ model: 'openai/gpt-live-1', routeKind: 'live' })
       }, request.signal, 10000);
       if (!response.ok) {
-        console.info('[JARVIS_LIVE_SAFE]', JSON.stringify({ stage: 'mint_token', ok: false, status: response.status }));
-        return reply(502, { ok: false, errorCode: 'live_token_failed', error: 'Não consegui abrir a sessão de voz agora. Nenhuma chave foi enviada ao aparelho.' });
+        console.info('[JARVIS_LIVE_SAFE]', JSON.stringify({ stage: 'mint_legacy_token', ok: false, status: response.status }));
+        return reply(502, { ok: false, errorCode: 'live_token_failed', error: 'A integração antiga de voz não conseguiu abrir a sessão.' });
       }
       minted = await safeJson(response);
     } catch {
@@ -142,12 +242,11 @@ export function createJarvisLiveTokenHandler({
       return reply(502, { ok: false, errorCode: 'live_token_invalid', error: 'O provedor devolveu uma autorização de voz inválida.' });
     }
 
-    console.info('[JARVIS_LIVE_SAFE]', JSON.stringify({ stage: 'mint_token', ok: true, model: LIVE_MODEL }));
     return reply(200, {
       ok: true,
       token,
       expiresAt,
-      model: LIVE_MODEL,
+      model: 'openai/gpt-live-1',
       pricing: { usdPerSessionHour: 3, usdPerMinute: 0.05 }
     });
   };

@@ -127,8 +127,7 @@ export function createJarvisGeminiLiveTokenHandler({
           liveConnectConstraints: {
             model: `models/${GEMINI_LIVE_MODEL}`,
             config: {
-              responseModalities: ['AUDIO'],
-              sessionResumption: {}
+              responseModalities: ['AUDIO']
             }
           }
         })

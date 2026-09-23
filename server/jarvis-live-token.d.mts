@@ -5,6 +5,10 @@ export function resolveLiveGatewayCredential(
   oidcResolver?: () => Promise<string>
 ): Promise<string>;
 
+export function resolveOpenAIProjectKey(
+  env?: Record<string, string | undefined>
+): string;
+
 export function createJarvisLiveTokenHandler(options?: {
   env?: Record<string, string | undefined>;
   fetchImpl?: typeof fetch;

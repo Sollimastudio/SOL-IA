@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { inspectSource } from '../scripts/capability-radar.mjs';
+import { inspectSource, materialFingerprint } from '../scripts/capability-radar.mjs';
 
 const source = {
   key: 'official-test',
@@ -15,28 +15,40 @@ const response = text => new Response(`<html><body><main>${text}</main><script>v
 });
 
 test('first observation creates baseline without pretending a change happened', async () => {
-  const result = await inspectSource(source, null, async () => response('Regra oficial A'));
+  const result = await inspectSource(source, null, async () => response('Nova API e modelo oficial'));
   assert.equal(result.ok, true);
   assert.equal(result.change, 'baseline_created');
+  assert.equal(result.materialChange, 'baseline_created');
   assert.match(result.hash, /^[a-f0-9]{64}$/);
+  assert.match(result.materialHash, /^[a-f0-9]{64}$/);
 });
 
 test('same normalized source is unchanged', async () => {
-  const first = await inspectSource(source, null, async () => response('Regra oficial A'));
-  const second = await inspectSource(source, { hash: first.hash }, async () => response('Regra oficial A'));
+  const first = await inspectSource(source, null, async () => response('API sem mudança'));
+  const second = await inspectSource(source, { hash: first.hash, materialHash: first.materialHash }, async () => response('API sem mudança'));
   assert.equal(second.change, 'unchanged');
+  assert.equal(second.materialChange, 'unchanged');
 });
 
-test('changed official source is flagged for review, not auto-promoted', async () => {
-  const first = await inspectSource(source, null, async () => response('Regra oficial A'));
-  const changed = await inspectSource(source, { hash: first.hash }, async () => response('Regra oficial B'));
-  assert.equal(changed.change, 'changed');
-  assert.notEqual(changed.hash, first.hash);
+test('cosmetic delta far from material terms changes raw hash but not material fingerprint', async () => {
+  const padding = 'conteudo editorial neutro '.repeat(30);
+  const first = await inspectSource(source, null, async () => response(`API estável. ${padding} Rodapé A.`));
+  const second = await inspectSource(source, { hash: first.hash, materialHash: first.materialHash }, async () => response(`API estável. ${padding} Rodapé B.`));
+  assert.equal(second.change, 'changed');
+  assert.equal(second.materialChange, 'unchanged');
+});
+
+test('new material term creates a different material fingerprint', () => {
+  const before = materialFingerprint('Página institucional sem detalhes técnicos.');
+  const after = materialFingerprint('Página institucional. API pricing changed and model deprecated.');
+  assert.equal(before, null);
+  assert.match(after, /^[a-f0-9]{64}$/);
 });
 
 test('source outage is recorded honestly', async () => {
   const result = await inspectSource(source, null, async () => new Response('nope', { status: 503 }));
   assert.equal(result.ok, false);
   assert.equal(result.change, 'unavailable');
+  assert.equal(result.materialChange, 'unavailable');
   assert.equal(result.status, 503);
 });

@@ -1,10 +1,28 @@
 {
-  "version": "2026-09-14.2",
+  "version": "2026-09-23.1",
   "sources": [
     {
       "key": "openai-model-catalog",
       "kind": "model_or_api",
       "url": "https://developers.openai.com/api/docs/models",
+      "allowedHosts": ["developers.openai.com"]
+    },
+    {
+      "key": "openai-api-changelog",
+      "kind": "model_or_api",
+      "url": "https://developers.openai.com/api/docs/changelog",
+      "allowedHosts": ["developers.openai.com"]
+    },
+    {
+      "key": "openai-deprecations",
+      "kind": "model_or_api",
+      "url": "https://developers.openai.com/api/docs/deprecations",
+      "allowedHosts": ["developers.openai.com"]
+    },
+    {
+      "key": "openai-pricing",
+      "kind": "cost",
+      "url": "https://developers.openai.com/api/docs/pricing",
       "allowedHosts": ["developers.openai.com"]
     },
     {
@@ -48,6 +66,12 @@
       "kind": "model_or_api",
       "url": "https://supabase.com/changelog.md",
       "allowedHosts": ["supabase.com", "www.supabase.com"]
+    },
+    {
+      "key": "supabase-status",
+      "kind": "security_or_outage",
+      "url": "https://status.supabase.com/",
+      "allowedHosts": ["status.supabase.com"]
     }
   ]
 }

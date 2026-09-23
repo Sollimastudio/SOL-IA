@@ -3,7 +3,7 @@ name: Jarvis capability radar
 on:
   workflow_dispatch:
   push:
-    branches: ['work/jarvis-neural-conversa-segura-20260908']
+    branches: ['work/**']
     paths:
       - 'core/growth-intelligence.*'
       - 'config/capability-radar-sources.json'
@@ -52,12 +52,13 @@ jobs:
           const report = JSON.parse(readFileSync('radar-report.json','utf8'));
           console.log('## Jarvis Capability Radar');
           console.log(`Observed: ${report.observedAt}`);
-          console.log(`\nChanged sources: **${report.changedCount}**`);
+          console.log(`\nChanged pages: **${report.changedCount}**`);
+          console.log(`\nMaterial review signals: **${report.materialChangedCount}**`);
           console.log(`\nUnavailable sources: **${report.unavailableCount}**`);
-          console.log('\n| Source | Kind | State | HTTP |');
-          console.log('|---|---|---:|---:|');
-          for (const item of report.results) console.log(`| ${item.key} | ${item.kind} | ${item.change} | ${item.status ?? '-'} |`);
-          console.log('\nA change is a review signal only. This workflow never changes models, strategy or production automatically.');
+          console.log('\n| Source | Kind | Page | Material | HTTP |');
+          console.log('|---|---|---:|---:|---:|');
+          for (const item of report.results) console.log(`| ${item.key} | ${item.kind} | ${item.change} | ${item.materialChange} | ${item.status ?? '-'} |`);
+          console.log('\nOnly material signals or source outages request human review. This workflow never changes models, strategy or production automatically.');
           NODE
 
       - name: Preserve report for supervised review

@@ -30,12 +30,12 @@ test('same normalized source is unchanged', async () => {
   assert.equal(second.materialChange, 'unchanged');
 });
 
-test('cosmetic page delta can change raw hash without becoming material', async () => {
-  const first = await inspectSource(source, null, async () => response('API estável. Rodapé A.'));
-  const second = await inspectSource(source, { hash: first.hash, materialHash: first.materialHash }, async () => response('API estável. Rodapé B.'));
+test('cosmetic delta far from material terms changes raw hash but not material fingerprint', async () => {
+  const padding = 'conteudo editorial neutro '.repeat(30);
+  const first = await inspectSource(source, null, async () => response(`API estável. ${padding} Rodapé A.`));
+  const second = await inspectSource(source, { hash: first.hash, materialHash: first.materialHash }, async () => response(`API estável. ${padding} Rodapé B.`));
   assert.equal(second.change, 'changed');
-  assert.equal(second.materialChange, 'changed');
-  // The keyword window intentionally catches nearby copy; semantic review remains supervised.
+  assert.equal(second.materialChange, 'unchanged');
 });
 
 test('new material term creates a different material fingerprint', () => {

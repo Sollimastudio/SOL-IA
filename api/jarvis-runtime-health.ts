@@ -20,6 +20,7 @@ export default {
     const envOidcPresent = typeof process.env.VERCEL_OIDC_TOKEN === 'string' && process.env.VERCEL_OIDC_TOKEN.trim().length > 0;
     const gpt6Experiment = resolveGpt6Experiment(process.env);
     const openaiProjectKeyPresent = Boolean((process.env.OPENAI_API_KEY || process.env.OPENAI_PROJECT_API_KEY || '').trim());
+    const geminiApiKeyPresent = Boolean((process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY || '').trim());
 
     return Response.json({
       ok: true,
@@ -45,9 +46,19 @@ export default {
         usableCredentialPresent: explicitKeyPresent || envOidcPresent || helperOidcPresent
       },
       live: {
-        transport: 'official_openai_webrtc',
-        model: 'gpt-live-1',
-        openaiProjectKeyPresent
+        defaultProvider: 'gemini',
+        providers: {
+          gemini: {
+            transport: 'google_live_websocket_ephemeral_token',
+            model: 'gemini-3.8-live',
+            apiKeyPresent: geminiApiKeyPresent
+          },
+          openai: {
+            transport: 'official_openai_webrtc',
+            model: 'gpt-live-1',
+            apiKeyPresent: openaiProjectKeyPresent
+          }
+        }
       },
       models: {
         currentConfiguredModel: typeof process.env.JARVIS_MODEL === 'string' ? process.env.JARVIS_MODEL : null,

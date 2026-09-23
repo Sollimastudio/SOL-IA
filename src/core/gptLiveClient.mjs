@@ -72,6 +72,10 @@ export function createGptLiveClient({
   WebSocketImpl = globalThis.WebSocket
 } = {}) {
   let socket = null;
+  let peerConnection = null;
+  let dataChannel = null;
+  let remoteAudio = null;
+  let webRtcMode = false;
   let microphone = null;
   let audioContext = null;
   let sourceNode = null;
@@ -118,9 +122,19 @@ export function createGptLiveClient({
     return socket && socket.readyState === WebSocketImpl.OPEN;
   }
 
+  function channelOpen() {
+    return dataChannel && dataChannel.readyState === 'open';
+  }
+
+  function transportOpen() {
+    return webRtcMode ? channelOpen() : socketOpen();
+  }
+
   function send(event) {
-    if (!socketOpen()) return false;
-    socket.send(JSON.stringify(event));
+    if (!transportOpen()) return false;
+    const payload = JSON.stringify(event);
+    if (webRtcMode) dataChannel.send(payload);
+    else socket.send(payload);
     return true;
   }
 
@@ -182,6 +196,26 @@ export function createGptLiveClient({
     }
   }
 
+  function releaseWebRtc() {
+    const channel = dataChannel;
+    dataChannel = null;
+    try { channel?.close(); } catch { /* already closed */ }
+    const peer = peerConnection;
+    peerConnection = null;
+    if (peer) {
+      peer.ontrack = null;
+      peer.onconnectionstatechange = null;
+      try { peer.close(); } catch { /* already closed */ }
+    }
+    if (remoteAudio) {
+      try { remoteAudio.pause(); } catch { /* no-op */ }
+      try { remoteAudio.srcObject = null; } catch { /* no-op */ }
+      try { remoteAudio.remove(); } catch { /* no-op */ }
+      remoteAudio = null;
+    }
+    webRtcMode = false;
+  }
+
   function finishClose() {
     closed = true;
     closing = true;
@@ -190,6 +224,7 @@ export function createGptLiveClient({
     connectionController?.abort();
     clearTimeout(closeTimer);
     clearTimeout(idleTimer);
+    releaseWebRtc();
     releaseAudio();
     const resolve = closeResolve;
     closeResolve = null;
@@ -229,7 +264,7 @@ export function createGptLiveClient({
         transcript: transcriptSnapshot(),
         metadata: event?.delegation ?? null
       });
-      if (!closing && socketOpen()) {
+      if (!closing && transportOpen()) {
         send({
           type: 'session.commentary.append',
           delegation_id: id,
@@ -237,7 +272,7 @@ export function createGptLiveClient({
         });
       }
     } catch {
-      if (!closing && socketOpen()) {
+      if (!closing && transportOpen()) {
         send({
           type: 'session.commentary.append',
           delegation_id: id,
@@ -350,8 +385,8 @@ export function createGptLiveClient({
     };
   }
 
-  async function connect() {
-    if (socket || connecting || closing || closed) throw new Error('Já existe uma tentativa de conversa ao vivo em andamento.');
+  async function connectLegacy() {
+    if (socket || peerConnection || connecting || closing || closed) throw new Error('Já existe uma tentativa de conversa ao vivo em andamento.');
     if (!accessToken) throw new Error('Sua sessão precisa estar ativa antes de abrir o GPT‑Live.');
     connecting = true;
     connectionController = new AbortController();
@@ -411,6 +446,145 @@ export function createGptLiveClient({
     }
   }
 
+  async function waitForIceGathering(peer, signal) {
+    if (peer.iceGatheringState === 'complete') return;
+    await new Promise((resolve, reject) => {
+      let timer;
+      const cleanup = () => {
+        clearTimeout(timer);
+        peer.removeEventListener('icegatheringstatechange', onState);
+        signal?.removeEventListener('abort', onAbort);
+      };
+      const onState = () => {
+        if (peer.iceGatheringState === 'complete') {
+          cleanup();
+          resolve();
+        }
+      };
+      const onAbort = () => {
+        cleanup();
+        reject(new DOMException('A abertura da conversa foi cancelada.', 'AbortError'));
+      };
+      peer.addEventListener('icegatheringstatechange', onState);
+      signal?.addEventListener('abort', onAbort, { once: true });
+      timer = setTimeout(() => {
+        cleanup();
+        resolve();
+      }, 3500);
+    });
+  }
+
+  async function connectWebRtc() {
+    if (socket || peerConnection || connecting || closing || closed) throw new Error('Já existe uma tentativa de conversa ao vivo em andamento.');
+    if (!accessToken) throw new Error('Sua sessão precisa estar ativa antes de abrir o GPT‑Live.');
+    if (!navigator?.mediaDevices?.getUserMedia) throw new Error('Este aparelho não oferece acesso ao microfone pelo navegador.');
+    if (typeof globalThis.RTCPeerConnection !== 'function') throw new Error('Este navegador não oferece WebRTC compatível com GPT‑Live.');
+
+    connecting = true;
+    webRtcMode = true;
+    connectionController = new AbortController();
+    setStatus('connecting');
+
+    try {
+      const acquiredMicrophone = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1
+        },
+        video: false
+      });
+      if (closing || closed || connectionController.signal.aborted) {
+        acquiredMicrophone.getTracks().forEach(track => track.stop());
+        assertOpening();
+      }
+      microphone = acquiredMicrophone;
+
+      const peer = new globalThis.RTCPeerConnection();
+      peerConnection = peer;
+
+      for (const track of microphone.getAudioTracks()) peer.addTrack(track, microphone);
+
+      const audio = document.createElement('audio');
+      remoteAudio = audio;
+      audio.autoplay = true;
+      audio.setAttribute('playsinline', 'true');
+      audio.style.display = 'none';
+      document.body.appendChild(audio);
+      peer.ontrack = event => {
+        if (peerConnection !== peer || closing || closed) return;
+        audio.srcObject = event.streams?.[0] || new MediaStream([event.track]);
+        void audio.play().catch(() => undefined);
+      };
+
+      const channel = peer.createDataChannel('oai-events');
+      dataChannel = channel;
+      channel.addEventListener('message', event => {
+        if (dataChannel === channel && !closed) void handleMessage(event.data);
+      });
+      channel.addEventListener('close', () => {
+        if (dataChannel !== channel || closed) return;
+        const wasClosing = closing;
+        dataChannel = null;
+        started = false;
+        setStatus('disconnected');
+        if (!wasClosing && !finalUsageConfirmed) reportError(new Error('A sessão de voz terminou sem confirmação final de uso.'));
+        finishClose();
+      });
+      channel.addEventListener('error', () => {
+        if (dataChannel !== channel || closing || closed) return;
+        reportError(new Error('O canal de voz encontrou uma falha de transporte.'));
+      });
+
+      peer.onconnectionstatechange = () => {
+        if (peerConnection !== peer || closing || closed) return;
+        if (peer.connectionState === 'failed') {
+          reportError(new Error('A conexão WebRTC do GPT‑Live falhou.'));
+          finishClose();
+        }
+      };
+
+      const offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
+      await waitForIceGathering(peer, connectionController.signal);
+      assertOpening();
+      const sdp = peer.localDescription?.sdp;
+      if (!sdp) throw new Error('O navegador não conseguiu preparar a oferta de áudio.');
+
+      const response = await fetchImpl(LIVE_TOKEN_URL, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sdp, voice, instructions }),
+        cache: 'no-store',
+        signal: connectionController.signal
+      });
+      assertOpening();
+      const payload = await response.json().catch(() => null);
+      assertOpening();
+      if (!response.ok || payload?.ok !== true || typeof payload?.transport?.sdp !== 'string') {
+        throw new Error(payload?.error || 'Não consegui criar a sessão WebRTC do GPT‑Live.');
+      }
+
+      await peer.setRemoteDescription({ type: 'answer', sdp: payload.transport.sdp });
+      connecting = false;
+    } catch (error) {
+      const cancelled = closing || closed || connectionController?.signal.aborted;
+      finishClose();
+      if (cancelled) return;
+      setStatus('error');
+      reportError(error);
+      throw error;
+    }
+  }
+
+  async function connect() {
+    if (typeof globalThis.RTCPeerConnection === 'function' && typeof document !== 'undefined') {
+      return connectWebRtc();
+    }
+    return connectLegacy();
+  }
+
   async function close() {
     if (closed) return;
     if (closing) return new Promise(resolve => {
@@ -422,7 +596,7 @@ export function createGptLiveClient({
     setStatus('closing');
     stopCapture();
     clearTimeout(idleTimer);
-    if (!socketOpen() || !started) {
+    if (!transportOpen() || !started) {
       try { socket?.close(); } catch { /* no-op */ }
       socket = null;
       started = false;
@@ -477,7 +651,7 @@ export function createGptLiveClient({
     disconnect,
     mute,
     unmute,
-    isConnected: () => started && socketOpen() && !closing,
+    isConnected: () => started && transportOpen() && !closing,
     isMuted: () => muted,
     hasFinalUsage: () => finalUsageConfirmed
   };

@@ -8,12 +8,23 @@ import {
   type GptLiveDelegation,
   type GptLiveTranscript
 } from '../core/gptLiveClient.mjs';
+import {
+  createGeminiLiveClient,
+  GEMINI_LIVE_VOICES,
+  type GeminiLiveClient,
+  type GeminiLiveDelegation,
+  type GeminiLiveTranscript
+} from '../core/geminiLiveClient.mjs';
 import { getCurrentSession, refreshCurrentSession } from '../services/authService';
 import { sendAuthenticatedChat } from '../services/authenticatedChat.mjs';
 import '../live-voice.css';
 
 type Mode = 'private' | 'public';
 type LiveStatus = 'idle' | 'connecting' | 'connected' | 'closing' | 'disconnected' | 'error';
+type LiveProvider = 'gemini' | 'openai';
+type AnyLiveClient = GptLiveClient | GeminiLiveClient;
+type AnyLiveDelegation = GptLiveDelegation | GeminiLiveDelegation;
+type AnyLiveTranscript = GptLiveTranscript | GeminiLiveTranscript;
 
 const LIVE_INSTRUCTIONS = [
   'Você é Jarvis, assessor pessoal da Sol em uma conversa por voz ao vivo.',
@@ -44,7 +55,9 @@ function compactCaption(current: string, delta: string) {
 }
 
 export function JarvisLiveVoice({ session, mode }: { session: Session; mode: Mode }) {
-  const [voice, setVoice] = useState('marin');
+  const [provider, setProvider] = useState<LiveProvider>('gemini');
+  const [openaiVoice, setOpenaiVoice] = useState('marin');
+  const [geminiVoice, setGeminiVoice] = useState('Kore');
   const [status, setStatus] = useState<LiveStatus>('idle');
   const [muted, setMuted] = useState(false);
   const [inputCaption, setInputCaption] = useState('');
@@ -54,12 +67,14 @@ export function JarvisLiveVoice({ session, mode }: { session: Session; mode: Mod
   const [providerSeconds, setProviderSeconds] = useState(0);
   const [usageSeen, setUsageSeen] = useState(false);
   const [finalUsage, setFinalUsage] = useState(false);
-  const clientRef = useRef<GptLiveClient | null>(null);
+  const clientRef = useRef<AnyLiveClient | null>(null);
   const delegationControllers = useRef(new Set<AbortController>());
   const connectedAt = useRef<number | null>(null);
 
   const active = ['connecting', 'connected', 'closing'].includes(status);
   const providerCost = useMemo(() => estimateLiveVoiceCost(providerSeconds), [providerSeconds]);
+  const voice = provider === 'gemini' ? geminiVoice : openaiVoice;
+  const providerLabel = provider === 'gemini' ? 'Gemini 3.8 Live' : 'GPT-Live 1';
 
   useEffect(() => {
     if (status !== 'connected') return;
@@ -93,12 +108,12 @@ export function JarvisLiveVoice({ session, mode }: { session: Session; mode: Mod
     void stopLive();
   }, [mode]);
 
-  async function delegateToJarvis(task: GptLiveDelegation) {
+  async function delegateToJarvis(task: AnyLiveDelegation) {
     const controller = new AbortController();
     delegationControllers.current.add(controller);
     try {
       const message = [
-        '[DELEGAÇÃO DO JARVIS GPT-LIVE]',
+        `[DELEGAÇÃO DO JARVIS VOZ AO VIVO · ${providerLabel}]`,
         'O modelo de voz pediu apoio de bastidor. Use o contexto autorizado do Jarvis e responda somente com o resultado factual necessário para a conversa continuar.',
         'Não afirme que executou ação externa sem prova. Não salve esta transcrição automaticamente. Seja conciso para retorno falado.',
         '',
@@ -124,7 +139,7 @@ export function JarvisLiveVoice({ session, mode }: { session: Session; mode: Mod
     }
   }
 
-  function onTranscript(fragment: GptLiveTranscript) {
+  function onTranscript(fragment: AnyLiveTranscript) {
     if (fragment.role === 'user') setInputCaption(current => compactCaption(current, fragment.delta));
     else setOutputCaption(current => compactCaption(current, fragment.delta));
   }
@@ -144,27 +159,32 @@ export function JarvisLiveVoice({ session, mode }: { session: Session; mode: Mod
     try {
       const fresh = await getCurrentSession();
       if (!fresh?.access_token || fresh.user.id !== session.user.id) throw new Error('Sua sessão mudou. Entre novamente antes de abrir a voz ao vivo.');
-      const client = createGptLiveClient({
+      const shared = {
         accessToken: fresh.access_token,
         voice,
         instructions: LIVE_INSTRUCTIONS,
-        onStatus: next => {
+        onStatus: (next: LiveStatus) => {
           setStatus(next === 'disconnected' ? 'disconnected' : next);
           if (next === 'connected') connectedAt.current = Date.now();
           if (next === 'disconnected' || next === 'error') setMuted(false);
         },
         onTranscript,
-        onUsage: (seconds, meta) => {
-          setProviderSeconds(seconds);
-          setUsageSeen(true);
-          setFinalUsage(meta.final);
-        },
         onDelegation: delegateToJarvis,
-        onError: liveError => {
+        onError: (liveError: Error) => {
           setError(liveError.message);
           if (status !== 'closing') setStatus(current => current === 'connected' ? current : 'error');
         }
-      });
+      };
+      const client: AnyLiveClient = provider === 'gemini'
+        ? createGeminiLiveClient(shared)
+        : createGptLiveClient({
+            ...shared,
+            onUsage: (seconds, meta) => {
+              setProviderSeconds(seconds);
+              setUsageSeen(true);
+              setFinalUsage(meta.final);
+            }
+          });
       clientRef.current = client;
       await client.connect();
     } catch (startError) {
@@ -201,22 +221,33 @@ export function JarvisLiveVoice({ session, mode }: { session: Session; mode: Mod
     if (changed) setMuted(!muted);
   }
 
-  return <section className="live-voice-panel" aria-label="Conversa GPT-Live">
+  return <section className="live-voice-panel" aria-label="Conversa de voz ao vivo">
     <div className="live-voice-heading">
       <div>
-        <span className="eyebrow">NOVO · GPT‑LIVE 1</span>
+        <span className="eyebrow">VOZ AO VIVO · {provider === 'gemini' ? 'GEMINI' : 'OPENAI'}</span>
         <h2>Conversa natural em tempo real</h2>
-        <p>Ele escuta e fala ao mesmo tempo, aceita interrupções e pode chamar os bastidores do Jarvis quando precisar pensar mais.</p>
+        <p>Escolha o motor de voz. O Jarvis continua sendo o mesmo: memória, contexto e bastidores ficam sob as regras do Jarvis.</p>
       </div>
       <span className={`live-status live-status-${status}`}>{status === 'connected' ? 'AO VIVO' : status === 'connecting' ? 'CONECTANDO' : status === 'closing' ? 'ENCERRANDO' : 'DESLIGADO'}</span>
     </div>
 
     <div className="live-controls">
       <label className="live-voice-select">
-        <span>Voz</span>
-        <select value={voice} disabled={active} onChange={event => setVoice(event.target.value)}>
-          {GPT_LIVE_VOICES.map(item => <option key={item} value={item}>{voiceLabel(item)}</option>)}
+        <span>Motor</span>
+        <select value={provider} disabled={active} onChange={event => setProvider(event.target.value as LiveProvider)}>
+          <option value="gemini">Google · Gemini 3.8 Live</option>
+          <option value="openai">OpenAI · GPT-Live 1</option>
         </select>
+      </label>
+      <label className="live-voice-select">
+        <span>Voz</span>
+        {provider === 'gemini'
+          ? <select value={geminiVoice} disabled={active} onChange={event => setGeminiVoice(event.target.value)}>
+              {GEMINI_LIVE_VOICES.map(item => <option key={item} value={item}>{item}</option>)}
+            </select>
+          : <select value={openaiVoice} disabled={active} onChange={event => setOpenaiVoice(event.target.value)}>
+              {GPT_LIVE_VOICES.map(item => <option key={item} value={item}>{voiceLabel(item)}</option>)}
+            </select>}
       </label>
       {!active
         ? <button className="button live-start" type="button" onClick={() => void startLive()}>INICIAR VOZ NATURAL</button>
@@ -228,10 +259,13 @@ export function JarvisLiveVoice({ session, mode }: { session: Session; mode: Mod
 
     <div className="live-meter" role="status">
       <span>Sessão: <strong>{formatDuration(connectedSeconds)}</strong></span>
-      <span>Preço da voz: <strong>US$ 0,05/min</strong></span>
-      <span>Uso informado pela sessão: <strong>{usageSeen ? `US$ ${providerCost.toFixed(3)}` : 'aguardando provedor'}</strong>{finalUsage ? ' · encerramento informado' : ''}</span>
+      <span>Motor: <strong>{providerLabel}</strong></span>
+      {provider === 'openai'
+        ? <><span>Preço da voz: <strong>US$ 0,05/min</strong></span>
+          <span>Uso informado pela sessão: <strong>{usageSeen ? `US$ ${providerCost.toFixed(3)}` : 'aguardando provedor'}</strong>{finalUsage ? ' · encerramento informado' : ''}</span></>
+        : <span>Custo: <strong>conforme sua cota/tier do Google AI Studio</strong></span>}
     </div>
-    {active && <p className="live-cost-note">Silêncio e microfone mudo também contam enquanto a sessão estiver conectada. Ao esconder esta tela ou ficar 3 minutos sem fala detectada, o Jarvis solicita o encerramento. O valor final depende da confirmação e conciliação do provedor.</p>}
+    {active && <p className="live-cost-note">Ao esconder esta tela ou ficar 3 minutos sem atividade, o Jarvis encerra a sessão. Gemini e OpenAI têm regras de cota/cobrança diferentes; o Jarvis não ativa outro provedor automaticamente.</p>}
 
     {(inputCaption || outputCaption) && <div className="live-captions" aria-live="polite">
       {inputCaption && <p><strong>VOCÊ</strong> {inputCaption}</p>}

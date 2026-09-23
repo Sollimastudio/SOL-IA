@@ -246,7 +246,7 @@ export function createJarvisLiveTokenHandler({
       ok: true,
       token,
       expiresAt,
-      model: 'openai/gpt-live-1',
+      model: LIVE_MODEL,
       pricing: { usdPerSessionHour: 3, usdPerMinute: 0.05 }
     });
   };

@@ -1,5 +1,10 @@
 export const GEMINI_LIVE_MODEL = 'gemini-3.8-live';
-export const GEMINI_LIVE_VOICES = Object.freeze(['Kore', 'Puck']);
+export const GEMINI_LIVE_VOICES = Object.freeze([
+  'Kore', 'Puck', 'Zephyr', 'Charon', 'Fenrir', 'Leda', 'Orus', 'Aoede', 'Callirrhoe',
+  'Autonoe', 'Enceladus', 'Iapetus', 'Umbriel', 'Algieba', 'Despina', 'Erinome',
+  'Algenib', 'Rasalgethi', 'Laomedeia', 'Achernar', 'Alnilam', 'Schedar', 'Gacrux',
+  'Pulcherrima', 'Achird', 'Zubenelgenubi', 'Vindemiatrix', 'Sadachbia', 'Sadaltager', 'Sulafat'
+]);
 const TOKEN_URL = '/api/jarvis-gemini-live-token';
 const WS_BASE = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained';
 const SAMPLE_RATE = 24000;

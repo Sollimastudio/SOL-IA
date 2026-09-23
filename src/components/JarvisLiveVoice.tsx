@@ -263,7 +263,7 @@ export function JarvisLiveVoice({ session, mode }: { session: Session; mode: Mod
           <span>Uso informado pela sessão: <strong>{usageSeen ? `US$ ${providerCost.toFixed(3)}` : 'aguardando provedor'}</strong>{finalUsage ? ' · encerramento informado' : ''}</span></>
         : <span>Custo: <strong>conforme sua cota/tier do Google AI Studio</strong></span>}
     </div>
-    {active && <p className="live-cost-note">Ao esconder esta tela ou ficar 3 minutos sem atividade, o Jarvis encerra a sessão. Gemini e OpenAI têm regras de cota/cobrança diferentes; o Jarvis não ativa outro provedor automaticamente.</p>}
+    {active && <p className="live-cost-note">Ao esconder esta tela ou ficar 3 minutos sem atividade, o Jarvis encerra a sessão. Gemini e OpenAI têm regras de cota/cobrança diferentes; o Jarvis não ativa outro provedor automaticamente. No OpenAI, o valor final depende da confirmação e conciliação do provedor.</p>}
 
     {(inputCaption || outputCaption) && <div className="live-captions" aria-live="polite">
       {inputCaption && <p><strong>VOCÊ</strong> {inputCaption}</p>}

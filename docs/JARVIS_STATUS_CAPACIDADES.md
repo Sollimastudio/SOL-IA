@@ -1,6 +1,6 @@
 # Jarvis / Sol.IA — Status de capacidades
 
-> **Fonte operacional de verdade sobre maturidade.** Atualizado em 16/09/2026.
+> **Fonte operacional de verdade sobre maturidade.** Atualizado em 23/09/2026.
 
 Este documento existe para impedir duas falhas comuns: apresentar requisito como se já fosse capacidade pronta ou esquecer recursos que já foram implementados.
 
@@ -63,7 +63,7 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 | Wake phrase web “Jarvis, tá aí?” | PARCIAL | Só com sessão já autorizada/ativa |
 | Resposta “Tô aqui. Pode falar.” | IMPLEMENTADA | Código/testes; reteste físico recomendado |
 | Conversa contínua web antiga | PARCIAL | Sessão engajada existe; limitações do navegador permanecem |
-| GPT-Live full-duplex no branch | IMPLEMENTADO / PREVIEW VERDE / AGUARDA PROVA FÍSICA | Broker autenticado, captura PCM, interrupção, transcrição, escolha de voz, custo e delegação compilam e passam contratos; falta prova real no aparelho antes de chamar operacional |
+| Gemini 3.8 Live | IMPLEMENTADO EM PRODUÇÃO / AGUARDA PROVA FÍSICA | Broker autenticado cria token efêmero restrito; WebSocket, áudio, transcrição e delegação ao Jarvis estão no código. Produção reporta chave Gemini presente; falta prova real no celular antes de chamar operacional |\n| OpenAI GPT-Live 1 | IMPLEMENTADO EM PRODUÇÃO / CREDENCIAL AUSENTE | Fluxo oficial WebRTC implementado; produção reporta OPENAI_API_KEY ausente. Continua opção explícita, sem fallback automático |\n| Seletor Gemini/OpenAI | OPERACIONAL NO CÓDIGO | Gemini é o default atual; usuário escolhe o motor. Jarvis/memória/contexto permanecem independentes do fornecedor |
 | Cliente nativo iOS hands-free | IMPLEMENTADO / AGUARDA PROVA FÍSICA | App Intent, áudio, Speech, Keychain, contexto e cérebro local estão no branch |
 | Atalho Vocal “Jarvis, tá aí?” sem toque | IMPLEMENTADO / AGUARDA PROVA FÍSICA | Requer instalar/configurar no iPhone |
 | Tela bloqueada | NÃO COMPROVADO | Teste separado obrigatório |
@@ -113,7 +113,7 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 
 | Capacidade | Status | Evidência/limite |
 |---|---|---|
-| Capability Radar | OPERACIONAL em escopo inicial | Fontes oficiais configuradas; cobertura global ainda não |
+| Capability Radar | OPERACIONAL em escopo inicial | OpenAI, Google/Gemini, Meta, TikTok, Vercel e Supabase têm fontes oficiais configuradas; mudança material exige revisão antes de alterar estratégia |
 | Frontier Radar global | PLANEJADO | Expandir ecossistema mundial de IA/ferramentas |
 | Radar de domínio por tenant | ARQUITETURA OFICIAL | Ainda sem pipeline multi-tenant operacional |
 | Loop Tendência → Ativo → Resultado | ARQUITETURA OFICIAL | Documento canônico criado; automação completa ainda não |
@@ -176,7 +176,7 @@ Isto certifica os contratos e a compilação do branch, **não** certifica hardw
 
 ## 12. Próxima sequência oficial
 
-1. provar GPT-Live em aparelho/navegador real e medir áudio, interrupção e encerramento;
+1. provar Gemini 3.8 Live em aparelho/navegador real e medir áudio, interrupção, transcrição e encerramento; depois repetir a prova OpenAI quando houver credencial;
 2. continuar a prova nativa Mac/iPhone;
 3. introduzir `tenant-context` progressivamente nas novas services/repositories, sem alterar ainda os registros atuais do piloto;
 4. desenhar a primeira migração persistente `tenant/workspace/member` em ambiente isolado, com estratégia de compatibilidade para dados atuais;

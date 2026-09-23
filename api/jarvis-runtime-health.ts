@@ -19,6 +19,7 @@ export default {
     const explicitKeyPresent = typeof process.env.AI_GATEWAY_API_KEY === 'string' && process.env.AI_GATEWAY_API_KEY.trim().length > 0;
     const envOidcPresent = typeof process.env.VERCEL_OIDC_TOKEN === 'string' && process.env.VERCEL_OIDC_TOKEN.trim().length > 0;
     const gpt6Experiment = resolveGpt6Experiment(process.env);
+    const openaiProjectKeyPresent = Boolean((process.env.OPENAI_API_KEY || process.env.OPENAI_PROJECT_API_KEY || '').trim());
 
     return Response.json({
       ok: true,
@@ -42,6 +43,11 @@ export default {
         envOidcPresent,
         helperOidcPresent,
         usableCredentialPresent: explicitKeyPresent || envOidcPresent || helperOidcPresent
+      },
+      live: {
+        transport: 'official_openai_webrtc',
+        model: 'gpt-live-1',
+        openaiProjectKeyPresent
       },
       models: {
         currentConfiguredModel: typeof process.env.JARVIS_MODEL === 'string' ? process.env.JARVIS_MODEL : null,

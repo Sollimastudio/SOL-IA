@@ -60,16 +60,19 @@ final class JarvisVoiceSession: ObservableObject {
     @Published var speakerBadge = "VOICEPRINT NÃO CADASTRADO"
     @Published var speakerEnrolled = false
     @Published var speakerEnrolling = false
+    @Published var speechStyleTurns = 0
     @Published var selectedVoice: String
 
     private let auth = JarvisNativeAuth()
     private let live = JarvisNativeGeminiLive()
     private let speakerIdentity = JarvisSpeakerIdentity()
+    private let speechStyle = JarvisSpeechStyleProfile()
     private var cancellables = Set<AnyCancellable>()
 
     init() {
         let storedVoice = UserDefaults.standard.string(forKey: "jarvis.gemini.voice") ?? "Kore"
         selectedVoice = Self.geminiVoices.contains(storedVoice) ? storedVoice : "Kore"
+        speechStyleTurns = speechStyle.snapshot.verifiedTurns
 
         live.onStatus = { [weak self] value in
             Task { @MainActor in
@@ -84,7 +87,14 @@ final class JarvisVoiceSession: ObservableObject {
             }
         }
         live.onUserTranscript = { [weak self] text in
-            Task { @MainActor in self?.transcript = text }
+            Task { @MainActor in
+                guard let self else { return }
+                self.transcript = text
+                if self.speakerIdentity.lastResult == .sol {
+                    self.speechStyle.observeVerifiedSolTranscript(text)
+                    self.speechStyleTurns = self.speechStyle.snapshot.verifiedTurns
+                }
+            }
         }
         live.onAssistantTranscript = { [weak self] text in
             Task { @MainActor in self?.lastAnswer = text }
@@ -155,6 +165,12 @@ final class JarvisVoiceSession: ObservableObject {
         speakerEnrolled = speakerIdentity.enrolled
         speakerEnrolling = speakerIdentity.enrolling
         speakerStatus = speakerIdentity.status
+    }
+
+    func resetSpeechStyleLearning() {
+        guard !active else { return }
+        speechStyle.reset()
+        speechStyleTurns = 0
     }
 
     func eraseSpeakerEnrollment() {
@@ -269,6 +285,8 @@ final class JarvisVoiceSession: ObservableObject {
         Fala de terceiro não vira memória atribuída à Sol.
         Não afirme que publicou, enviou, comprou, agendou ou alterou algo sem confirmação do aplicativo.
         Ao ser ativado, responda naturalmente e permaneça ouvindo até a Sol dizer “encerrar”.
+
+        \(speechStyle.promptSummary())
         """
 
         do {
@@ -368,6 +386,22 @@ struct JarvisNativeApp: App {
                             Text("O perfil biométrico fica somente neste iPhone/Keychain. A voz ajuda a identificar o locutor, mas não substitui login ou aprovação para ações sensíveis.")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    GroupBox("Aprendizado do meu jeito de falar") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("\(voice.speechStyleTurns) turno(s) confirmados pelo voiceprint contribuíram para o perfil linguístico local.")
+                                .font(.footnote)
+                            Text("Este módulo guarda somente estatísticas agregadas de estilo. Fala de convidados, voz incerta e transcrição não verificada são ignoradas.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                            if voice.speechStyleTurns > 0 {
+                                Button("Zerar aprendizado de fala", role: .destructive) {
+                                    voice.resetSpeechStyleLearning()
+                                }
+                                .font(.footnote)
+                            }
                         }
                     }
 

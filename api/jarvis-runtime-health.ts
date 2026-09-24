@@ -45,6 +45,19 @@ export default {
         helperOidcPresent,
         usableCredentialPresent: explicitKeyPresent || envOidcPresent || helperOidcPresent
       },
+      conversation: {
+        preferredTextProvider: geminiApiKeyPresent && process.env.JARVIS_GEMINI_CHAT_ENABLED !== 'false' ? 'gemini' : 'gateway',
+        preferredTextModel: geminiApiKeyPresent && process.env.JARVIS_GEMINI_CHAT_ENABLED !== 'false' ? 'gemini-3.8-flash' : null,
+        captureOnlyIsContingency: true
+      },
+      voiceExperience: {
+        webPrimary: 'gemini-live',
+        nativePrimary: 'gemini-live',
+        legacyDeviceTtsDefault: false,
+        remoteWakePath: 'ios-native-vocal-shortcut',
+        speakerVerificationOperational: false,
+        guestAuthorizationOperational: false
+      },
       live: {
         defaultProvider: 'gemini',
         providers: {

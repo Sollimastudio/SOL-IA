@@ -69,7 +69,8 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 | Cliente nativo iOS hands-free | NOVO DELTA IMPLEMENTADO / AGUARDA BUILD XCODE E PROVA FÍSICA | App Intent, Keychain, background audio e cliente Gemini Live nativo estão no código; memória entra por `consult_jarvis` → Jarvis Core. TTS local não é mais padrão |
 | Atalho Vocal “Jarvis, tá aí?” sem toque | IMPLEMENTADO / AGUARDA NOVA PROVA FÍSICA | A ação nativa abre o app e tenta iniciar Gemini Live com sessão do Keychain e voz persistida; primeiro uso ainda exige login/microfone |
 | Tela bloqueada / background com sessão ativa | CONFIGURADO / NÃO COMPROVADO | `UIBackgroundModes=audio` + `playAndRecord`; a sessão deve começar legitimamente e precisa de prova física no iPhone |
-| Identificação de locutor / voiceprint | REQUISITO CONGELADO / NÃO IMPLEMENTADO | Interface deve dizer `LOCUTOR NÃO VERIFICADO` até existir Speaker ID real. Voz nunca será autenticação única |
+| Identificação de locutor / voiceprint | IMPLEMENTADO EM CÓDIGO / AGUARDA XCODE + PROVA FÍSICA | FluidAudio/CoreML local, cadastro de embedding no Keychain e classificação `sol/guest/unknown`. Thresholds permanecem conservadores e precisam ser medidos no iPhone real. Voz nunca é autenticação única |
+| Autorização de convidado por voz | IMPLEMENTADO EM CÓDIGO / AGUARDA SPEAKER ID VALIDADO | Outra voz bloqueia `consult_jarvis`; apenas voz classificada como Sol pode autorizar conversa genérica de convidado, sem liberar Cofre ao convidado |
 | Clone de voz pessoal para conteúdo | EXPERIMENTO REPROVADO no primeiro ensaio | Não usar como voz padrão do Jarvis |
 
 ## 5. Câmera, vídeo e ambiente

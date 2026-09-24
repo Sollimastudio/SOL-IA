@@ -45,7 +45,7 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 
 | Capacidade | Status | Evidência/limite |
 |---|---|---|
-| Chat web autenticado | PARCIAL | Backend/UI existem; precisa continuar sendo provado em uso real após mudanças |
+| Chat web autenticado | PARCIAL / GEMINI ATIVO | Backend/UI existem; Gemini 3.8 Flash é o caminho inteligente preferencial quando a chave Gemini está presente. `capture-only` fica restrito a contingência |
 | Roteamento de especialistas | OPERACIONAL no backend | Não exige escolha manual de agente |
 | Política fail-closed de custo | OPERACIONAL | Bloqueia fallback pago silencioso fora da autorização |
 | Gateway via Vercel OIDC | OPERACIONAL como credencial de runtime | Não significa uso ilimitado |
@@ -58,16 +58,18 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 
 | Capacidade | Status | Evidência/limite |
 |---|---|---|
-| TTS web local | OPERACIONAL | Perfil Veludo usa melhor voz pt-BR disponível |
+| TTS web local | CONTINGÊNCIA MANUAL | Não é mais a voz principal. Pode soar robótico; Gemini Live é a rota natural padrão |
 | Reconhecimento de voz web | OPERACIONAL em primeiro plano | Depende do navegador; microfone precisa de autorização |
 | Wake phrase web “Jarvis, tá aí?” | PARCIAL | Só com sessão já autorizada/ativa |
 | Resposta “Tô aqui. Pode falar.” | IMPLEMENTADA | Código/testes; reteste físico recomendado |
 | Conversa contínua web antiga | PARCIAL | Sessão engajada existe; limitações do navegador permanecem |
-| Gemini 3.8 Live | IMPLEMENTADO EM PRODUÇÃO / AGUARDA PROVA FÍSICA | Broker autenticado cria token efêmero restrito; WebSocket, áudio, transcrição e delegação ao Jarvis estão no código. Produção reporta chave Gemini presente; falta prova real no celular antes de chamar operacional |\n| OpenAI GPT-Live 1 | IMPLEMENTADO EM PRODUÇÃO / CREDENCIAL AUSENTE | Fluxo oficial WebRTC implementado; produção reporta OPENAI_API_KEY ausente. Continua opção explícita, sem fallback automático |\n| Seletor Gemini/OpenAI | OPERACIONAL NO CÓDIGO | Gemini é o default atual; usuário escolhe o motor. Jarvis/memória/contexto permanecem independentes do fornecedor |
-| Cliente nativo iOS hands-free | IMPLEMENTADO / AGUARDA PROVA FÍSICA | App Intent, áudio, Speech, Keychain, contexto e cérebro local estão no branch |
-| Atalho Vocal “Jarvis, tá aí?” sem toque | IMPLEMENTADO / AGUARDA PROVA FÍSICA | Requer instalar/configurar no iPhone |
-| Tela bloqueada | NÃO COMPROVADO | Teste separado obrigatório |
-| Identificação de locutor | PLANEJADO | Voz não será autenticação única |
+| Gemini 3.8 Live web | IMPLEMENTADO EM PRODUÇÃO / AGUARDA PROVA FÍSICA FINAL | Broker autenticado cria token efêmero; áudio nativo, transcrição e delegação ao Jarvis estão no código. O microfone principal do web agora abre Gemini Live, não TTS local |
+| OpenAI GPT-Live 1 | IMPLEMENTADO EM PRODUÇÃO / CREDENCIAL AUSENTE | Fluxo oficial WebRTC implementado; continua opção explícita, sem fallback automático |
+| Seletor Gemini/OpenAI | OPERACIONAL NO CÓDIGO | Gemini é o default atual; usuário escolhe o motor. Jarvis/memória/contexto permanecem independentes do fornecedor |
+| Cliente nativo iOS hands-free | NOVO DELTA IMPLEMENTADO / AGUARDA BUILD XCODE E PROVA FÍSICA | App Intent, Keychain, background audio e cliente Gemini Live nativo estão no código; memória entra por `consult_jarvis` → Jarvis Core. TTS local não é mais padrão |
+| Atalho Vocal “Jarvis, tá aí?” sem toque | IMPLEMENTADO / AGUARDA NOVA PROVA FÍSICA | A ação nativa abre o app e tenta iniciar Gemini Live com sessão do Keychain e voz persistida; primeiro uso ainda exige login/microfone |
+| Tela bloqueada / background com sessão ativa | CONFIGURADO / NÃO COMPROVADO | `UIBackgroundModes=audio` + `playAndRecord`; a sessão deve começar legitimamente e precisa de prova física no iPhone |
+| Identificação de locutor / voiceprint | REQUISITO CONGELADO / NÃO IMPLEMENTADO | Interface deve dizer `LOCUTOR NÃO VERIFICADO` até existir Speaker ID real. Voz nunca será autenticação única |
 | Clone de voz pessoal para conteúdo | EXPERIMENTO REPROVADO no primeiro ensaio | Não usar como voz padrão do Jarvis |
 
 ## 5. Câmera, vídeo e ambiente

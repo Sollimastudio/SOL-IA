@@ -87,3 +87,11 @@ Continuar o **checkpoint 1**, sem pular para iOS:
 - https://github.com/googleapis/js-genai/blob/main/src/tokens.ts
 - https://github.com/googleapis/js-genai/blob/main/src/converters/_tokens_converters.ts
 - https://vercel.com/docs/project-configuration/vercel-json
+
+## Retomada após configuração da chave — 24/09/2026
+
+- Teste de Sol às 18:44:10 UTC na Preview `dpl_JANg3w1mHLhmGR9vuq9DuH7FGX1D`: POST do token respondeu 503. A captura de tela informa ausência de GEMINI_API_KEY. Não foi o 400 do Google: a chamada ao provedor não ocorreu nessa tentativa.
+- Produção foi reconsultada e manteve `apiKeyPresent: true`; nenhuma chave foi apagada nesta execução. A prévia antiga não havia recebido a variável.
+- Sol informou ter atualizado a configuração e feito deploy. O novo deployment observado, `dpl_DWnxbozvmn2aj2uZpvBVs6x5LV84`, está READY em **production**, commit `50d9d8c`; não contém o patch da PR #18. A chave segue presente no health da produção.
+- O alias da Preview ainda apontava para `dpl_JANg3w1mHLhmGR9vuq9DuH7FGX1D` / `690687e`, anterior à atualização. Esta revisão documental dispara nova Preview com o código já testado para receber o ambiente atual. Não há troca de modelo, merge, promoção de produção ou alteração de Auth/dados.
+- Conferir a presença da chave no novo runtime; depois provar emissão real e conversa. Configuração informada por Sol ainda não equivale a chave carregada/aceita pelo Google.

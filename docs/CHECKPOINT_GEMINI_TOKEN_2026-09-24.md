@@ -37,6 +37,16 @@ Demais redirects, produção e cabeçalhos preservados. Proteção Vercel e logi
 - 271/271 testes Node após o delta completo; TypeScript, build Vite, auditoria de ambiente e 10 verificações de segurança aprovados localmente.
 - Logs completos em `evidencias/gemini-token-2026-09-24/`.
 
+## Prévia confirmada em 24/09, 18:39 UTC
+
+- Commit do candidato completo: `dfa78d93f0d642529daa189d29295c0e488e00bf`.
+- Deployment `dpl_GfbbVNDDVhSUH9FHUp329VSewKAF`: READY, alias desta branch, target Preview.
+- Navegador abriu a tela “Entrar no Jarvis” com versão visível `dfa78d9`: a exceção de redirect executa o candidato correto.
+- Comparação da árvore remota: 312 arquivos anteriores idênticos por SHA, 7 modificados, 8 adicionados, zero exclusões. Documentação canônica anterior mantida integralmente por anexação no início. Main revalidada em `50d9d8c`.
+- Health da Preview não foi confirmado: o conector retornou redirecionamento SSO; a navegação direta ao JSON foi bloqueada pelo cliente de navegador. A chave presente foi confirmada em produção, não extrapolada para Preview.
+- Links temporários da Vercel devem ser gerados para o deployment corrente e abertos exatamente como emitidos. Sem registrar o parâmetro de acesso no GitHub.
+- **Dependência humana atual:** Sol abrir a Preview privada no iPhone, entrar com sua conta e iniciar Gemini Live. Sem essa sessão legítima/permissão física não é possível comprovar áudio nesta execução. Se houver erro, usar os novos logs sanitizados do deployment para prosseguir; não pedir segredo pelo chat.
+
 ## IMPLEMENTADO MAS NÃO PROVADO
 
 - Correção REST e diagnóstico seguro: validados localmente; emissão real ainda pendente.

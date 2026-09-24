@@ -1,3 +1,5 @@
+> **Homologação disponível:** PR #18; candidato `dfa78d9` READY e tela de login aberta no navegador com esse SHA. Próxima ação humana: Sol entrar na Preview privada no iPhone e iniciar voz; emissão real/áudio ainda não comprovados. Produção permanece preservada. Detalhes/evidências no checkpoint de 24/09.
+
 > **Checkpoint prioritário — 24/09/2026: Gemini Live bloqueado em produção.** Ler [correção do token e evidências](CHECKPOINT_GEMINI_TOKEN_2026-09-24.md) e [mandato operacional de Sol](MANDATO_OPERACIONAL_JARVIS_2026-09-24.md). PR #18 corrige o contrato REST e prepara homologação; não há prova ponta a ponta nem promoção. Continuar checkpoint 1 antes de avançar ao iOS. Todo o histórico abaixo permanece preservado.
 
 > **Checkpoint Speaker ID — 24/09/2026:** o app nativo agora tem implementação local de voiceprint com FluidAudio/CoreML, Cofre bloqueado para locutor não-Sol, autorização de convidado e aprendizado linguístico apenas de turnos verificados. **Ainda não é capacidade física homologada:** falta Xcode + iPhone real. Ler [CHECKPOINT_SPEAKER_ID_LOCAL_2026-09-24.md](CHECKPOINT_SPEAKER_ID_LOCAL_2026-09-24.md) antes de alterar identidade de voz.

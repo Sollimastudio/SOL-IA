@@ -19,6 +19,7 @@ final class JarvisNativeDiagnostics: ObservableObject {
 
     private let auth = JarvisNativeAuth()
     private let context = JarvisNativeContextClient()
+    private let speakerIdentity = JarvisSpeakerIdentity()
 
     func run() async {
         guard !running else { return }
@@ -54,11 +55,14 @@ final class JarvisNativeDiagnostics: ObservableObject {
             result.append(.init(id: "gemini-live", label: "Gemini Live", ok: false, detail: "Health do servidor indisponível"))
         }
 
+        await speakerIdentity.prepare()
         result.append(.init(
             id: "speaker-id",
             label: "Reconhecimento da voz da Sol",
-            ok: false,
-            detail: "Pendente: transcrição não equivale a speaker verification/voiceprint"
+            ok: speakerIdentity.enrolled && !speakerIdentity.preparing,
+            detail: speakerIdentity.enrolled
+                ? "Voiceprint local cadastrado; motor FluidAudio/CoreML preparado. Falta validar acerto no iPhone real."
+                : "Motor local disponível, mas falta cadastrar uma amostra da Sol neste iPhone."
         ))
 
         let speech = SFSpeechRecognizer.authorizationStatus()

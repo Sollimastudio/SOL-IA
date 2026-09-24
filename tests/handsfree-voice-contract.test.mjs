@@ -42,10 +42,25 @@ test('native iPhone path uses Gemini Live and keeps distance wake/background con
   assert.match(project, /UIBackgroundModes:[\s\S]*- audio/);
 });
 
-test('speaker identity stays explicitly unverified until a real verifier exists', async () => {
+test('native speaker identity is local, fail-closed and still gated by physical proof', async () => {
   const app = await read('ios/JarvisNative/Sources/JarvisNativeApp.swift');
+  const identity = await read('ios/JarvisNative/Sources/NativeSpeakerIdentity.swift');
+  const live = await read('ios/JarvisNative/Sources/NativeGeminiLive.swift');
+  const project = await read('ios/JarvisNative/project.yml');
   const health = await read('api/jarvis-runtime-health.ts');
-  assert.match(app, /Locutor não verificado/);
+
+  assert.match(project, /FluidInference\/FluidAudio/);
+  assert.match(identity, /import FluidAudio/);
+  assert.match(identity, /extractSpeakerEmbedding/);
+  assert.match(identity, /SpeakerManager\.cosineDistance/);
+  assert.match(identity, /kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly/);
+  assert.match(identity, /case sol/);
+  assert.match(identity, /case guest/);
+  assert.match(identity, /case unknown/);
+  assert.match(app, /Cadastrar minha voz neste iPhone/);
+  assert.match(live, /guard speakerIdentity == \.sol/);
+  assert.match(live, /Contexto privado bloqueado/);
+  assert.match(health, /speakerVerificationImplementation:\s*'fluid-audio-local-voiceprint'/);
   assert.match(health, /speakerVerificationOperational:\s*false/);
   assert.match(health, /guestAuthorizationOperational:\s*false/);
 });

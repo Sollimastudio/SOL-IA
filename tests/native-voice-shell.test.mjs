@@ -3,30 +3,34 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const swift = fs.readFileSync('ios/JarvisNative/Sources/JarvisNativeApp.swift', 'utf8');
+const live = fs.readFileSync('ios/JarvisNative/Sources/NativeGeminiLive.swift', 'utf8');
 const auth = fs.readFileSync('ios/JarvisNative/Sources/NativeAuth.swift', 'utf8');
 const context = fs.readFileSync('ios/JarvisNative/Sources/NativeContext.swift', 'utf8');
 const brain = fs.readFileSync('ios/JarvisNative/Sources/NativeBrain.swift', 'utf8');
 const diagnostics = fs.readFileSync('ios/JarvisNative/Sources/NativeDiagnostics.swift', 'utf8');
 const bootstrap = fs.readFileSync('ios/JarvisNative/PREPARAR-JARVIS.command', 'utf8');
 const project = fs.readFileSync('ios/JarvisNative/project.yml', 'utf8');
-const nativeBundle = [swift, auth, context, brain, diagnostics, bootstrap].join('\n');
+const nativeBundle = [swift, live, auth, context, brain, diagnostics, bootstrap].join('\n');
 
 test('native iOS shell exposes a system voice action without provider secrets', () => {
   assert.match(swift, /StartJarvisConversationIntent/);
   assert.match(swift, /openAppWhenRun\s*=\s*true/);
   assert.match(swift, /AppShortcutsProvider/);
-  assert.doesNotMatch(nativeBundle, /OPENAI_API_KEY|OPENROUTER_API_KEY|AI_GATEWAY_API_KEY|service_role/i);
+  assert.match(swift, /tá aí/);
+  assert.doesNotMatch(nativeBundle, /OPENAI_API_KEY|OPENROUTER_API_KEY|AI_GATEWAY_API_KEY|GEMINI_API_KEY|GOOGLE_GEMINI_API_KEY|service_role/i);
 });
 
-test('native voice session uses play-and-record, Brazilian speech and explicit stop', () => {
+test('native hands-free path uses play-and-record, Gemini Live, explicit stop and background audio', () => {
   assert.match(swift, /\.playAndRecord/);
   assert.match(swift, /AVAudioApplication\.requestRecordPermission/);
-  assert.match(swift, /pt-BR/);
-  assert.match(swift, /Tô aqui\. Pode falar\./);
-  assert.match(swift, /Continue falando normalmente/);
+  assert.match(swift, /JarvisNativeGeminiLive/);
+  assert.match(swift, /Gemini 3\.8 Live/);
   assert.match(swift, /encerrar/);
+  assert.match(live, /models\/gemini-3\.8-live/);
+  assert.match(live, /jarvis-gemini-live-token/);
   assert.match(project, /UIBackgroundModes/);
   assert.match(project, /audio/);
+  assert.doesNotMatch(swift, /AVSpeechSynthesizer|speechSynthesis/);
 });
 
 test('native private login mirrors web OTP flow and persists only the session in Keychain', () => {
@@ -36,9 +40,17 @@ test('native private login mirrors web OTP flow and persists only the session in
   assert.match(auth, /\/auth\/v1\/token\?grant_type=refresh_token/);
   assert.match(auth, /kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly/);
   assert.match(swift, /Acesso privado — uma vez neste aparelho/);
+  assert.match(swift, /Keychain/);
 });
 
-test('native context remains read-only and owner-scoped through authenticated RPCs', () => {
+test('Gemini Live consults Jarvis Core for private context without a second model', () => {
+  assert.match(live, /consult_jarvis/);
+  assert.match(live, /\/api\/jarvis-core/);
+  assert.match(live, /Authorization/);
+  assert.match(live, /contexto privado/i);
+});
+
+test('legacy native context remains read-only and owner-scoped through authenticated RPCs', () => {
   assert.match(context, /search_solia_continuity/);
   assert.match(context, /search_solia_profile_claims/);
   assert.match(context, /search_solia_assistant_history/);
@@ -47,31 +59,27 @@ test('native context remains read-only and owner-scoped through authenticated RP
   assert.doesNotMatch(context, /import_solia_knowledge|record_solia_|method\s*=\s*"(?:PUT|PATCH|DELETE)"/i);
 });
 
-test('native brain uses on-device Foundation Models and keeps imported sources epistemically separate', () => {
+test('local Apple brain remains available only as legacy/fallback code, not the primary speaking path', () => {
   assert.match(brain, /FoundationModels/);
   assert.match(brain, /SystemLanguageModel\.default/);
   assert.match(brain, /LanguageModelSession/);
-  assert.match(brain, /supportsLocale\(Locale\(identifier: "pt-BR"\)\)/);
-  assert.match(brain, /documento importado/);
-  assert.match(brain, /Não afirme que executou ações externas/);
+  assert.doesNotMatch(swift, /JarvisNativeBrain\(/);
+  assert.doesNotMatch(swift, /brain\.answer|say\(response\)/);
 });
 
-test('captured speech now traverses auth, private context, local reasoning and spoken reply', () => {
-  assert.match(swift, /auth\.currentSession\(\)/);
-  assert.match(swift, /core\.fetch\(query: text, auth: session\)/);
-  assert.match(swift, /brain\.answer\(message: text, context: context\)/);
-  assert.match(swift, /lastAnswer = response/);
-  assert.match(swift, /say\(response\)/);
-  assert.match(swift, /self\.listen\(\)/);
+test('speaker identity is explicitly unverified until a real voice verifier exists', () => {
+  assert.match(swift, /Locutor não verificado/);
+  assert.match(swift, /Speaker ID\/voiceprint ainda é um módulo separado/);
+  assert.match(diagnostics, /Reconhecimento da voz da Sol/);
+  assert.match(diagnostics, /Pendente: transcrição não equivale a speaker verification\/voiceprint/);
 });
 
-test('device diagnostics expose each required layer without sending model traffic', () => {
+test('device diagnostics expose current live readiness, session and memory without provider secrets', () => {
   assert.match(diagnostics, /Microfone/);
-  assert.match(diagnostics, /Reconhecimento pt-BR/);
-  assert.match(diagnostics, /Cérebro local Apple/);
+  assert.match(diagnostics, /Gemini Live/);
   assert.match(diagnostics, /Sessão privada/);
   assert.match(diagnostics, /Memória privada/);
-  assert.doesNotMatch(diagnostics, /openai|openrouter|ai-gateway/i);
+  assert.doesNotMatch(diagnostics, /GEMINI_API_KEY|OPENAI_API_KEY|OPENROUTER_API_KEY|AI_GATEWAY_API_KEY/);
   assert.match(swift, /Diagnóstico deste iPhone/);
 });
 

@@ -64,3 +64,15 @@ test('native speaker identity is local, fail-closed and still gated by physical 
   assert.match(health, /speakerVerificationOperational:\s*false/);
   assert.match(health, /guestAuthorizationOperational:\s*false/);
 });
+
+
+test('speech-style learning accepts only voiceprint-verified Sol turns and stores no raw transcript history', async () => {
+  const app = await read('ios/JarvisNative/Sources/JarvisNativeApp.swift');
+  const style = await read('ios/JarvisNative/Sources/NativeSpeechStyle.swift');
+  assert.match(app, /speakerIdentity\.lastResult == \.sol/);
+  assert.match(app, /observeVerifiedSolTranscript/);
+  assert.match(style, /verifiedTurns/);
+  assert.match(style, /markerCounts/);
+  assert.doesNotMatch(style, /\[String\]\s*=\s*\[\]|rawTranscripts|transcriptHistory/);
+  assert.match(style, /PERFIL_DE_FALA_LOCAL_DA_SOL/);
+});

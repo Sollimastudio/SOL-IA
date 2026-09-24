@@ -11,7 +11,6 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
     var onStatus: (@Sendable (String) -> Void)?
     var onUserTranscript: (@Sendable (String) -> Void)?
     var onAssistantTranscript: (@Sendable (String) -> Void)?
-    var consultJarvis: (@Sendable (String) async -> String)?
 
     private let urlSession: URLSession
     private let engine = AVAudioEngine()
@@ -187,7 +186,7 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
 
         if let toolCall = object["toolCall"] as? [String: Any],
            let calls = toolCall["functionCalls"] as? [[String: Any]] {
-            await handleToolCalls(calls)
+            await handleToolCalls(calls, configuration: configuration)
         }
 
         if let error = object["error"] as? [String: Any] {
@@ -196,7 +195,7 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
         }
     }
 
-    private func handleToolCalls(_ calls: [[String: Any]]) async {
+    private func handleToolCalls(_ calls: [[String: Any]], configuration: Configuration) async {
         var responses: [[String: Any]] = []
         for call in calls {
             let name = call["name"] as? String ?? "unknown"
@@ -207,7 +206,7 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
             }
             let args = call["args"] as? [String: Any]
             let request = args?["request"] as? String ?? ""
-            let context = await consultJarvis?(request) ?? "Nenhum contexto adicional confirmado."
+            let context = await privateContext(query: request, accessToken: configuration.auth.accessToken)
             responses.append([
                 "name": name,
                 "id": id,
@@ -216,6 +215,33 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
         }
         if !responses.isEmpty {
             try? await send(["toolResponse": ["functionResponses": responses]])
+        }
+    }
+
+    private func privateContext(query: String, accessToken: String) async -> String {
+        let clean = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty,
+              let url = URL(string: "/api/jarvis-core", relativeTo: JarvisNativeConfig.webAppURL) else {
+            return "Nenhum contexto adicional confirmado."
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 15
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["query": String(clean.prefix(1000))])
+        do {
+            let (data, response) = try await urlSession.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+                  let payload = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  payload["ok"] as? Bool == true,
+                  let context = payload["context"] else {
+                return "O contexto privado não pôde ser recuperado nesta consulta."
+            }
+            let encoded = try JSONSerialization.data(withJSONObject: context)
+            return String(data: encoded, encoding: .utf8) ?? "Contexto privado recuperado sem representação textual."
+        } catch {
+            return "O contexto privado não pôde ser recuperado nesta consulta."
         }
     }
 

@@ -114,7 +114,7 @@ test('budget pause preserves a private remembered message through capture withou
   assert.equal(data.ok, true);
   assert.equal(data.persisted, true);
   assert.equal(data.execution, 'capture_only_budget_fallback');
-  assert.equal(data.modelUsed, 'none');
+  assert.equal(data.modelUsed, 'capture-only');
   assert.match(data.answer, /guardada no cofre e no Diário/);
   assert.equal(calls.length, 2);
 });

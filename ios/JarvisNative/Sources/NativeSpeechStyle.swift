@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 struct JarvisSpeechStyleSnapshot: Codable, Sendable {
     var version: Int = 1

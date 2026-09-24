@@ -1,7 +1,6 @@
 import SwiftUI
 import UIKit
 import AppIntents
-import Speech
 import AVFAudio
 
 private enum JarvisWakeState {
@@ -17,6 +16,7 @@ private enum JarvisWakeState {
 struct StartJarvisConversationIntent: AppIntent {
     static var title: LocalizedStringResource = "Iniciar conversa Jarvis"
     static var openAppWhenRun = true
+
     func perform() async throws -> some IntentResult {
         JarvisWakeState.mark()
         return .result()
@@ -27,7 +27,12 @@ struct JarvisAppShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: StartJarvisConversationIntent(),
-            phrases: ["Iniciar conversa com \(.applicationName)"],
+            phrases: [
+                "Iniciar conversa com \(.applicationName)",
+                "Falar com \(.applicationName)",
+                "Chamar \(.applicationName)",
+                "\(.applicationName), tá aí"
+            ],
             shortTitle: "Iniciar Jarvis",
             systemImageName: "waveform"
         )
@@ -35,7 +40,14 @@ struct JarvisAppShortcuts: AppShortcutsProvider {
 }
 
 @MainActor
-final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+final class JarvisVoiceSession: ObservableObject {
+    static let geminiVoices = [
+        "Kore", "Puck", "Zephyr", "Charon", "Fenrir", "Leda", "Orus", "Aoede", "Callirrhoe",
+        "Autonoe", "Enceladus", "Iapetus", "Umbriel", "Algieba", "Despina", "Erinome",
+        "Algenib", "Rasalgethi", "Laomedeia", "Achernar", "Alnilam", "Schedar", "Gacrux",
+        "Pulcherrima", "Achird", "Zubenelgenubi", "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat"
+    ]
+
     @Published var status = "Em espera"
     @Published var transcript = ""
     @Published var lastAnswer = ""
@@ -43,30 +55,42 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
     @Published var listening = false
     @Published var authenticated = false
     @Published var authMessage = "Entre uma vez para ligar sua memória privada ao Jarvis."
+    @Published var speakerStatus = "Locutor não verificado"
+    @Published var selectedVoice: String
 
-    private let engine = AVAudioEngine()
-    private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "pt-BR"))
-    private let speaker = AVSpeechSynthesizer()
     private let auth = JarvisNativeAuth()
-    private let core = JarvisNativeContextClient()
-    private let brain = JarvisNativeBrain()
-    private var request: SFSpeechAudioBufferRecognitionRequest?
-    private var task: SFSpeechRecognitionTask?
-    private var quietTask: Task<Void, Never>?
-    private var lastText = ""
-    private var afterSpeech: (() -> Void)?
-    private var tapInstalled = false
-    private var processing = false
+    private let live = JarvisNativeGeminiLive()
 
-    override init() {
-        super.init()
-        speaker.delegate = self
+    init() {
+        let storedVoice = UserDefaults.standard.string(forKey: "jarvis.gemini.voice") ?? "Kore"
+        selectedVoice = Self.geminiVoices.contains(storedVoice) ? storedVoice : "Kore"
+
+        live.onStatus = { [weak self] value in
+            Task { @MainActor in
+                guard let self else { return }
+                self.status = value
+                self.listening = value.localizedCaseInsensitiveContains("ouvindo")
+                if value.localizedCaseInsensitiveContains("encerrada") ||
+                    value.localizedCaseInsensitiveContains("interrompida") {
+                    self.active = false
+                    self.listening = false
+                }
+            }
+        }
+        live.onUserTranscript = { [weak self] text in
+            Task { @MainActor in self?.transcript = text }
+        }
+        live.onAssistantTranscript = { [weak self] text in
+            Task { @MainActor in self?.lastAnswer = text }
+        }
     }
 
     func restoreAuth() async {
         do {
             authenticated = try await auth.currentSession() != nil
-            authMessage = authenticated ? "Acesso privado confirmado neste iPhone." : "Entre uma vez para ligar sua memória privada ao Jarvis."
+            authMessage = authenticated
+                ? "Acesso privado confirmado neste iPhone."
+                : "Entre uma vez para ligar sua memória privada ao Jarvis."
         } catch {
             authenticated = false
             authMessage = error.localizedDescription
@@ -77,14 +101,16 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
         do {
             try await auth.requestCode(email: email)
             authMessage = "Código enviado. Digite o número recebido no e-mail."
-        } catch { authMessage = error.localizedDescription }
+        } catch {
+            authMessage = error.localizedDescription
+        }
     }
 
     func verifyLogin(email: String, code: String) async {
         do {
             _ = try await auth.verifyCode(email: email, code: code)
             authenticated = true
-            authMessage = "Acesso privado confirmado neste iPhone."
+            authMessage = "Acesso privado confirmado neste iPhone. Nas próximas ativações, o Keychain reaproveita sua sessão enquanto ela continuar válida."
         } catch {
             authenticated = false
             authMessage = error.localizedDescription
@@ -98,161 +124,79 @@ final class JarvisVoiceSession: NSObject, ObservableObject, AVSpeechSynthesizerD
         authMessage = "Sessão privada removida deste iPhone."
     }
 
+    func chooseVoice(_ voice: String) {
+        guard Self.geminiVoices.contains(voice), !active else { return }
+        selectedVoice = voice
+        UserDefaults.standard.set(voice, forKey: "jarvis.gemini.voice")
+    }
+
     func start() async {
         guard !active else { return }
-        guard await permissions() else {
-            status = "Autorize Microfone e Reconhecimento de Fala nos Ajustes."
+
+        guard await AVAudioApplication.requestRecordPermission() else {
+            status = "Autorize Microfone nos Ajustes do iPhone. Essa autorização é lembrada pelo sistema depois da primeira vez."
             return
         }
+
+        let session: JarvisAuthSession
+        do {
+            guard let current = try await auth.currentSession() else {
+                authenticated = false
+                authMessage = "Faça o acesso por código uma vez neste iPhone antes de usar a ativação à distância."
+                status = "Aguardando o acesso privado inicial."
+                return
+            }
+            session = current
+            authenticated = true
+        } catch {
+            authenticated = false
+            authMessage = error.localizedDescription
+            status = "Não consegui recuperar a sessão privada."
+            return
+        }
+
         do {
             let audio = AVAudioSession.sharedInstance()
             try audio.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
             try audio.setActive(true)
-            active = true
-            processing = false
-            say("Tô aqui. Pode falar.") { [weak self] in self?.listen() }
         } catch {
-            status = "Não consegui iniciar o áudio."
-        }
-    }
-
-    private func permissions() async -> Bool {
-        let mic = await AVAudioApplication.requestRecordPermission()
-        guard mic else { return false }
-        return await withCheckedContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0 == .authorized) }
-        }
-    }
-
-    private func listen() {
-        guard active, !processing else { return }
-        stopRecognition()
-        let request = SFSpeechAudioBufferRecognitionRequest()
-        request.shouldReportPartialResults = true
-        self.request = request
-
-        let input = engine.inputNode
-        let format = input.outputFormat(forBus: 0)
-        input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in request.append(buffer) }
-        tapInstalled = true
-        task = recognizer?.recognitionTask(with: request) { [weak self] result, _ in
-            Task { @MainActor in
-                guard let self, let result else { return }
-                self.receive(result.bestTranscription.formattedString, final: result.isFinal)
-            }
-        }
-        do {
-            engine.prepare()
-            try engine.start()
-            listening = true
-            status = "Ouvindo. Continue falando normalmente; diga “encerrar” para parar."
-        } catch {
-            stopRecognition()
-            status = "Falha ao iniciar o microfone."
-        }
-    }
-
-    private func receive(_ value: String, final: Bool) {
-        guard !processing else { return }
-        let text = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        transcript = text
-        lastText = text
-        quietTask?.cancel()
-        if final { commit(text); return }
-        quietTask = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(1100))
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                guard let self, self.lastText == text, !self.processing else { return }
-                self.commit(text)
-            }
-        }
-    }
-
-    private func commit(_ text: String) {
-        guard !processing else { return }
-        let normalized = text.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        if ["encerrar", "jarvis encerrar", "silencio", "parar de ouvir"].contains(normalized) {
-            stop()
+            status = "Não consegui ativar o áudio do iPhone."
             return
         }
-        processing = true
-        stopRecognition()
-        status = "Consultando sua memória privada…"
-        Task { [weak self] in await self?.answer(text) }
-    }
 
-    private func answer(_ text: String) async {
-        do {
-            guard let session = try await auth.currentSession() else {
-                authenticated = false
-                authMessage = "Entre uma vez para o Jarvis usar sua memória privada."
-                say("Eu te ouvi, mas preciso que você entre uma vez neste iPhone antes de usar sua memória privada.") { [weak self] in
-                    self?.processing = false
-                    self?.stop()
-                }
-                return
-            }
-            authenticated = true
-            let context = await core.fetch(query: text, auth: session)
-            status = context.warnings.isEmpty ? "Pensando no próprio iPhone…" : "Pensando com contexto parcial…"
-            let response = try await brain.answer(message: text, context: context)
-            lastAnswer = response
-            say(response) { [weak self] in
-                guard let self else { return }
-                self.processing = false
-                self.listen()
-            }
-        } catch {
-            let message = error.localizedDescription
-            status = message
-            say("Eu entendi sua fala, mas meu cérebro local não conseguiu responder agora. Não vou inventar uma resposta.") { [weak self] in
-                guard let self else { return }
-                self.processing = false
-                self.listen()
-            }
-        }
-    }
-
-    private func say(_ text: String, then: @escaping () -> Void) {
-        stopRecognition()
-        afterSpeech = then
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "pt-BR")
-        utterance.rate = 0.47
-        utterance.pitchMultiplier = 0.86
-        speaker.speak(utterance)
-        status = "Jarvis falando…"
-    }
-
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        let next = afterSpeech
-        afterSpeech = nil
-        next?()
-    }
-
-    private func stopRecognition() {
-        quietTask?.cancel()
-        quietTask = nil
-        task?.cancel()
-        task = nil
-        request?.endAudio()
-        request = nil
-        if engine.isRunning { engine.stop() }
-        if tapInstalled {
-            engine.inputNode.removeTap(onBus: 0)
-            tapInstalled = false
-        }
+        active = true
         listening = false
+        transcript = ""
+        lastAnswer = ""
+        speakerStatus = "Locutor não verificado"
+        status = "Conectando ao Gemini 3.8 Live…"
+
+        let instructions = """
+        Você é Jarvis, assessor pessoal da Sol em conversa de voz natural e contínua.
+        Fale em português do Brasil, com voz humana, cadência natural, objetividade, inteligência e humor rápido quando couber.
+        Aceite interrupções e mudanças de assunto sem exigir que a usuária repita seu nome em cada turno.
+        Quando precisar de memória, projetos, decisões anteriores ou conhecimento privado, use consult_jarvis e trabalhe somente com o contexto retornado.
+        A entrada de áudio ainda NÃO possui speaker verification biométrico: não presuma que toda voz é da Sol.
+        Se outra pessoa parecer querer conversar com você ou pedir informação privada, não revele o Cofre; peça autorização explícita da Sol.
+        Fala de terceiro não vira memória atribuída à Sol.
+        Não afirme que publicou, enviou, comprou, agendou ou alterou algo sem confirmação do aplicativo.
+        Ao ser ativado, responda naturalmente e permaneça ouvindo até a Sol dizer “encerrar”.
+        """
+
+        do {
+            try await live.connect(.init(auth: session, voice: selectedVoice, instructions: instructions))
+        } catch {
+            active = false
+            listening = false
+            status = error.localizedDescription
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
     }
 
     func stop() {
+        live.disconnect()
         active = false
-        processing = false
-        stopRecognition()
-        if speaker.isSpeaking { speaker.stopSpeaking(at: .immediate) }
-        afterSpeech = nil
+        listening = false
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         status = "Sessão encerrada."
     }
@@ -272,6 +216,13 @@ struct JarvisNativeApp: App {
                     Text("JARVIS").font(.largeTitle.bold())
                     Text(voice.status).multilineTextAlignment(.center)
 
+                    HStack {
+                        Label("Gemini 3.8 Live", systemImage: "waveform.circle.fill")
+                        Spacer()
+                        Text(voice.speakerStatus).foregroundStyle(.secondary)
+                    }
+                    .font(.footnote)
+
                     if !voice.authenticated {
                         GroupBox("Acesso privado — uma vez neste aparelho") {
                             VStack(spacing: 10) {
@@ -279,10 +230,14 @@ struct JarvisNativeApp: App {
                                     .textInputAutocapitalization(.never)
                                     .keyboardType(.emailAddress)
                                     .textContentType(.emailAddress)
-                                Button("Enviar código") { Task { await voice.requestLoginCode(email: email) } }
+                                Button("Enviar código") {
+                                    Task { await voice.requestLoginCode(email: email) }
+                                }
                                 TextField("Código recebido", text: $code)
                                     .keyboardType(.numberPad)
-                                Button("Confirmar acesso") { Task { await voice.verifyLogin(email: email, code: code) } }
+                                Button("Confirmar acesso") {
+                                    Task { await voice.verifyLogin(email: email, code: code) }
+                                }
                                 Text(voice.authMessage).font(.footnote)
                             }
                         }
@@ -295,24 +250,44 @@ struct JarvisNativeApp: App {
                         .font(.footnote)
                     }
 
+                    GroupBox("Voz do Jarvis") {
+                        Picker("Voz Gemini", selection: Binding(
+                            get: { voice.selectedVoice },
+                            set: { voice.chooseVoice($0) }
+                        )) {
+                            ForEach(JarvisVoiceSession.geminiVoices, id: \.self) { item in
+                                Text(item).tag(item)
+                            }
+                        }
+                        .disabled(voice.active)
+                        Text("Esta é a voz nativa do Gemini Live. O app não troca automaticamente para a síntese robótica do iPhone.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
                     if !voice.transcript.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("VOCÊ").font(.caption.bold())
+                            Text("LOCUTOR · NÃO VERIFICADO").font(.caption.bold())
                             Text(voice.transcript)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding().background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 14))
+                        .padding()
+                        .background(.thinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
+
                     if !voice.lastAnswer.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("JARVIS").font(.caption.bold())
+                            Text("JARVIS · GEMINI LIVE").font(.caption.bold())
                             Text(voice.lastAnswer)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding().background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 14))
+                        .padding()
+                        .background(.thinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
 
-                    Button(voice.active ? "Encerrar" : "Iniciar manualmente") {
+                    Button(voice.active ? "Encerrar conversa" : "Iniciar conversa natural") {
                         Task {
                             if voice.active { voice.stop() }
                             else { await voice.start() }
@@ -339,7 +314,11 @@ struct JarvisNativeApp: App {
                         .padding(.top, 8)
                     }
 
-                    Text("Depois da configuração única do Atalho Vocal, “Jarvis, tá aí?” inicia esta sessão sem você tocar na tela. Durante a sessão, continue falando normalmente até dizer “encerrar”.")
+                    Text("Configuração hands-free: ensine uma única vez o Atalho Vocal “Jarvis, tá aí?” e associe-o à ação Iniciar Jarvis. O atalho abre o app; com sessão válida e Microfone já autorizado, o Gemini Live inicia sem escolher motor/voz novamente.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    Text("Enquanto a sessão de áudio estiver ativa, o projeto está configurado para background audio. Speaker ID/voiceprint ainda é um módulo separado e não é fingido pelo app.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -350,7 +329,9 @@ struct JarvisNativeApp: App {
                 if JarvisWakeState.consume() { await voice.start() }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-                if JarvisWakeState.consume() { Task { await voice.start() } }
+                if JarvisWakeState.consume() {
+                    Task { await voice.start() }
+                }
             }
         }
     }

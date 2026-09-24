@@ -20,6 +20,7 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
     private var receiveTask: Task<Void, Never>?
     private var started = false
     private var closing = false
+    private var muted = false
     private var tapInstalled = false
     private var inputRate: Double = 48_000
     private var phase: Double = 0
@@ -97,9 +98,8 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
         status("Sessão Gemini encerrada.")
     }
 
-    func setMuted(_ muted: Bool) {
-        engine.inputNode.inputFormat(forBus: 0)
-        engine.inputNode.volume = muted ? 0 : 1
+    func setMuted(_ value: Bool) {
+        muted = value
     }
 
     func updateSpeakerIdentity(_ result: JarvisSpeakerIdentityResult) {
@@ -332,7 +332,7 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
     }
 
     private func capture(_ buffer: AVAudioPCMBuffer) {
-        guard started, !closing, let channel = buffer.floatChannelData?[0] else { return }
+        guard started, !closing, !muted, let channel = buffer.floatChannelData?[0] else { return }
         let count = Int(buffer.frameLength)
         guard count > 0 else { return }
         let ratio = inputRate / targetRate

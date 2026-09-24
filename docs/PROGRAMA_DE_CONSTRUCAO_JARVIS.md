@@ -49,6 +49,11 @@ Ao retomar, consultar o estado salvo antes de pedir contexto novamente.
 7. Visão comercial deve medir valor entregue e custo antes de escala; não prometer resultado financeiro.
 8. Auditoria de históricos/repositórios é parcial enquanto não houver inventário completo.
 
+
+## Requisito hands-free congelado — 23/09/2026
+
+Ler [REQUISITO_HANDSFREE_VOZ_IDENTIDADE_2026-09-23.md](REQUISITO_HANDSFREE_VOZ_IDENTIDADE_2026-09-23.md) antes de alterar voz, ativação, ambiente, Speaker ID ou convidados. O web é painel/manual; o app nativo é o caminho principal para ativação à distância. `Modelo: none` e TTS robótico não são critérios de aceite da voz principal.
+
 ## Generalização para outros clientes
 
 As capacidades acima são reinterpretadas por objetivo.
@@ -100,12 +105,12 @@ Esses dados são exemplo de profundidade de personalização, não esquema obrig
 | Etapa | Construção | Critério de aceite | Estado/observação |
 |---|---|---|---|
 | 0. Uso cotidiano | acesso estável, sessão, recuperação de erro | abrir/retomar sem reset indevido | piloto em evolução |
-| 1. Fala natural | interpretação contextual + voz | conversa sem exigir prompt técnico | web/realtime em evolução; provas pendentes |
+| 1. Fala natural | Gemini Live + interpretação contextual | conversa natural sem TTS robótico ou prompt técnico | web redirecionado para Gemini Live; nativo Gemini Live implementado, prova física pendente |
 | 2. Continuidade | eventos, decisões, tópicos, tarefas duráveis | retomar com fonte, decisão vigente e próximo passo | infraestrutura já avançou além do estado original deste programa |
 | 3. Acervo | inventário, originais, relações | importar sem duplicar/sobrescrever e restaurar | biblioteca parcial |
 | 4. Execução | fila persistente, workers, conectores | tarefa sobrevive ao fechamento e não duplica ação | pendente |
-| 5. Voz/live | áudio, interrupção, público/privado | prova real no dispositivo/plataforma | GPT-Live implementado em branch; live completa pendente |
-| 6. Evolução dentro do Jarvis | pedido → tarefa → patch → Preview | defeito enviado pelo produto gera entrega rastreável | pendente/parcial fora do app |
+| 5. Voz/live | ativação à distância, áudio natural, interrupção, ambiente e identidade de locutor | prova real no iPhone + nenhum vazamento de memória a terceiros | Gemini Live é o default; App Intent/Keychain/background existem; Speaker ID e prova física continuam pendentes |
+| 6. Evolução dentro do Jarvis | detectar → evidência → patch → testes → Preview → promoção/rollback | defeito de voz/modelo gera entrega rastreável sem editar produção às cegas | PARCIAL: health/radar/testes existem; autorreparo ponta a ponta ainda não |
 | 7. Fundamento multiusuário | tenant/workspace/client/role, Profile/Skill Packs | novas features não hardcodam Sol | arquitetura oficial; implementação incremental |
 | 8. Produto multi-tenant | isolamento real, RBAC, metering, billing/export | duas+ organizações sem vazamento; agência multi-cliente | pendente |
 | 9. Legado/delegação | exportação, recuperação, acesso designado | continuidade independente de fornecedor | pendente |

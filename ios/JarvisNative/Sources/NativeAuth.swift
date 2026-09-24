@@ -11,6 +11,7 @@ struct JarvisAuthSession: Codable {
 
 enum JarvisNativeConfig {
     static let supabaseURL = URL(string: "https://rkkpbmzrucaghrojujvb.supabase.co")!
+    static let webAppURL = URL(string: "https://sol-ia-i5wy.vercel.app")!
     static let publishableKey = "sb_publishable_XhsUjBPVRtC-0DBfMNDQTA_FaK8XFj8"
 }
 

@@ -6,12 +6,18 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+packages:
+  FluidAudio:
+    url: https://github.com/FluidInference/FluidAudio.git
+    from: 0.12.4
 targets:
   JarvisNative:
     type: application
     platform: iOS
     sources:
       - Sources
+    dependencies:
+      - package: FluidAudio
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sollimastudio.jarvis

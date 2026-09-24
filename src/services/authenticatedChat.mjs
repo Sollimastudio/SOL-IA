@@ -40,12 +40,12 @@ async function maybeCaptureBudgetFallback({ response, endpoint, body, userId, si
 
   return Response.json({
     ok: true,
-    answer: 'A resposta inteligente está temporariamente indisponível, mas sua fala foi guardada no cofre e no Diário. Continue falando normalmente; o conteúdo não foi perdido.',
+    answer: 'Nenhum modelo respondeu nesta tentativa. Sua fala foi guardada no cofre e no Diário, mas isso é modo de contingência — não uma resposta inteligente.',
     specialist: 'vault_memory',
     mode: 'private',
     persisted: true,
     memoryId: captureId,
-    modelUsed: 'none',
+    modelUsed: 'capture-only',
     promptVersion: '',
     execution: 'capture_only_budget_fallback',
     continuityPersisted: receipt.continuityPersisted === true,

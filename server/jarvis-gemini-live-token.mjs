@@ -3,6 +3,32 @@ const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_XhsUjBPVRtC-0DBfMNDQTA_
 const GEMINI_LIVE_MODEL = 'gemini-3.8-live';
 const AUTH_TOKEN_URL = 'https://generativelanguage.googleapis.com/v1beta/auth_tokens';
 
+// Never log provider text, metadata, request headers or bodies: Google can echo
+// credentials in an error. Keep only known technical classifications/field names.
+function providerDiagnostic(payload, httpStatus) {
+  const error = payload?.error;
+  const knownStatuses = ['INVALID_ARGUMENT', 'UNAUTHENTICATED', 'PERMISSION_DENIED',
+    'RESOURCE_EXHAUSTED', 'NOT_FOUND', 'FAILED_PRECONDITION', 'INTERNAL', 'UNAVAILABLE'];
+  const providerCode = knownStatuses.includes(error?.status) ? error.status : 'UNKNOWN';
+  const message = typeof error?.message === 'string' ? error.message.slice(0, 8000) : '';
+  const details = Array.isArray(error?.details) ? error.details.slice(0, 20) : [];
+  const reasons = details.map(item => item?.reason);
+  let cause = 'provider_rejected';
+  if (httpStatus === 429 || providerCode === 'RESOURCE_EXHAUSTED') cause = 'quota_exhausted';
+  else if (reasons.includes('API_KEY_INVALID') || /api key not valid|invalid api key/i.test(message)) cause = 'api_key_invalid';
+  else if (httpStatus === 401 || httpStatus === 403 || reasons.some(reason =>
+    ['API_KEY_SERVICE_BLOCKED', 'API_KEY_HTTP_REFERRER_BLOCKED', 'API_KEY_IP_ADDRESS_BLOCKED', 'SERVICE_DISABLED'].includes(reason))) cause = 'credential_not_authorized';
+  else if (/unknown name|unknown field|cannot find field/i.test(message)) cause = 'unknown_field';
+  else if (/model.{0,120}(not found|not supported|not available)/i.test(message)) cause = 'model_unavailable';
+  else if (providerCode === 'INVALID_ARGUMENT') cause = 'invalid_argument';
+  const knownFields = ['liveConnectConstraints', 'bidiGenerateContentSetup', 'responseModalities',
+    'generationConfig', 'sessionResumption', 'expireTime', 'newSessionExpireTime', 'fieldMask'];
+  const violations = details.flatMap(item => Array.isArray(item?.fieldViolations) ? item.fieldViolations.slice(0, 20) : []);
+  const fields = knownFields.filter(field => message.includes(field) || violations.some(item =>
+    typeof item?.field === 'string' && item.field.split(/[.\[\]]/).includes(field)));
+  return { providerCode, cause, fields };
+}
+
 const reply = (status, payload) => Response.json(payload, {
   status,
   headers: {
@@ -34,7 +60,8 @@ export function resolveGeminiApiKey(env = {}) {
 
 export function createJarvisGeminiLiveTokenHandler({
   env = process.env,
-  fetchImpl = globalThis.fetch
+  fetchImpl = globalThis.fetch,
+  logger = console
 } = {}) {
   return async function handle(request) {
     if (request.method !== 'POST') return reply(405, { ok: false, error: 'Use POST.' });
@@ -124,12 +151,17 @@ export function createJarvisGeminiLiveTokenHandler({
           uses: 1,
           expireTime,
           newSessionExpireTime,
-          liveConnectConstraints: {
+          // Raw REST AuthToken schema. The SDK converts liveConnectConstraints
+          // into this shape before POSTing; fetch does not perform that conversion.
+          bidiGenerateContentSetup: {
             model: `models/${GEMINI_LIVE_MODEL}`,
-            config: {
+            generationConfig: {
               responseModalities: ['AUDIO']
             }
-          }
+          },
+          // Lock exactly the existing model/AUDIO restrictions. Without a mask,
+          // Google ignores the client's voice, instructions, transcription/tools.
+          fieldMask: 'model,generationConfig.responseModalities'
         })
       }, request.signal, 10000);
     } catch {
@@ -137,13 +169,18 @@ export function createJarvisGeminiLiveTokenHandler({
     }
 
     if (!response.ok) {
-      console.info('[JARVIS_GEMINI_LIVE_SAFE]', JSON.stringify({ stage: 'mint_ephemeral_token', ok: false, status: response.status }));
-      const errorCode = response.status === 429 ? 'gemini_quota_limited'
-        : response.status === 401 || response.status === 403 ? 'gemini_key_not_authorized'
+      const diagnostic = providerDiagnostic(await safeJson(response), response.status);
+      logger.info('[JARVIS_GEMINI_LIVE_SAFE]', JSON.stringify({
+        stage: 'mint_ephemeral_token', ok: false, status: response.status,
+        model: GEMINI_LIVE_MODEL, apiVersion: 'v1beta', ...diagnostic
+      }));
+      const keyRejected = ['api_key_invalid', 'credential_not_authorized'].includes(diagnostic.cause);
+      const errorCode = diagnostic.cause === 'quota_exhausted' ? 'gemini_quota_limited'
+        : keyRejected ? 'gemini_key_not_authorized'
           : 'gemini_token_failed';
-      const error = response.status === 429
+      const error = diagnostic.cause === 'quota_exhausted'
         ? 'A cota atual da API Gemini atingiu o limite. Aguarde a renovação da cota ou revise o plano.'
-        : response.status === 401 || response.status === 403
+        : keyRejected
           ? 'A chave Gemini não foi autorizada para criar a sessão Live.'
           : 'Não consegui criar a autorização temporária do Gemini Live.';
       return reply(502, { ok: false, errorCode, error, providerStatus: response.status });
@@ -155,7 +192,7 @@ export function createJarvisGeminiLiveTokenHandler({
       return reply(502, { ok: false, errorCode: 'gemini_token_invalid', error: 'O Google devolveu uma autorização temporária inválida.' });
     }
 
-    console.info('[JARVIS_GEMINI_LIVE_SAFE]', JSON.stringify({ stage: 'mint_ephemeral_token', ok: true, model: GEMINI_LIVE_MODEL }));
+    logger.info('[JARVIS_GEMINI_LIVE_SAFE]', JSON.stringify({ stage: 'mint_ephemeral_token', ok: true, model: GEMINI_LIVE_MODEL }));
     return reply(200, {
       ok: true,
       provider: 'gemini',

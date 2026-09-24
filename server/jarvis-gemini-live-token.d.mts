@@ -3,4 +3,5 @@ export function resolveGeminiApiKey(env?: Record<string, string | undefined>): s
 export function createJarvisGeminiLiveTokenHandler(options?: {
   env?: Record<string, string | undefined>;
   fetchImpl?: typeof fetch;
+  logger?: Pick<Console, 'info'>;
 }): (request: Request) => Promise<Response>;

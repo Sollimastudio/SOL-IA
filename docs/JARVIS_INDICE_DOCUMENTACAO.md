@@ -1,3 +1,5 @@
+> Entrada atual: [Checkpoint Gemini Live 24/09](CHECKPOINT_GEMINI_TOKEN_2026-09-24.md) e [Mandato operacional integral de requisitos](MANDATO_OPERACIONAL_JARVIS_2026-09-24.md).
+
 # Jarvis / Sol.IA — Índice oficial de documentação
 
 > **Documento canônico de navegação.** Atualizado em 16/09/2026.

@@ -1,3 +1,5 @@
+> **Atualização prioritária — 24/09/2026:** Gemini Live está **QUEBRADO em produção** (token Google 400 → API 502). Correção REST/diagnóstico em PR #18, com 271 testes locais aprovados; emissão real e voz ponta a ponta ainda não provadas. Ver [checkpoint](CHECKPOINT_GEMINI_TOKEN_2026-09-24.md). Esta atualização supera o status histórico de voz abaixo, sem apagar seu registro.
+
 # Jarvis / Sol.IA — Status de capacidades
 
 > **Fonte operacional de verdade sobre maturidade.** Atualizado em 23/09/2026.

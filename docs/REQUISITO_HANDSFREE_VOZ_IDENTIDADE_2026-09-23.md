@@ -71,9 +71,9 @@ Regras:
 
 Transcrição NÃO é reconhecimento de locutor.
 
-Ainda falta implementar um módulo real de Speaker ID / voiceprint.
+O módulo real de Speaker ID / voiceprint já foi implementado em código no app nativo usando FluidAudio/CoreML local. O perfil da Sol é extraído no próprio iPhone e salvo no Keychain; não é enviado ao Gemini. **Isto ainda não autoriza chamar a capacidade de operacional:** faltam build Xcode e prova com a voz real da Sol e vozes de terceiros.
 
-O comportamento-alvo:
+O comportamento-alvo — agora também contrato da implementação — é:
 
 1. áudio chega;
 2. speaker verifier classifica `sol`, `guest` ou `unknown` com confiança;
@@ -92,7 +92,7 @@ Com Speaker ID operacional:
 - convidado não escreve memória como Sol;
 - ao terminar, contexto temporário é descartado ou salvo somente conforme consentimento.
 
-Antes do Speaker ID existir, a interface deve dizer **LOCUTOR NÃO VERIFICADO** e nunca fingir que sabe quem falou.
+Enquanto o Speaker ID não estiver cadastrado, estiver incerto ou ainda não tiver sido validado fisicamente, a interface deve dizer **LOCUTOR NÃO VERIFICADO** (ou estado equivalente) e nunca fingir que sabe quem falou. Quando o verificador local classifica `guest`, o Cofre permanece bloqueado mesmo se a Sol autorizar uma conversa genérica.
 
 ## Aprender o jeito de falar da Sol
 
@@ -168,6 +168,10 @@ Implementado em código:
 - Jarvis Core read-only disponível para `consult_jarvis`;
 - health endpoint expõe estado sem segredos;
 - testes de contrato hands-free.
+- voiceprint local com FluidAudio/CoreML e armazenamento no Keychain;
+- classificação `sol / guest / unknown` fail-closed;
+- bloqueio de `consult_jarvis` para qualquer locutor não verificado como Sol;
+- pedido de autorização da Sol quando outra voz é detectada.
 
 Ainda não comprovado:
 
@@ -175,7 +179,9 @@ Ainda não comprovado:
 - instalação física deste novo delta;
 - wake físico após atualização;
 - background/tela bloqueada desta versão;
-- Speaker ID/voiceprint;
-- autorização de convidados baseada em identidade real.
+- build Xcode com FluidAudio/Swift Package;
+- cadastro do voiceprint real da Sol no iPhone;
+- medição e ajuste dos thresholds com Sol + vozes de terceiros;
+- autorização de convidados baseada no Speaker ID validado.
 
 **Regra:** não declarar reconhecimento da voz da Sol enquanto Speaker ID não existir e não for provado.

@@ -35,6 +35,32 @@ final class JarvisNativeDiagnostics: ObservableObject {
             detail: micPermission == .granted ? "Autorizado" : micPermission == .denied ? "Negado nos Ajustes" : "Ainda não autorizado"
         ))
 
+        do {
+            let healthURL = URL(string: "/api/jarvis-runtime-health", relativeTo: JarvisNativeConfig.webAppURL)!
+            let (data, response) = try await URLSession.shared.data(from: healthURL)
+            let http = response as? HTTPURLResponse
+            let payload = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let live = payload?["live"] as? [String: Any]
+            let providers = live?["providers"] as? [String: Any]
+            let gemini = providers?["gemini"] as? [String: Any]
+            let keyPresent = gemini?["apiKeyPresent"] as? Bool == true
+            result.append(.init(
+                id: "gemini-live",
+                label: "Gemini Live",
+                ok: http?.statusCode == 200 && keyPresent,
+                detail: keyPresent ? "Servidor pronto para token efêmero; modelo gemini-3.8-live" : "Credencial Gemini não confirmada no servidor"
+            ))
+        } catch {
+            result.append(.init(id: "gemini-live", label: "Gemini Live", ok: false, detail: "Health do servidor indisponível"))
+        }
+
+        result.append(.init(
+            id: "speaker-id",
+            label: "Reconhecimento da voz da Sol",
+            ok: false,
+            detail: "Pendente: transcrição não equivale a speaker verification/voiceprint"
+        ))
+
         let speech = SFSpeechRecognizer.authorizationStatus()
         result.append(.init(
             id: "speech",

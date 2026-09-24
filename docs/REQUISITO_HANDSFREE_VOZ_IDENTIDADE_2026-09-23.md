@@ -109,6 +109,8 @@ O Jarvis deve aprender, de exemplos atribuídos à Sol:
 
 Aprendizagem deve ser versionada e corrigível. Fala de terceiros não entra nesse perfil.
 
+A implementação nativa atual cria um perfil **agregado e local** somente a partir de transcrições recebidas enquanto o voiceprint está classificado como `sol`. O módulo contabiliza tamanho médio dos turnos, marcadores recorrentes, retomadas/autocorreções e frequência de pedidos diretos. Ele não mantém um histórico bruto das frases nesse perfil. O resumo é incorporado às instruções da sessão seguinte para ajudar o Jarvis a acompanhar a cadência da Sol sem caricaturá-la.
+
 ## Autoevolução / “Jarvis se programa”
 
 Objetivo aceito: autodiagnóstico e autorreparo supervisionado.

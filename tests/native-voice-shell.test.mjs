@@ -8,9 +8,10 @@ const auth = fs.readFileSync('ios/JarvisNative/Sources/NativeAuth.swift', 'utf8'
 const context = fs.readFileSync('ios/JarvisNative/Sources/NativeContext.swift', 'utf8');
 const brain = fs.readFileSync('ios/JarvisNative/Sources/NativeBrain.swift', 'utf8');
 const diagnostics = fs.readFileSync('ios/JarvisNative/Sources/NativeDiagnostics.swift', 'utf8');
+const identity = fs.readFileSync('ios/JarvisNative/Sources/NativeSpeakerIdentity.swift', 'utf8');
 const bootstrap = fs.readFileSync('ios/JarvisNative/PREPARAR-JARVIS.command', 'utf8');
 const project = fs.readFileSync('ios/JarvisNative/project.yml', 'utf8');
-const nativeBundle = [swift, live, auth, context, brain, diagnostics, bootstrap].join('\n');
+const nativeBundle = [swift, live, auth, context, brain, diagnostics, identity, bootstrap].join('\n');
 
 test('native iOS shell exposes a system voice action without provider secrets', () => {
   assert.match(swift, /StartJarvisConversationIntent/);
@@ -67,11 +68,17 @@ test('local Apple brain remains available only as legacy/fallback code, not the 
   assert.doesNotMatch(swift, /brain\.answer|say\(response\)/);
 });
 
-test('speaker identity is explicitly unverified until a real voice verifier exists', () => {
-  assert.match(swift, /Locutor não verificado/);
-  assert.match(swift, /Speaker ID\/voiceprint ainda é um módulo separado/);
+test('speaker identity uses a local voiceprint and fails closed until physical proof', () => {
+  assert.match(identity, /import FluidAudio/);
+  assert.match(identity, /extractSpeakerEmbedding/);
+  assert.match(identity, /SpeakerManager\.cosineDistance/);
+  assert.match(identity, /kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly/);
+  assert.match(swift, /Cadastrar minha voz neste iPhone/);
+  assert.match(swift, /VOICEPRINT NÃO CADASTRADO/);
+  assert.match(live, /guard speakerIdentity == \.sol/);
+  assert.match(live, /Contexto privado bloqueado/);
   assert.match(diagnostics, /Reconhecimento da voz da Sol/);
-  assert.match(diagnostics, /Pendente: transcrição não equivale a speaker verification\/voiceprint/);
+  assert.match(diagnostics, /Voiceprint local cadastrado/);
 });
 
 test('device diagnostics expose current live readiness, session and memory without provider secrets', () => {

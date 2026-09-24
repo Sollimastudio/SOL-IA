@@ -1,12 +1,16 @@
-> **Requisito congelado — 23/09/2026:** a experiência hands-free, voz Gemini nativa, ativação à distância, ambiente, Speaker ID, convidados e autoevolução supervisionada estão definidos em [REQUISITO_HANDSFREE_VOZ_IDENTIDADE_2026-09-23.md](REQUISITO_HANDSFREE_VOZ_IDENTIDADE_2026-09-23.md). Leia junto com o checkpoint multiprovedor antes de alterar voz/ativação. `Modelo: none` não é aceite normal.\n\n> **Checkpoint prioritário — 23/09/2026:** voz web agora é multiprovedor. Gemini 3.8 Live está implementado com token efêmero e a produção reporta credencial Gemini presente; OpenAI GPT-Live 1 permanece implementado via WebRTC, mas sem credencial em produção. Ler primeiro [CHECKPOINT_LIVE_MULTIPROVEDOR_2026-09-23.md](CHECKPOINT_LIVE_MULTIPROVEDOR_2026-09-23.md). Identificação de locutor/voiceprint da Sol e autorização de convidados continuam pendentes e não podem ser confundidas com transcrição.\n\n> **Checkpoint documental adicional — 21/09/2026:** Sol pediu preservar e incorporar MM01–MM17: referências por link, Visionário, séries autorais, LÚCIDA, respostas Telegram, aprendizado e mapa pré-mentoria. Ler [PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md](PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md). A inspeção usou o candidato PR #8 em `0cc1e4a79a370333dccf9c99cffc8688e28d2366`, além de main e fontes canônicas. Este registro adiciona documentação à branch do candidato; não muda prioridades de voz/login, código, banco ou produção. As referências antigas a PR #6 abaixo são históricas e não substituem a conferência do HEAD atual.
+> **Requisito congelado — 23/09/2026:** a experiência hands-free, voz Gemini nativa, ativação à distância, ambiente, Speaker ID, convidados e autoevolução supervisionada estão definidos em [REQUISITO_HANDSFREE_VOZ_IDENTIDADE_2026-09-23.md](REQUISITO_HANDSFREE_VOZ_IDENTIDADE_2026-09-23.md). Leia junto com o checkpoint multiprovedor antes de alterar voz/ativação. `Modelo: none` não é aceite normal.
+
+> **Checkpoint prioritário — 23/09/2026:** voz web agora é multiprovedor. Gemini 3.8 Live está implementado com token efêmero e a produção reporta credencial Gemini presente; OpenAI GPT-Live 1 permanece implementado via WebRTC, mas sem credencial em produção. Ler primeiro [CHECKPOINT_LIVE_MULTIPROVEDOR_2026-09-23.md](CHECKPOINT_LIVE_MULTIPROVEDOR_2026-09-23.md). Identificação de locutor/voiceprint da Sol e autorização de convidados continuam pendentes e não podem ser confundidas com transcrição.
+
+> **Checkpoint documental adicional — 21/09/2026:** Sol pediu preservar e incorporar MM01–MM17: referências por link, Visionário, séries autorais, LÚCIDA, respostas Telegram, aprendizado e mapa pré-mentoria. Ler [PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md](PROTOCOLO_REFERENCIAS_CONTEUDO_LUCIDA.md). A inspeção usou o candidato PR #8 em `0cc1e4a79a370333dccf9c99cffc8688e28d2366`, além de main e fontes canônicas. Este registro adiciona documentação à branch do candidato; não muda prioridades de voz/login, código, banco ou produção. As referências antigas a PR #6 abaixo são históricas e não substituem a conferência do HEAD atual.
 
 # Jarvis / Sol.IA — continuidade verificável
 
 ## Ponto único de trabalho
 
-Repositório: `Sollimastudio/SOL-IA`. Proposta ativa: PR #6, branch `work/jarvis-neural-conversa-segura-20260908`.
-Esta etapa preserva a interface Neural e o núcleo seguro. Não criar outro Jarvis. Não sobrescrever `main`, aplicar migrações reais ou habilitar custos automaticamente.
-Antes da continuação, ler este registro, a PR e seu HEAD real; comparar alterações concorrentes.
+Repositório: `Sollimastudio/SOL-IA`. O `main` é a referência operacional atual e deve ser comparado com qualquer branch antes de continuar. PRs antigas citadas abaixo são histórico, não a base ativa.
+Preservar a interface Neural, o núcleo seguro e os checkpoints. Não criar outro Jarvis nem recomeçar o projeto em outro repositório. Mudanças de provedor, banco, custo, segurança ou produção exigem teste, evidência e rollback.
+Antes da continuação, ler `REQUISITO_HANDSFREE_VOZ_IDENTIDADE_2026-09-23.md`, `CHECKPOINT_LIVE_MULTIPROVEDOR_2026-09-23.md` e conferir o HEAD real do `main`.
 
 ## Correção de produto e aceite — amostra de voz REPROVADA pela Sol
 
@@ -14,7 +18,7 @@ Feedback explícito: “Nem de longe parece a minha voz”; Sol considera as exp
 
 **Duas finalidades obrigatórias:**
 
-- Jarvis conversa, lê e participa de chamadas com sua própria voz de assistente, distinta da Sol. O código atual usa síntese do aparelho; a identidade final da voz do assistente ainda não foi aprovada.
+- Jarvis conversa, lê e participa de chamadas com sua própria voz de assistente, distinta da Sol. A rota principal atual usa áudio nativo do Gemini Live; síntese do aparelho existe apenas como contingência manual e não é critério de aceite.
 - A voz pessoal da Sol é uma ferramenta para criar conteúdo **somente quando ela pedir explicitamente**. Ouvir/aprender sua fala não autoriza reproduzi-la em respostas, chamadas ou mensagens por ela. Clone não é autenticação.
 
 Corrigida mensagem da interface que sugeria que a leitura do Jarvis deveria evoluir para a voz da Sol. Diretiva compartilhada de conversa atualizada. Síntese pessoal exige sinal explícito de pedido de conteúdo e trabalho identificado para conteúdo; recusa destino de diálogo. Renderização recusa narração reprovada, inclusive se já existir prévia antiga. Esses controles no worker não são autenticação remota; integração ao aplicativo continua pendente.

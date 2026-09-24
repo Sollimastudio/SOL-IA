@@ -11,6 +11,7 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
     var onStatus: (@Sendable (String) -> Void)?
     var onUserTranscript: (@Sendable (String) -> Void)?
     var onAssistantTranscript: (@Sendable (String) -> Void)?
+    var onSpeakerWindow: (@Sendable ([Float], Double) -> Void)?
 
     private let urlSession: URLSession
     private let engine = AVAudioEngine()
@@ -23,8 +24,13 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
     private var inputRate: Double = 48_000
     private var phase: Double = 0
     private var pending: [Int16] = []
+    private var identityPending: [Float] = []
+    private var speakerIdentity: JarvisSpeakerIdentityResult = .notEnrolled
+    private var guestAwaitingAuthorization = false
+    private var guestAuthorized = false
     private let targetRate: Double = 24_000
     private let chunkSamples = 960
+    private let identityWindowSamples = 72_000
 
     init(urlSession: URLSession = .shared) {
         self.urlSession = urlSession
@@ -96,6 +102,40 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
         engine.inputNode.volume = muted ? 0 : 1
     }
 
+    func updateSpeakerIdentity(_ result: JarvisSpeakerIdentityResult) {
+        guard result != speakerIdentity else { return }
+        speakerIdentity = result
+
+        switch result {
+        case .sol:
+            Task { [weak self] in
+                try? await self?.sendSystemInstruction(
+                    "SISTEMA LOCAL: o voiceprint do iPhone confirmou a Sol. Contexto privado pode ser consultado para a fala dela."
+                )
+            }
+        case .guest:
+            guestAwaitingAuthorization = true
+            guestAuthorized = false
+            Task { [weak self] in
+                try? await self?.sendSystemInstruction(
+                    "SISTEMA LOCAL: outra voz foi detectada. Não revele memória privada. Diga exatamente: Sol, detectei outra voz. Você autoriza que eu converse como convidado?"
+                )
+            }
+        case .unknown, .preparing:
+            Task { [weak self] in
+                try? await self?.sendSystemInstruction(
+                    "SISTEMA LOCAL: o locutor não pôde ser confirmado com segurança. Não consulte nem revele memória privada."
+                )
+            }
+        case .notEnrolled:
+            Task { [weak self] in
+                try? await self?.sendSystemInstruction(
+                    "SISTEMA LOCAL: não existe voiceprint cadastrado neste iPhone. Trate o locutor como não verificado e não revele memória privada."
+                )
+            }
+        }
+    }
+
     private func ephemeralToken(accessToken: String) async throws -> String {
         guard let url = URL(string: "/api/jarvis-gemini-live-token", relativeTo: JarvisNativeConfig.webAppURL) else {
             throw URLError(.badURL)
@@ -147,16 +187,10 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
             do {
                 try startAudio()
                 started = true
-                status("Ouvindo. Fale normalmente; diga “encerrar” para terminar.")
-                try await send([
-                    "clientContent": [
-                        "turns": [[
-                            "role": "user",
-                            "parts": [["text": "Você acabou de ser ativado pela Sol. Responda somente: Tô aqui. Pode falar."]]
-                        ]],
-                        "turnComplete": true
-                    ]
-                ])
+                status("Ouvindo. Verificando o locutor localmente; diga “encerrar” para terminar.")
+                try await sendSystemInstruction(
+                    "SISTEMA LOCAL: o Jarvis foi ativado no dispositivo da Sol, mas o locutor ainda precisa ser verificado. Diga: Tô aqui. Vou confirmar quem está falando."
+                )
             } catch {
                 status("Não consegui iniciar o áudio do Gemini Live.")
             }
@@ -165,9 +199,26 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
         if let content = object["serverContent"] as? [String: Any] {
             if let transcript = (content["inputTranscription"] as? [String: Any])?["text"] as? String, !transcript.isEmpty {
                 onUserTranscript?(transcript)
-                if normalize(transcript) == "encerrar" || normalize(transcript) == "jarvis encerrar" {
+                let normalized = normalize(transcript)
+                if normalized == "encerrar" || normalized == "jarvis encerrar" {
                     disconnect()
                     return
+                }
+
+                if speakerIdentity == .sol && guestAwaitingAuthorization {
+                    if normalized.contains("autorizo") || normalized.contains("pode conversar") || normalized.contains("pode falar") {
+                        guestAwaitingAuthorization = false
+                        guestAuthorized = true
+                        try? await sendSystemInstruction(
+                            "SISTEMA LOCAL: a voz verificada da Sol autorizou conversa de convidado. Converse genericamente com o convidado, mas continue bloqueando memória privada quando o locutor não for Sol."
+                        )
+                    } else if normalized.contains("nao autorizo") || normalized.contains("não autorizo") || normalized.contains("nao pode") || normalized.contains("não pode") {
+                        guestAwaitingAuthorization = false
+                        guestAuthorized = false
+                        try? await sendSystemInstruction(
+                            "SISTEMA LOCAL: a voz verificada da Sol negou autorização ao convidado. Não continue a conversa com o outro locutor."
+                        )
+                    }
                 }
             }
             if let transcript = (content["outputTranscription"] as? [String: Any])?["text"] as? String, !transcript.isEmpty {
@@ -206,6 +257,14 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
             }
             let args = call["args"] as? [String: Any]
             let request = args?["request"] as? String ?? ""
+            guard speakerIdentity == .sol else {
+                responses.append([
+                    "name": name,
+                    "id": id,
+                    "response": ["error": "Contexto privado bloqueado: locutor não verificado como Sol."]
+                ])
+                continue
+            }
             let context = await privateContext(query: request, accessToken: configuration.auth.accessToken)
             responses.append([
                 "name": name,
@@ -262,6 +321,7 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
         inputRate = format.sampleRate
         phase = 0
         pending.removeAll(keepingCapacity: true)
+        identityPending.removeAll(keepingCapacity: true)
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             self?.capture(buffer)
         }
@@ -285,6 +345,7 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
             let clipped = max(-1, min(1, sample))
             let pcm = clipped < 0 ? Int16(clipped * 32768) : Int16(clipped * 32767)
             pending.append(pcm)
+            identityPending.append(clipped)
             phase += ratio
         }
         phase -= Double(count)
@@ -302,6 +363,12 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
                 ]
             ]
             Task { [weak self] in try? await self?.send(payload) }
+        }
+
+        if identityPending.count >= identityWindowSamples {
+            let window = Array(identityPending.prefix(identityWindowSamples))
+            identityPending.removeFirst(identityWindowSamples)
+            onSpeakerWindow?(window, targetRate)
         }
     }
 
@@ -329,7 +396,20 @@ final class JarvisNativeGeminiLive: @unchecked Sendable {
         if engine.isRunning { engine.stop() }
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         pending.removeAll()
+        identityPending.removeAll()
         phase = 0
+    }
+
+    private func sendSystemInstruction(_ text: String) async throws {
+        try await send([
+            "clientContent": [
+                "turns": [[
+                    "role": "user",
+                    "parts": [["text": text]]
+                ]],
+                "turnComplete": true
+            ]
+        ])
     }
 
     private func send(_ object: [String: Any]) async throws {

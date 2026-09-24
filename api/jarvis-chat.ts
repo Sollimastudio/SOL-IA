@@ -6,6 +6,7 @@ import { createJarvisHandler } from '../server/jarvis-chat.mjs';
 import { createProviderAwareFetch, resolvePilotRuntime, runtimeBlockResponse } from '../server/pilot-runtime.mjs';
 import { applyZeroCostRuntime, verifyZeroCostGatewayModel } from '../server/zero-cost-ai.mjs';
 import { normalizeContinuityCues } from '../server/continuity-cues.mjs';
+import { createGeminiChatFetch, geminiChatEnabled, GEMINI_CHAT_MODEL } from '../server/gemini-chat.mjs';
 import { routeCapability } from '../src/core/capabilityRouter.js';
 import { SOL_PRESENCE_PROFILE } from '../core/presence-profile.mjs';
 import { AUDIENCE_INTELLIGENCE_DIRECTIVE } from '../core/audience-intelligence.mjs';
@@ -88,9 +89,31 @@ export default {
     let runtime = await resolvePilotRuntime(request, process.env);
     const liveDelegation = await liveDelegationAuthorized(request, runtime);
 
-    // Regular chat keeps the zero-cost gate. Only an authenticated pilot row with
-    // can_use_realtime=true may bypass that gate for a GPT-Live delegated task.
-    if (liveDelegation) {
+    const useGeminiChat = geminiChatEnabled(process.env) &&
+      process.env.JARVIS_CHAT_PROVIDER !== 'gateway';
+
+    // Gemini Free Tier is the preferred conversational brain while its server key is present.
+    // No provider switch happens silently after a provider error: one request still means one provider attempt.
+    if (useGeminiChat) {
+      runtime = {
+        ...runtime,
+        env: {
+          ...runtime.env,
+          JARVIS_METERED_AI_ENABLED: 'true',
+          JARVIS_CHAT_ENABLED: 'true',
+          JARVIS_MODEL: GEMINI_CHAT_MODEL,
+          JARVIS_GEMINI_CHAT_ACTIVE: 'true',
+          OPENROUTER_API_KEY: runtime.env.OPENROUTER_API_KEY || 'gemini-server-broker'
+        },
+        diagnostics: {
+          ...runtime.diagnostics,
+          providerCredentialPresent: true,
+          readinessReason: runtime.diagnostics.readinessReason === 'provider_credential_missing'
+            ? 'ready'
+            : runtime.diagnostics.readinessReason
+        }
+      };
+    } else if (liveDelegation) {
       runtime = {
         ...runtime,
         env: {
@@ -124,6 +147,7 @@ export default {
       zeroCostModelVerified: runtimeDiagnostics.zeroCostModelVerified === true,
       zeroCostModel: runtimeDiagnostics.zeroCostModel ?? null,
       liveDelegation,
+      chatProvider: useGeminiChat ? 'gemini' : runtime.useGateway ? 'vercel-gateway' : 'openrouter',
       chatFlagEnabled, blockReason
     }));
 
@@ -142,7 +166,13 @@ export default {
       : null;
     const continuityText = continuitySystemText(packet, classification, profilePacket, assistantHistory);
 
-    const providerFetch = createProviderAwareFetch(runtime, globalThis.fetch);
+    const providerFetch = useGeminiChat
+      ? createGeminiChatFetch({
+          apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY,
+          model: GEMINI_CHAT_MODEL,
+          fetchImpl: globalThis.fetch
+        })
+      : createProviderAwareFetch(runtime, globalThis.fetch);
     const secureChat = createJarvisHandler({
       env: runtime.env,
       routeInput: routeCapability,

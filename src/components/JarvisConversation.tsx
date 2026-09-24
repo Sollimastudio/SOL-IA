@@ -137,7 +137,7 @@ export function JarvisConversation({ session, onModeChange, onSaved, onReference
   const [accessState, setAccessState] = useState<'local' | 'verified' | 'check'>('local');
   const [listening, setListening] = useState(false);
   const [consent, setConsent] = useState(false);
-  const [voiceReply, setVoiceReply] = useState(true);
+  const [voiceReply, setVoiceReply] = useState(false);
   const [remember, setRemember] = useState(true);
   const [activeSpecialist, setActiveSpecialist] = useState('jarvis_executive');
   const [callActive, setCallActive] = useState(false);
@@ -461,7 +461,17 @@ export function JarvisConversation({ session, onModeChange, onSaved, onReference
 
   function startVoice() {
     if (!session || gate.current.isActive() || !gate.current.start(true)) return;
-    setConsent(true); armIdleTimeout(); setStatus(`Escuta de espera autorizada. Diga “${WAKE_PHRASE}” para ativar a conversa.`); captureNext();
+    setConsent(true); armIdleTimeout(); setStatus(`Escuta local de apoio autorizada. Diga “${WAKE_PHRASE}” para ativar este modo legado.`); captureNext();
+  }
+
+  function startNaturalVoice() {
+    if (!session || busy) return;
+    stopVoiceHardware();
+    setListening(false);
+    setConsent(true);
+    setStatus('Abrindo a conversa natural pelo Gemini Live…');
+    window.dispatchEvent(new CustomEvent('jarvis:start-natural-voice', { detail: { provider: 'gemini' } }));
+    window.setTimeout(() => document.getElementById('jarvis-live-voice')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
   }
 
   function toggleAmbient() {
@@ -494,9 +504,9 @@ export function JarvisConversation({ session, onModeChange, onSaved, onReference
       <aside className="neural-rail" aria-label="Departamentos do Jarvis"><span>JARVIS</span><span>MEMÓRIA</span><span>EDITORIAL</span><span>CONTEÚDO</span><span>TRÁFEGO</span><span>JURÍDICO</span><span>VÍDEO</span><span>ROTINA</span><small>O roteamento é automático. Você não precisa escolher agente.</small></aside>
       <div className="neural-chat">
         {!session && <div className="neural-empty"><strong>ASSISTENTE EM ESPERA</strong><p>Entre no cofre seguro acima para habilitar a conversa privada com memória. Nenhuma chave de IA é entregue ao navegador.</p></div>}
-        {session && turns.length === 0 && <div className="neural-empty"><strong>CONTA CONECTADA</strong><p>Digite, anexe ou ligue a escuta. Para voz contínua em primeiro plano, toque no microfone e diga “{WAKE_PHRASE}”.</p><div className="neural-suggestions"><button onClick={() => setText('Jarvis, organize minhas prioridades de hoje.')}>Organizar meu dia</button><button onClick={() => setText('Jarvis, continue meu projeto mais importante do ponto onde paramos.')}>Retomar projeto</button><button onClick={() => setText('Jarvis, tive uma ideia. Analise o potencial e me diga onde ela se encaixa.')}>Guardar uma ideia</button></div></div>}
+        {session && turns.length === 0 && <div className="neural-empty"><strong>CONTA CONECTADA</strong><p>Digite, anexe ou use o microfone para abrir a voz natural do Gemini Live. A ativação à distância “{WAKE_PHRASE}” pertence ao app nativo do iPhone.</p><div className="neural-suggestions"><button onClick={() => setText('Jarvis, organize minhas prioridades de hoje.')}>Organizar meu dia</button><button onClick={() => setText('Jarvis, continue meu projeto mais importante do ponto onde paramos.')}>Retomar projeto</button><button onClick={() => setText('Jarvis, tive uma ideia. Analise o potencial e me diga onde ela se encaixa.')}>Guardar uma ideia</button></div></div>}
         <div className="neural-log" role="log" aria-label="Conversa" aria-live="polite">
-          {turns.map((turn, index) => <article key={index} className={`neural-message ${turn.role}`}><div className="neural-message-head"><strong>{turn.role === 'user' ? 'SOL' : turn.isError ? 'AVISO DO SISTEMA' : 'JARVIS'}</strong>{turn.specialist && <span>{specialistLabels[turn.specialist] ?? turn.specialist}</span>}</div><p>{turn.content}</p>{turn.modelUsed && <small>Modelo: {turn.modelUsed}</small>}</article>)}
+          {turns.map((turn, index) => <article key={index} className={`neural-message ${turn.role}`}><div className="neural-message-head"><strong>{turn.role === 'user' ? 'SOL' : turn.isError ? 'AVISO DO SISTEMA' : 'JARVIS'}</strong>{turn.specialist && <span>{specialistLabels[turn.specialist] ?? turn.specialist}</span>}</div><p>{turn.content}</p>{turn.modelUsed && turn.modelUsed !== 'capture-only' && <small>Modelo: {turn.modelUsed}</small>}</article>)}
           {busy && <article className="neural-message assistant thinking-card"><div className="neural-message-head"><strong>JARVIS</strong><span>ORQUESTRANDO</span></div><p className="neural-thinking"><i /><i /><i /> consultando o núcleo seguro…</p></article>}
         </div>
       </div>
@@ -509,16 +519,16 @@ export function JarvisConversation({ session, onModeChange, onSaved, onReference
     <div className="neural-console">
       <form onSubmit={event => { event.preventDefault(); void send(text); }}>
         {attachments.length > 0 && <div className="neural-attachments" aria-label="Anexos selecionados">{attachments.map(item => <span className="neural-attachment" key={item.id}>📎 {item.name}<button type="button" aria-label={`Remover ${item.name}`} onClick={() => setAttachments(current => current.filter(candidate => candidate.id !== item.id))}>×</button></span>)}</div>}
-        <div className="neural-input-wrap"><button className={`neural-icon-button ${listening ? 'danger' : ''}`} type="button" disabled={!session || busy} onClick={listening ? endSession : startVoice} title={listening ? 'Encerrar voz' : 'Ativar escuta'} aria-label={listening ? 'Encerrar voz' : 'Ativar escuta'}>◉</button><button className="neural-icon-button" type="button" disabled={!session || busy || attachmentBusy || attachments.length >= MAX_ATTACHMENTS} onClick={() => fileInput.current?.click()} title="Anexar arquivo" aria-label="Anexar arquivo">＋</button><input ref={fileInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp,.txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json" onChange={event => void addAttachments(event.target.files)} /><textarea id="jarvis-message" rows={2} maxLength={8000} value={text} disabled={!session || busy} onChange={event => setText(event.target.value)} placeholder={listening ? `Escuta ativa… diga “${WAKE_PHRASE}”.` : 'Converse com o Jarvis…'} /><button className="neural-send" type="submit" disabled={!session || busy || attachmentBusy || (!text.trim() && !attachments.length)}>{busy ? 'ANALISANDO' : 'ENVIAR'}</button></div>
+        <div className="neural-input-wrap"><button className="neural-icon-button" type="button" disabled={!session || busy} onClick={startNaturalVoice} title="Abrir voz natural Gemini Live" aria-label="Abrir voz natural Gemini Live">◉</button><button className="neural-icon-button" type="button" disabled={!session || busy || attachmentBusy || attachments.length >= MAX_ATTACHMENTS} onClick={() => fileInput.current?.click()} title="Anexar arquivo" aria-label="Anexar arquivo">＋</button><input ref={fileInput} hidden type="file" multiple accept="image/jpeg,image/png,image/webp,.txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json" onChange={event => void addAttachments(event.target.files)} /><textarea id="jarvis-message" rows={2} maxLength={8000} value={text} disabled={!session || busy} onChange={event => setText(event.target.value)} placeholder={listening ? `Escuta ativa… diga “${WAKE_PHRASE}”.` : 'Converse com o Jarvis…'} /><button className="neural-send" type="submit" disabled={!session || busy || attachmentBusy || (!text.trim() && !attachments.length)}>{busy ? 'ANALISANDO' : 'ENVIAR'}</button></div>
         <div className="neural-options">
           {mode === 'private' && <label><input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)} /> Memória automática — guardar minhas falas</label>}
-          <label><input type="checkbox" checked={voiceReply} onChange={event => { setVoiceReply(event.target.checked); if (!event.target.checked) { const resume = speechResume.current; speechResume.current = null; window.speechSynthesis?.cancel(); resume?.(); } }} /> Voz Jarvis · {JARVIS_VOICE_PROFILE.label} — responder em voz alta</label>
+          <label><input type="checkbox" checked={voiceReply} onChange={event => { setVoiceReply(event.target.checked); if (!event.target.checked) { const resume = speechResume.current; speechResume.current = null; window.speechSynthesis?.cancel(); resume?.(); } }} /> Leitura local de emergência — usar a voz do aparelho</label>
           <label><input type="checkbox" checked={consent} onChange={event => { setConsent(event.target.checked); if (!event.target.checked) endSession(); }} /> Autorizar microfone nesta sessão</label>
           <button type="button" disabled={!session || busy} onClick={() => void (callActive ? Promise.resolve(endSession()) : startVideoCall())}>{callActive ? 'ENCERRAR VIDEOCHAMADA' : 'INICIAR VIDEOCHAMADA'}</button><button type="button" disabled={!session || busy} onClick={toggleAmbient}>{ambientMode ? `AMBIENTE ON · ${ambientCount}` : 'MODO AMBIENTE'}</button><button type="button" onClick={endSession}>ENCERRAR / MIC OFF</button>
         </div>
       </form>
       <p className="neural-status" role="status">{status}</p>
-      <p className="neural-status">Voz do Jarvis: perfil {JARVIS_VOICE_PROFILE.label}, masculino pt-BR, grave moderado e cadência calma. O timbre final depende da melhor voz instalada no aparelho.</p>
+      <p className="neural-status">Voz principal: Gemini Live com áudio nativo. A síntese do aparelho fica somente como contingência manual e pode soar robótica.</p>
       <p className="neural-status">Identificação de locutor ainda não está ativa: transcrição de voz não prova que quem falou foi você. Voz nunca substituirá login/biometria do aparelho como autorização.</p>
       <p className="neural-status">Sua voz pessoal não é usada para o Jarvis responder. Ela fica reservada para criação de conteúdos quando você pedir explicitamente.</p>
       <details className="neural-disclosure"><summary>Limites desta etapa</summary><p>A palavra de ativação “{WAKE_PHRASE}” funciona somente enquanto a página está visível e o microfone foi autorizado. O iPhone não permite que este web app mantenha um wake word confiável com a tela bloqueada. A videochamada desta etapa usa câmera local + conversa de voz e consegue enviar um quadro atual para análise sob comando; ainda não é visão contínua em streaming. O modo ambiente mantém um buffer temporário local e não salva fala de terceiros automaticamente. Identificação biométrica de locutor ainda precisa do motor de verificação de voz apropriado.</p></details>

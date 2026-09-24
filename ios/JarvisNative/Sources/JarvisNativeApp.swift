@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 import AppIntents
 import AVFAudio
+import Combine
 
 private enum JarvisWakeState {
     static let key = "jarvis.pendingVoiceStart"
@@ -55,11 +56,16 @@ final class JarvisVoiceSession: ObservableObject {
     @Published var listening = false
     @Published var authenticated = false
     @Published var authMessage = "Entre uma vez para ligar sua memória privada ao Jarvis."
-    @Published var speakerStatus = "Locutor não verificado"
+    @Published var speakerStatus = "Voiceprint da Sol ainda não cadastrado."
+    @Published var speakerBadge = "VOICEPRINT NÃO CADASTRADO"
+    @Published var speakerEnrolled = false
+    @Published var speakerEnrolling = false
     @Published var selectedVoice: String
 
     private let auth = JarvisNativeAuth()
     private let live = JarvisNativeGeminiLive()
+    private let speakerIdentity = JarvisSpeakerIdentity()
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
         let storedVoice = UserDefaults.standard.string(forKey: "jarvis.gemini.voice") ?? "Kore"
@@ -83,6 +89,81 @@ final class JarvisVoiceSession: ObservableObject {
         live.onAssistantTranscript = { [weak self] text in
             Task { @MainActor in self?.lastAnswer = text }
         }
+        live.onSpeakerWindow = { [weak self] samples, rate in
+            Task { @MainActor in
+                guard let self else { return }
+                let result = await self.speakerIdentity.verify(samples: samples, sourceSampleRate: rate)
+                self.applySpeakerIdentity(result)
+                self.live.updateSpeakerIdentity(result)
+            }
+        }
+
+        speakerIdentity.$status
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in self?.speakerStatus = value }
+            .store(in: &cancellables)
+
+        speakerIdentity.$enrolled
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in
+                self?.speakerEnrolled = value
+                if !value { self?.speakerBadge = "VOICEPRINT NÃO CADASTRADO" }
+            }
+            .store(in: &cancellables)
+
+        speakerIdentity.$enrolling
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] value in self?.speakerEnrolling = value }
+            .store(in: &cancellables)
+    }
+
+    private func applySpeakerIdentity(_ result: JarvisSpeakerIdentityResult) {
+        switch result {
+        case .sol:
+            speakerBadge = "SOL · VOZ VERIFICADA"
+        case .guest:
+            speakerBadge = "OUTRO LOCUTOR · MEMÓRIA BLOQUEADA"
+        case .unknown:
+            speakerBadge = "LOCUTOR NÃO VERIFICADO"
+        case .notEnrolled:
+            speakerBadge = "VOICEPRINT NÃO CADASTRADO"
+        case .preparing:
+            speakerBadge = "VERIFICANDO LOCUTOR"
+        }
+    }
+
+    func prepareSpeakerIdentity() async {
+        await speakerIdentity.prepare()
+        speakerEnrolled = speakerIdentity.enrolled
+        speakerEnrolling = speakerIdentity.enrolling
+        speakerStatus = speakerIdentity.status
+    }
+
+    func startSpeakerEnrollment() async {
+        guard !active else {
+            speakerStatus = "Encerre a conversa antes de refazer o cadastro da voz."
+            return
+        }
+        await speakerIdentity.startEnrollment()
+        speakerEnrolled = speakerIdentity.enrolled
+        speakerEnrolling = speakerIdentity.enrolling
+        speakerStatus = speakerIdentity.status
+    }
+
+    func cancelSpeakerEnrollment() {
+        speakerIdentity.cancelEnrollment()
+        speakerEnrolled = speakerIdentity.enrolled
+        speakerEnrolling = speakerIdentity.enrolling
+        speakerStatus = speakerIdentity.status
+    }
+
+    func eraseSpeakerEnrollment() {
+        guard !active else { return }
+        speakerIdentity.eraseEnrollment()
+        speakerEnrolled = false
+        speakerEnrolling = false
+        applySpeakerIdentity(.notEnrolled)
+        live.updateSpeakerIdentity(.notEnrolled)
     }
 
     func restoreAuth() async {
@@ -164,20 +245,27 @@ final class JarvisVoiceSession: ObservableObject {
             return
         }
 
+        await speakerIdentity.prepare()
+        let initialIdentity: JarvisSpeakerIdentityResult = speakerIdentity.enrolled ? .unknown : .notEnrolled
+        applySpeakerIdentity(initialIdentity)
+        live.updateSpeakerIdentity(initialIdentity)
+
         active = true
         listening = false
         transcript = ""
         lastAnswer = ""
-        speakerStatus = "Locutor não verificado"
-        status = "Conectando ao Gemini 3.8 Live…"
+        status = speakerIdentity.enrolled
+            ? "Conectando ao Gemini 3.8 Live e preparando verificação de locutor…"
+            : "Conectando ao Gemini 3.8 Live sem voiceprint; memória privada ficará bloqueada."
 
         let instructions = """
         Você é Jarvis, assessor pessoal da Sol em conversa de voz natural e contínua.
         Fale em português do Brasil, com voz humana, cadência natural, objetividade, inteligência e humor rápido quando couber.
         Aceite interrupções e mudanças de assunto sem exigir que a usuária repita seu nome em cada turno.
         Quando precisar de memória, projetos, decisões anteriores ou conhecimento privado, use consult_jarvis e trabalhe somente com o contexto retornado.
-        A entrada de áudio ainda NÃO possui speaker verification biométrico: não presuma que toda voz é da Sol.
-        Se outra pessoa parecer querer conversar com você ou pedir informação privada, não revele o Cofre; peça autorização explícita da Sol.
+        O iPhone possui um verificador local de locutor. Somente quando o aplicativo confirmar "Sol" a ferramenta consult_jarvis poderá devolver contexto privado.
+        Se o aplicativo sinalizar outro locutor, não revele o Cofre; peça autorização explícita da Sol para uma conversa de convidado.
+        Autorização de convidado nunca libera memória privada para a voz do convidado.
         Fala de terceiro não vira memória atribuída à Sol.
         Não afirme que publicou, enviou, comprou, agendou ou alterou algo sem confirmação do aplicativo.
         Ao ser ativado, responda naturalmente e permaneça ouvindo até a Sol dizer “encerrar”.
@@ -219,7 +307,7 @@ struct JarvisNativeApp: App {
                     HStack {
                         Label("Gemini 3.8 Live", systemImage: "waveform.circle.fill")
                         Spacer()
-                        Text(voice.speakerStatus).foregroundStyle(.secondary)
+                        Text(voice.speakerBadge).foregroundStyle(.secondary)
                     }
                     .font(.footnote)
 
@@ -250,6 +338,39 @@ struct JarvisNativeApp: App {
                         .font(.footnote)
                     }
 
+                    GroupBox("Reconhecimento da Sol") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(voice.speakerStatus)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+
+                            if voice.speakerEnrolling {
+                                ProgressView("Ouvindo a amostra local por 8 segundos…")
+                                Button("Cancelar cadastro") { voice.cancelSpeakerEnrollment() }
+                            } else if !voice.speakerEnrolled {
+                                Button("Cadastrar minha voz neste iPhone") {
+                                    Task { await voice.startSpeakerEnrollment() }
+                                }
+                            } else {
+                                HStack {
+                                    Label("Voiceprint local cadastrado", systemImage: "person.wave.2.fill")
+                                    Spacer()
+                                    Button("Refazer") {
+                                        Task { await voice.startSpeakerEnrollment() }
+                                    }
+                                }
+                                Button("Apagar voiceprint deste iPhone", role: .destructive) {
+                                    voice.eraseSpeakerEnrollment()
+                                }
+                                .font(.footnote)
+                            }
+
+                            Text("O perfil biométrico fica somente neste iPhone/Keychain. A voz ajuda a identificar o locutor, mas não substitui login ou aprovação para ações sensíveis.")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
                     GroupBox("Voz do Jarvis") {
                         Picker("Voz Gemini", selection: Binding(
                             get: { voice.selectedVoice },
@@ -267,7 +388,7 @@ struct JarvisNativeApp: App {
 
                     if !voice.transcript.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("LOCUTOR · NÃO VERIFICADO").font(.caption.bold())
+                            Text(voice.speakerBadge).font(.caption.bold())
                             Text(voice.transcript)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -318,7 +439,7 @@ struct JarvisNativeApp: App {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
 
-                    Text("Enquanto a sessão de áudio estiver ativa, o projeto está configurado para background audio. Speaker ID/voiceprint ainda é um módulo separado e não é fingido pelo app.")
+                    Text("Enquanto a sessão de áudio estiver ativa, o projeto está configurado para background audio. O Speaker ID local bloqueia o Cofre até confirmar a Sol; se detectar outra voz, o Jarvis deve pedir autorização para conversa de convidado.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -326,6 +447,7 @@ struct JarvisNativeApp: App {
             }
             .task {
                 await voice.restoreAuth()
+                await voice.prepareSpeakerIdentity()
                 if JarvisWakeState.consume() { await voice.start() }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in

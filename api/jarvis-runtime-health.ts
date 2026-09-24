@@ -55,7 +55,10 @@ export default {
         nativePrimary: 'gemini-live',
         legacyDeviceTtsDefault: false,
         remoteWakePath: 'ios-native-vocal-shortcut',
+        speakerVerificationImplementation: 'fluid-audio-local-voiceprint',
         speakerVerificationOperational: false,
+        speakerVerificationProofRequired: 'xcode-build-and-real-iphone',
+        guestAuthorizationImplementation: 'speaker-gated-private-memory-with-sol-voice-confirmation',
         guestAuthorizationOperational: false
       },
       live: {

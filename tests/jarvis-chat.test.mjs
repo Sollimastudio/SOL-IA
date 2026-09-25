@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createJarvisHandler, selectMemories } from '../server/jarvis-chat.mjs';
 import { SOLIA_PROMPT_AUTOPILOT_DIRECTIVE, SOLIA_PROMPT_AUTOPILOT_VERSION } from '../core/prompt-autopilot.mjs';
+import { GROWTH_INTELLIGENCE_DIRECTIVE, GROWTH_INTELLIGENCE_VERSION } from '../core/growth-intelligence.mjs';
 const owner = '11111111-1111-4111-8111-111111111111';
 const env = { JARVIS_CHAT_ENABLED: 'true', JARVIS_METERED_AI_ENABLED: 'true', SUPABASE_URL: 'https://example.supabase.co',
   SUPABASE_ANON_KEY: 'test-publishable-key', JARVIS_ALLOWED_USER_IDS: owner,
@@ -142,9 +143,11 @@ test('active handler delivers versioned autopilot without promoting input or add
   const payload = JSON.parse(modelCalls[0].options.body);
   assert.equal(payload.messages[0].role, 'system');
   assert.ok(payload.messages[0].content.includes(SOLIA_PROMPT_AUTOPILOT_DIRECTIVE));
+  assert.ok(payload.messages[0].content.includes(GROWTH_INTELLIGENCE_DIRECTIVE));
   assert.doesNotMatch(payload.messages[0].content, /MARCADOR_USUARIO|HISTORICO_USUARIO/);
   assert.deepEqual(payload.messages.slice(1), [...history, { role: 'user', content: message }]);
   assert.equal(data.promptVersion, SOLIA_PROMPT_AUTOPILOT_VERSION);
+  assert.equal(data.growthIntelligenceVersion, GROWTH_INTELLIGENCE_VERSION);
   assert.equal(data.execution, 'conversation_and_draft_only');
   assert.equal(data.persisted, false);
   assert.equal(calls.filter(c => c.url.includes('solia_memories') && c.options.method === 'POST').length, 0);
@@ -207,4 +210,15 @@ test('lexical retrieval limits context and excludes unrelated and foreign record
   assert.ok(selectMemories(rows, 'livro', owner).every(row => row.content.length <= 1000));
   assert.equal(selectMemories(rows, 'campanha', owner).length, 0);
   assert.equal(selectMemories(rows, 'livro', 'other').length, 0);
+});
+
+
+test('Jarvis active prompt carries multivendor comparison and anti-regression intelligence', async () => {
+  const { handle, calls } = fixture({ rows: [] });
+  const data = await (await handle(request({ message: 'Qual IA devemos usar para voz?' }))).json();
+  const payload = JSON.parse(calls.find(c => c.url.startsWith('https://openrouter.ai/')).options.body);
+  assert.match(payload.messages[0].content, /multifornnecedor/);
+  assert.match(payload.messages[0].content, /Gemini, Anthropic, Apple\/on-device/);
+  assert.match(payload.messages[0].content, /Nao trocar provedor/);
+  assert.equal(data.growthIntelligenceVersion, GROWTH_INTELLIGENCE_VERSION);
 });

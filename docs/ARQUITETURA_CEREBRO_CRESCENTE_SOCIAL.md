@@ -56,6 +56,8 @@ Aprendizado local de Tenant A **não altera silenciosamente** Tenant B.
 
 ## 4. Capability Radar global
 
+> **Adendo canônico 25/09/2026:** o Radar agora deve ser comparativo e multifornnecedor, não apenas um monitor de novidades. Ler `RADAR_COMPARATIVO_MULTIFORNECEDOR_2026-09-25.md`. Toda mudança material de modelo/API deve comparar alternativas relevantes (incluindo OpenAI, Gemini, Anthropic e opções locais quando aplicáveis), estimar custo-benefício por tarefa e só então abrir benchmark/Opportunity Card. Nenhum fornecedor é promovido automaticamente.
+
 O `Capability Radar` monitora fontes confiáveis relevantes para a plataforma:
 
 - changelogs/documentação de provedores usados;

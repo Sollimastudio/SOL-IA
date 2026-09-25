@@ -171,6 +171,15 @@ export async function runRadar({ fetchImpl = globalThis.fetch } = {}) {
   const comparativeKinds = new Set(['model_or_api', 'cost', 'cost_or_quota', 'security_or_api']);
   const comparativeSignals = materialChanged.filter(item => comparativeKinds.has(item.kind));
   const affectedProviders = [...new Set(comparativeSignals.map(item => item.provider).filter(Boolean))].sort();
+  const modelProviderUniverse = ['openai', 'google', 'anthropic', 'apple'];
+  const comparisonQueue = comparativeSignals.map(item => ({
+    sourceKey: item.key,
+    triggerProvider: item.provider,
+    kind: item.kind,
+    action: 'compare_cost_benefit_before_change',
+    compareWith: modelProviderUniverse.filter(provider => provider !== item.provider),
+    productionMutationAllowed: false
+  }));
   const report = {
     schema: 'jarvis-capability-radar-v2',
     configVersion: config.version,
@@ -181,6 +190,7 @@ export async function runRadar({ fetchImpl = globalThis.fetch } = {}) {
     requiresReview: materialChanged.length > 0 || unavailable.length > 0,
     requiresComparativeReview: comparativeSignals.length > 0,
     affectedProviders,
+    comparisonQueue,
     recommendedAction: comparativeSignals.length > 0
       ? 'compare_alternatives_and_build_opportunity_card'
       : unavailable.length > 0

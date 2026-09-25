@@ -10,6 +10,8 @@ on:
       - 'scripts/capability-radar.mjs'
       - 'tests/growth-intelligence.test.mjs'
       - 'tests/capability-radar.test.mjs'
+      - 'server/jarvis-chat.mjs'
+      - 'tests/jarvis-chat.test.mjs'
       - '.github/workflows/jarvis-capability-radar.yml'
   schedule:
     - cron: '17 11 * * *'
@@ -31,7 +33,7 @@ jobs:
           node-version: '22'
 
       - name: Contract tests for freshness and source detection
-        run: node --test tests/growth-intelligence.test.mjs tests/capability-radar.test.mjs
+        run: node --test tests/growth-intelligence.test.mjs tests/capability-radar.test.mjs tests/jarvis-chat.test.mjs
 
       - name: Restore previous radar state
         uses: actions/cache@v4

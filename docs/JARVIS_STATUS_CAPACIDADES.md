@@ -116,11 +116,11 @@ Este documento existe para impedir duas falhas comuns: apresentar requisito como
 
 | Capacidade | Status | Evidência/limite |
 |---|---|---|
-| Capability Radar | OPERACIONAL em escopo inicial | OpenAI, Google/Gemini, Meta, TikTok, Vercel e Supabase têm fontes oficiais configuradas; mudança material exige revisão antes de alterar estratégia |
-| Frontier Radar global | PLANEJADO | Expandir ecossistema mundial de IA/ferramentas |
+| Capability Radar | OPERACIONAL / MULTIFORNECEDOR | OpenAI, Google/Gemini, Anthropic, Apple, Meta, TikTok, Vercel e Supabase têm fontes oficiais configuradas; mudança material de modelo/API/custo/segurança gera fila comparativa antes de qualquer mudança |
+| Frontier Radar global | PARCIAL / COMPARADOR IMPLEMENTADO | O núcleo compara candidatos por tarefa e custo-benefício com promoção supervisionada; expansão mundial automática e ingestão persistente ainda não estão completas |
 | Radar de domínio por tenant | ARQUITETURA OFICIAL | Ainda sem pipeline multi-tenant operacional |
 | Loop Tendência → Ativo → Resultado | ARQUITETURA OFICIAL | Documento canônico criado; automação completa ainda não |
-| Opportunity Cards persistentes | PLANEJADO | Estrutura definida; armazenamento/workflow ainda não |
+| Opportunity Cards persistentes | PARCIAL | Contrato e geração estruturada implementados; persistência durável e workflow autônomo ponta a ponta ainda pendentes |
 | Social Intelligence com métricas reais | PARCIAL/PLANEJADO | Depende de contas/conectores |
 | Motor de monetização/objetivos genérico | ARQUITETURA OFICIAL | Precisa dados reais por tenant para operar plenamente |
 | Testes de regressão | OPERACIONAL | Prebuild executa contratos Node |

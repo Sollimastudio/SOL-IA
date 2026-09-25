@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { inspectSource, materialFingerprint } from '../scripts/capability-radar.mjs';
+import { inspectSource, materialFingerprint, providerForSource } from '../scripts/capability-radar.mjs';
 
 const source = {
   key: 'official-test',
@@ -51,4 +51,16 @@ test('source outage is recorded honestly', async () => {
   assert.equal(result.change, 'unavailable');
   assert.equal(result.materialChange, 'unavailable');
   assert.equal(result.status, 503);
+});
+
+
+test('provider is inferred so radar can compare labs instead of tracking a single vendor', () => {
+  assert.equal(providerForSource({ key: 'openai-pricing' }), 'openai');
+  assert.equal(providerForSource({ key: 'google-gemini-pricing' }), 'google');
+  assert.equal(providerForSource({ key: 'anthropic-model-deprecations' }), 'anthropic');
+  assert.equal(providerForSource({ key: 'apple-foundation-models-updates' }), 'apple');
+});
+
+test('explicit provider metadata overrides key inference', () => {
+  assert.equal(providerForSource({ key: 'custom-source', provider: 'GeminiPartner' }), 'geminipartner');
 });

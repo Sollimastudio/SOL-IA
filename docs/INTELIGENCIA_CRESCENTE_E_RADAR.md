@@ -1,6 +1,6 @@
 # Jarvis — Inteligência Crescente e Radares
 
-> Atualizado em 16/09/2026. Este documento separa o Radar global da plataforma do Radar de Domínio de cada tenant.
+> Atualizado em 25/09/2026. O Radar global agora inclui comparação multifornnecedor e custo-benefício por tarefa. Ler também `RADAR_COMPARATIVO_MULTIFORNECEDOR_2026-09-25.md`.
 
 ## 1. O problema
 

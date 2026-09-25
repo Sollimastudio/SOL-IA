@@ -1,11 +1,20 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { JarvisBootBoundary } from './JarvisBootBoundary';
 import './styles.css';
 import './mission-control.css';
 
-createRoot(document.getElementById('root') as HTMLElement).render(
+const root = document.getElementById('root');
+
+if (!root) {
+  throw new Error('Jarvis root element unavailable');
+}
+
+createRoot(root).render(
   <React.StrictMode>
-    <App />
+    <JarvisBootBoundary>
+      <App />
+    </JarvisBootBoundary>
   </React.StrictMode>
 );

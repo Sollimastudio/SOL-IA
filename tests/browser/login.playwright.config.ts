@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 export default defineConfig({
-  testDir: '.', testMatch: ['login.spec.ts', 'chat.spec.ts', 'install.spec.ts', 'capture.spec.ts'], timeout: 20000,
+  testDir: '.', testMatch: ['login.spec.ts', 'chat.spec.ts', 'install.spec.ts', 'capture.spec.ts', 'jarvis-mobile-boot.spec.ts'], timeout: 20000,
   fullyParallel: true, workers: 2, retries: 0,
   outputDir: '../../test-results/login', reporter: 'list',
   use: { baseURL: 'http://127.0.0.1:4179', trace: 'retain-on-failure' },

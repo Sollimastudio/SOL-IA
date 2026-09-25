@@ -1,27 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": {
-            "pre": "sol-ia-i5wy-",
-            "suf": "-sol-limas-projects.vercel.app"
-          }
-        }
-      ],
-      "missing": [
-        {
-          "type": "host",
-          "value": "sol-ia-i5wy-git-work-jarvis-neural-co-13a334-sol-limas-projects.vercel.app"
-        }
-      ],
-      "destination": "https://sol-ia-i5wy-git-work-jarvis-neural-co-13a334-sol-limas-projects.vercel.app/:path*",
-      "permanent": false
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",

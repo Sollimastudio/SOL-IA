@@ -55,10 +55,16 @@ jobs:
           console.log(`\nChanged pages: **${report.changedCount}**`);
           console.log(`\nMaterial review signals: **${report.materialChangedCount}**`);
           console.log(`\nUnavailable sources: **${report.unavailableCount}**`);
-          console.log('\n| Source | Kind | Page | Material | HTTP |');
-          console.log('|---|---|---:|---:|---:|');
-          for (const item of report.results) console.log(`| ${item.key} | ${item.kind} | ${item.change} | ${item.materialChange} | ${item.status ?? '-'} |`);
-          console.log('\nOnly material signals or source outages request human review. This workflow never changes models, strategy or production automatically.');
+          console.log(`\nComparative review required: **${report.requiresComparativeReview ? 'yes' : 'no'}**`);
+          console.log(`\nAffected providers: **${report.affectedProviders?.join(', ') || 'none'}**`);
+          console.log('\n| Source | Provider | Kind | Page | Material | HTTP |');
+          console.log('|---|---|---|---:|---:|---:|');
+          for (const item of report.results) console.log(`| ${item.key} | ${item.provider || '-'} | ${item.kind} | ${item.change} | ${item.materialChange} | ${item.status ?? '-'} |`);
+          if (report.comparisonQueue?.length) {
+            console.log('\n### Cross-provider comparison queue');
+            for (const item of report.comparisonQueue) console.log(`- ${item.sourceKey}: compare ${item.triggerProvider} with ${item.compareWith.join(', ')} before any production change.`);
+          }
+          console.log('\nMaterial model/API/cost/security signals now open a cross-provider comparison queue. The workflow may prepare review/benchmarks, but never switches provider, spends money, alters privacy/security or changes production automatically.');
           NODE
 
       - name: Preserve report for supervised review

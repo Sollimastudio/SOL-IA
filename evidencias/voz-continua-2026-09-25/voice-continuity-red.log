@@ -1,0 +1,190 @@
+✖ Gemini preserves automatic idle protection and continuous listening explicitly opts out (4.226819ms)
+✖ Gemini interruption clears queued audio and the next turn still plays (5.787928ms)
+✖ Gemini stop aborts token request and late authorization cannot open microphone (0.466149ms)
+✖ Gemini stop during microphone permission disposes a late granted stream (6.273596ms)
+✖ Gemini mute ends audio input and no frames escape until explicitly unmuted (2.341432ms)
+✖ Gemini bounds setup wait and releases microphone if provider never starts (0.553899ms)
+✖ Gemini cancelled delegation is aborted and never returns stale private context (0.613908ms)
+✖ Gemini resumes with fresh authorization, same voice/model and keeps mute after goAway (0.551875ms)
+✔ Gemini never resumes without consent, after policy denial, or from an invalidated handle (5.542986ms)
+✔ Gemini manual stop cancels pending resumption and ignores stale socket messages (1.03489ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 2
+ℹ fail 8
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 117.43948
+
+✖ failing tests:
+
+test at tests/gemini-live-lifecycle.test.mjs:85:1
+✖ Gemini preserves automatic idle protection and continuous listening explicitly opts out (4.226819ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file://<repository>/tests/gemini-live-lifecycle.test.mjs:95:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/gemini-live-lifecycle.test.mjs:100:1
+✖ Gemini interruption clears queued audio and the next turn still plays (5.787928ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(h.playback.every(source => source.stopped))
+  
+      at TestContext.<anonymous> (file://<repository>/tests/gemini-live-lifecycle.test.mjs:105:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/gemini-live-lifecycle.test.mjs:112:1
+✖ Gemini stop aborts token request and late authorization cannot open microphone (0.466149ms)
+  TypeError: Cannot read properties of undefined (reading 'aborted')
+      at TestContext.<anonymous> (file://<repository>/tests/gemini-live-lifecycle.test.mjs:116:37)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:960:18)
+      at Test.postRun (node:internal/test_runner/test:1522:19)
+      at Test.run (node:internal/test_runner/test:1447:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests/gemini-live-lifecycle.test.mjs:124:1
+✖ Gemini stop during microphone permission disposes a late granted stream (6.273596ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file://<repository>/tests/gemini-live-lifecycle.test.mjs:131:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/gemini-live-lifecycle.test.mjs:135:1
+✖ Gemini mute ends audio input and no frames escape until explicitly unmuted (2.341432ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+  +   setup: {
+  +     generationConfig: {
+  +       responseModalities: [
+  +         'AUDIO'
+  +       ],
+  +       speechConfig: {
+  +         voiceConfig: {
+  +           prebuiltVoiceConfig: {
+  +             voiceName: 'Kore'
+  +           }
+  +         }
+  +       }
+  +     },
+  +     inputAudioTranscription: {},
+  +     model: 'models/gemini-3.8-live',
+  +     outputAudioTranscription: {},
+  +     systemInstruction: {
+  +       parts: [
+  +         {
+  +           text: ''
+  +         }
+  +       ]
+  +     },
+  +     tools: [
+  +       {
+  +         functionDeclarations: [
+  +           {
+  +             description: 'Consulta a memória, contexto e especialistas autorizados do Jarvis quando a conversa precisa de informação que não está no turno atual.',
+  +             name: 'consult_jarvis',
+  +             parameters: {
+  +               properties: {
+  +                 request: {
+  +                   description: 'Pergunta objetiva para os bastidores do Jarvis.',
+  +                   type: 'STRING'
+  +                 }
+  +               },
+  +               required: [
+  +                 'request'
+  +               ],
+  +               type: 'OBJECT'
+  +             }
+  +           }
+  +         ]
+  +       }
+  +     ]
+  -   realtimeInput: {
+  -     audioStreamEnd: true
+      }
+    }
+  
+      at TestContext.<anonymous> (file://<repository>/tests/gemini-live-lifecycle.test.mjs:139:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { setup: { model: 'models/gemini-3.8-live', generationConfig: [Object], systemInstruction: [Object], inputAudioTranscription: {}, outputAudioTranscription: {}, tools: [Array] } },
+    expected: { realtimeInput: { audioStreamEnd: true } },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/gemini-live-lifecycle.test.mjs:149:1
+✖ Gemini bounds setup wait and releases microphone if provider never starts (0.553899ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file://<repository>/tests/gemini-live-lifecycle.test.mjs:154:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/gemini-live-lifecycle.test.mjs:161:1
+✖ Gemini cancelled delegation is aborted and never returns stale private context (0.613908ms)
+  TypeError: Cannot read properties of undefined (reading 'aborted')
+      at TestContext.<anonymous> (file://<repository>/tests/gemini-live-lifecycle.test.mjs:167:23)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests/gemini-live-lifecycle.test.mjs:172:1
+✖ Gemini resumes with fresh authorization, same voice/model and keeps mute after goAway (0.551875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  
+  undefined !== {}
+  
+      at TestContext.<anonymous> (file://<repository>/tests/gemini-live-lifecycle.test.mjs:176:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: {},
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

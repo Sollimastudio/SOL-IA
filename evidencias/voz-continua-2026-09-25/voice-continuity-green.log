@@ -1,0 +1,20 @@
+✔ Gemini preserves automatic idle protection and continuous listening explicitly opts out (3.318837ms)
+✔ Gemini interruption clears queued audio and the next turn still plays (0.964607ms)
+✔ Gemini stop aborts token request and late authorization cannot open microphone (0.394203ms)
+✔ Gemini stop during microphone permission disposes a late granted stream (7.054226ms)
+✔ Gemini mute ends audio input and no frames escape until explicitly unmuted (1.644632ms)
+✔ Gemini bounds setup wait and releases microphone if provider never starts (0.470295ms)
+✔ Gemini cancelled delegation is aborted and never returns stale private context (1.486338ms)
+✔ Gemini resumes with fresh authorization, same voice/model and keeps mute after goAway (1.482422ms)
+✔ Gemini never resumes without consent, after policy denial, or from an invalidated handle (1.378268ms)
+✔ Gemini manual stop cancels pending resumption and ignores stale socket messages (1.868373ms)
+✔ Gemini caps repeated short-lived resumption attempts instead of looping forever (0.893651ms)
+✔ Gemini cancels queued tool calls before delegation starts (0.718222ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 102.443292

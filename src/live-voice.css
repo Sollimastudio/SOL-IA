@@ -43,6 +43,7 @@
 }
 
 .live-status-connecting,
+.live-status-reconnecting,
 .live-status-closing {
   background: rgba(214, 180, 106, 0.1);
   border-color: rgba(214, 180, 106, 0.4);
@@ -84,6 +85,18 @@
   color: #111;
   font-weight: 850;
 }
+
+.live-continuity {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 0;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.live-continuity input { width: 22px; height: 22px; flex: 0 0 22px; margin-top: 2px; accent-color: #b786dc; }
+.live-continuity small { display: block; color: rgba(255, 255, 255, 0.66); }
 
 .live-stop {
   border-color: rgba(255, 115, 115, 0.44);

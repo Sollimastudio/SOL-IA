@@ -1,3 +1,5 @@
+> **25/09 — voz real confirmada por Sol e token 200 na Preview `86fa594`.** Nova opção de conversa contínua, interrupção, retomada e cancelamento: 283 testes aprovados, aguardando prova no iPhone. LÚCIDA existe no Magnetus3; conhecimento confirmado no Supabase, acesso operacional amplo ainda não. Ler [checkpoint atual](CHECKPOINT_VOZ_CONTINUA_2026-09-25.md), que supera os bloqueios históricos abaixo somente no escopo comprovado. Permanecer no checkpoint 1.
+
 > **25/09 — bloqueio de configuração corrigido no painel:** GEMINI_API_KEY preservada e habilitada em Production + Preview após login de Sol. Nova Preview em validação. Permanecer no checkpoint 1; token e voz ainda exigem prova real. Ver CHECKPOINT_GEMINI_TOKEN_2026-09-24.md.
 
 > **Homologação disponível:** PR #18; candidato `dfa78d9` READY e tela de login aberta no navegador com esse SHA. Próxima ação humana: Sol entrar na Preview privada no iPhone e iniciar voz; emissão real/áudio ainda não comprovados. Produção permanece preservada. Detalhes/evidências no checkpoint de 24/09.

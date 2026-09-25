@@ -1,3 +1,5 @@
+> **Atualização 25/09:** token 200 no deployment `dpl_FDZd51PrfQpryMfBczF6UcKEgiQT` (`86fa594`) e áudio no iPhone confirmados por Sol. A falha de token está superada nessa Preview. Permanência/interrupção agora em correção no [checkpoint seguinte da voz](CHECKPOINT_VOZ_CONTINUA_2026-09-25.md); não confundir com promoção de produção.
+
 # Checkpoint 1 — Gemini Live: correção REST, prova real pendente
 
 24/09/2026. Continuação do Jarvis existente.

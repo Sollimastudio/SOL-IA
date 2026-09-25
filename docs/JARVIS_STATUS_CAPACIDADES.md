@@ -1,3 +1,5 @@
+> **Estado atual — 25/09:** voz básica no iPhone confirmada por Sol e token 200 na Preview. Continuidade/interrupção/retomada novas: implementadas e testadas localmente (283), **ainda sem prova física**. Produção/main não promovidos. Base contém 101 documentos/643 trechos; GitHub tem leitura canônica, não edição irrestrita. LÚCIDA existe no Magnetus3, ponte ainda não integrada. [Evidências e pendências](CHECKPOINT_VOZ_CONTINUA_2026-09-25.md). Histórico abaixo preservado.
+
 > **Atualização prioritária — 24/09/2026:** Gemini Live está **QUEBRADO em produção** (token Google 400 → API 502). Correção REST/diagnóstico em PR #18, com 271 testes locais aprovados; emissão real e voz ponta a ponta ainda não provadas. Ver [checkpoint](CHECKPOINT_GEMINI_TOKEN_2026-09-24.md). Esta atualização supera o status histórico de voz abaixo, sem apagar seu registro.
 
 # Jarvis / Sol.IA — Status de capacidades

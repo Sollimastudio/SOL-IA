@@ -1,3 +1,5 @@
+> **Entrada vigente — 25/09:** [Voz contínua, prova de áudio e estado real de LÚCIDA/conhecimento/n8n](CHECKPOINT_VOZ_CONTINUA_2026-09-25.md). Ler antes de modificar voz ou avançar ao iOS.
+
 > Entrada atual: [Checkpoint Gemini Live 24/09](CHECKPOINT_GEMINI_TOKEN_2026-09-24.md) e [Mandato operacional integral de requisitos](MANDATO_OPERACIONAL_JARVIS_2026-09-24.md).
 
 # Jarvis / Sol.IA — Índice oficial de documentação

@@ -16,7 +16,9 @@ export const DEFAULT_MATERIAL_TERMS = Object.freeze([
   'token', 'security', 'vulnerab', 'auth', 'oauth', 'key', 'quota', 'rate limit',
   'recommend', 'distribution', 'reach', 'ranking', 'creator', 'reels', 'for you',
   'algorithm', 'eligibility', 'sandbox', 'drive', 'cpu', 'billable', 'jwt',
-  'storage', 'incident', 'outage', 'breaking', 'sdk',
+  'storage', 'incident', 'outage', 'breaking', 'sdk', 'voice', 'realtime',
+  'multimodal', 'agent', 'tool', 'context', 'cache', 'batch', 'residency',
+  'benchmark', 'thinking', 'latency', 'availability', 'migration',
   'modelo', 'api', 'descontin', 'preço', 'preco', 'custo', 'segurança', 'seguranca',
   'recomend', 'distribuição', 'distribuicao', 'alcance', 'criador', 'algoritmo'
 ]);
@@ -36,6 +38,20 @@ function normalizeText(body) {
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
+}
+
+export function providerForSource(source = {}) {
+  if (typeof source.provider === 'string' && source.provider.trim()) return source.provider.trim().toLowerCase();
+  const key = String(source.key || '').toLowerCase();
+  if (key.startsWith('openai-')) return 'openai';
+  if (key.startsWith('google-') || key.startsWith('gemini-')) return 'google';
+  if (key.startsWith('anthropic-') || key.startsWith('claude-')) return 'anthropic';
+  if (key.startsWith('apple-')) return 'apple';
+  if (key.startsWith('meta-')) return 'meta';
+  if (key.startsWith('tiktok-')) return 'tiktok';
+  if (key.startsWith('vercel-')) return 'vercel';
+  if (key.startsWith('supabase-')) return 'supabase';
+  return 'other';
 }
 
 export function materialFingerprint(text, terms = DEFAULT_MATERIAL_TERMS) {
@@ -72,6 +88,7 @@ async function safeJson(path, fallback) {
 }
 
 export async function inspectSource(source, previous = null, fetchImpl = globalThis.fetch) {
+  const provider = providerForSource(source);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20_000);
   try {
@@ -83,12 +100,12 @@ export async function inspectSource(source, previous = null, fetchImpl = globalT
     const finalUrl = new URL(response.url || source.url);
     if (!source.allowedHosts.includes(finalUrl.hostname)) throw new Error('redirected_to_unapproved_host');
     if (!response.ok) {
-      return { key: source.key, kind: source.kind, url: source.url, ok: false, status: response.status, change: 'unavailable', materialChange: 'unavailable' };
+      return { key: source.key, provider, kind: source.kind, url: source.url, ok: false, status: response.status, change: 'unavailable', materialChange: 'unavailable' };
     }
     const body = await response.text();
     const normalized = normalizeText(body);
     if (!normalized) {
-      return { key: source.key, kind: source.kind, url: source.url, ok: false, status: response.status, change: 'empty', materialChange: 'empty' };
+      return { key: source.key, provider, kind: source.kind, url: source.url, ok: false, status: response.status, change: 'empty', materialChange: 'empty' };
     }
 
     const hash = sha256(normalized);
@@ -104,6 +121,7 @@ export async function inspectSource(source, previous = null, fetchImpl = globalT
 
     return {
       key: source.key,
+      provider,
       kind: source.kind,
       url: source.url,
       finalUrl: finalUrl.toString(),
@@ -122,6 +140,7 @@ export async function inspectSource(source, previous = null, fetchImpl = globalT
   } catch (error) {
     return {
       key: source.key,
+      provider,
       kind: source.kind,
       url: source.url,
       ok: false,
@@ -149,6 +168,9 @@ export async function runRadar({ fetchImpl = globalThis.fetch } = {}) {
   const changed = results.filter(item => item.change === 'changed');
   const materialChanged = results.filter(item => item.materialChange === 'changed');
   const unavailable = results.filter(item => !item.ok);
+  const comparativeKinds = new Set(['model_or_api', 'cost', 'cost_or_quota', 'security_or_api']);
+  const comparativeSignals = materialChanged.filter(item => comparativeKinds.has(item.kind));
+  const affectedProviders = [...new Set(comparativeSignals.map(item => item.provider).filter(Boolean))].sort();
   const report = {
     schema: 'jarvis-capability-radar-v2',
     configVersion: config.version,
@@ -157,7 +179,14 @@ export async function runRadar({ fetchImpl = globalThis.fetch } = {}) {
     materialChangedCount: materialChanged.length,
     unavailableCount: unavailable.length,
     requiresReview: materialChanged.length > 0 || unavailable.length > 0,
-    policy: 'A page change alone is noise. Only material-keyword deltas or source outages require supervised review; never change models, strategy or production automatically.',
+    requiresComparativeReview: comparativeSignals.length > 0,
+    affectedProviders,
+    recommendedAction: comparativeSignals.length > 0
+      ? 'compare_alternatives_and_build_opportunity_card'
+      : unavailable.length > 0
+        ? 'investigate_source_health'
+        : 'none',
+    policy: 'A page change alone is noise. Material model/API/cost/security deltas must trigger cross-provider comparison and cost-benefit review. Low-risk reversible work may prepare benchmarks/branches, but never switch provider, spend money, alter privacy/security or change production automatically.',
     results
   };
 
@@ -169,7 +198,8 @@ export async function runRadar({ fetchImpl = globalThis.fetch } = {}) {
       materialHash: item.materialHash,
       observedAt,
       url: item.url,
-      kind: item.kind
+      kind: item.kind,
+      provider: item.provider
     }]))
   };
   await mkdir(dirname(statePath), { recursive: true });

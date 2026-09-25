@@ -1,0 +1,51 @@
+✔ Gemini token broker rejects callers without Jarvis session (3.311194ms)
+✔ Gemini token broker never calls Google when server key is missing (1.810331ms)
+✖ Gemini token broker mints one short-lived token only after pilot authorization (2.570266ms)
+✖ Gemini quota errors are surfaced without retries (1.303912ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 2
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 94.600979
+
+✖ failing tests:
+
+test at tests/jarvis-gemini-live-token.test.mjs:72:1
+✖ Gemini token broker mints one short-lived token only after pilot authorization (2.570266ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  502 !== 200
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/2f047910211d/SOL-IA/tests/jarvis-gemini-live-token.test.mjs:82:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 502,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/jarvis-gemini-live-token.test.mjs:89:1
+✖ Gemini quota errors are surfaced without retries (1.303912ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'gemini_token_unavailable'
+  - 'gemini_quota_limited'
+            ^
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/2f047910211d/SOL-IA/tests/jarvis-gemini-live-token.test.mjs:104:10)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'gemini_token_unavailable',
+    expected: 'gemini_quota_limited',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

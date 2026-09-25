@@ -10,6 +10,7 @@ export type GeminiLiveDelegation = {
   id: string;
   transcript: string;
   metadata: unknown;
+  signal?: AbortSignal;
 };
 export type GeminiLiveClient = {
   connect(): Promise<void>;
@@ -25,7 +26,9 @@ export function createGeminiLiveClient(options?: {
   accessToken?: string;
   voice?: string;
   instructions?: string;
-  onStatus?: (status: 'connecting' | 'connected' | 'closing' | 'disconnected' | 'error') => void;
+  keepAlive?: boolean;
+  getAccessToken?: () => Promise<string>;
+  onStatus?: (status: 'connecting' | 'reconnecting' | 'connected' | 'closing' | 'disconnected' | 'error') => void;
   onTranscript?: (fragment: GeminiLiveTranscript) => void;
   onDelegation?: (delegation: GeminiLiveDelegation) => string | Promise<string>;
   onError?: (error: Error) => void;

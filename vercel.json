@@ -16,6 +16,10 @@
         {
           "type": "host",
           "value": "sol-ia-i5wy-git-work-jarvis-neural-co-13a334-sol-limas-projects.vercel.app"
+        },
+        {
+          "type": "host",
+          "value": "sol-ia-i5wy-git-work-fix-gemini-live-782643-sol-limas-projects.vercel.app"
         }
       ],
       "destination": "https://sol-ia-i5wy-git-work-jarvis-neural-co-13a334-sol-limas-projects.vercel.app/:path*",

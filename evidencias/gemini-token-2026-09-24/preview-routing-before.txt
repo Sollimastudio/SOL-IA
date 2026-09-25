@@ -1,0 +1,54 @@
+✖ Gemini validation branch must execute its own deployment, not the legacy voice code (6.917295ms)
+✔ preview exception preserves production, legacy redirect and security headers (1.824189ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 115.597672
+
+✖ failing tests:
+
+test at tests/gemini-preview-routing.test.mjs:19:1
+✖ Gemini validation branch must execute its own deployment, not the legacy voice code (6.917295ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   {
+  +     destination: 'https://sol-ia-i5wy-git-work-jarvis-neural-co-13a334-sol-limas-projects.vercel.app/:path*',
+  +     has: [
+  +       {
+  +         type: 'host',
+  +         value: {
+  +           pre: 'sol-ia-i5wy-',
+  +           suf: '-sol-limas-projects.vercel.app'
+  +         }
+  +       }
+  +     ],
+  +     missing: [
+  +       {
+  +         type: 'host',
+  +         value: 'sol-ia-i5wy-git-work-jarvis-neural-co-13a334-sol-limas-projects.vercel.app'
+  +       }
+  +     ],
+  +     permanent: false,
+  +     source: '/:path*'
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/2f047910211d/SOL-IA/tests/gemini-preview-routing.test.mjs:20:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1382:25)
+      at Test.start (node:internal/test_runner/test:1242:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { source: '/:path*', has: [Array], missing: [Array], destination: 'https://sol-ia-i5wy-git-work-jarvis-neural-co-13a334-sol-limas-projects.vercel.app/:path*', permanent: false } ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

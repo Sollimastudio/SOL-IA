@@ -95,3 +95,10 @@ Continuar o **checkpoint 1**, sem pular para iOS:
 - Sol informou ter atualizado a configuração e feito deploy. O novo deployment observado, `dpl_DWnxbozvmn2aj2uZpvBVs6x5LV84`, está READY em **production**, commit `50d9d8c`; não contém o patch da PR #18. A chave segue presente no health da produção.
 - O alias da Preview ainda apontava para `dpl_JANg3w1mHLhmGR9vuq9DuH7FGX1D` / `690687e`, anterior à atualização. Esta revisão documental dispara nova Preview com o código já testado para receber o ambiente atual. Não há troca de modelo, merge, promoção de produção ou alteração de Auth/dados.
 - Conferir a presença da chave no novo runtime; depois provar emissão real e conversa. Configuração informada por Sol ainda não equivale a chave carregada/aceita pelo Google.
+
+## Acesso e ajuste de ambiente — 25/09/2026
+
+- Após login legítimo concluído por Sol, o painel Vercel confirmou `GEMINI_API_KEY` como Secret, apenas Production. A Preview `30358c5` estava READY mas seu health retornou `apiKeyPresent: false`.
+- Ajustado o escopo da variável existente para **Production e Preview**, mantendo Development desligado. A interface confirmou o estado salvo. Não lido, copiado, revelado, rotacionado ou substituído o valor da chave; não alteradas outras variáveis.
+- Este commit somente documental reconstrói a Preview com o ambiente atualizado. Main segue `50d9d8c`; não há promoção ou mudança de código desde os 271 testes registrados.
+- Próxima prova: health da nova Preview com chave presente; token real deve ser testado por sessão legítima do Jarvis. Presença da chave não prova validade, cota, WebSocket ou áudio.

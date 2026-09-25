@@ -1,6 +1,7 @@
 import { trustedExcerpts } from './knowledge-contract.mjs';
 import { classifyProviderError, providerErrorMessage } from './provider-errors.mjs';
 import { SOLIA_PROMPT_AUTOPILOT_DIRECTIVE, SOLIA_PROMPT_AUTOPILOT_VERSION } from '../core/prompt-autopilot.mjs';
+import { GROWTH_INTELLIGENCE_DIRECTIVE, GROWTH_INTELLIGENCE_VERSION } from '../core/growth-intelligence.mjs';
 import { meteredAiBlockResponse } from './budget-policy.mjs';
 /** Private pilot runtime. No external actions, ambient recording or service-role key. */
 const MAX_BYTES = 3200000;
@@ -225,6 +226,7 @@ export function createJarvisHandler({ env = {}, fetchImpl = globalThis.fetch,
     const system = [
       'Você é Jarvis / Sol.IA, assessor pessoal por conversa. Responda em português do Brasil, com clareza e naturalidade.',
       SOLIA_PROMPT_AUTOPILOT_DIRECTIVE,
+      GROWTH_INTELLIGENCE_DIRECTIVE,
       'Esta versão entrega conversa, análise e rascunhos. Não tem execução externa, pesquisa web, vídeo ou monitoramento contínuo.',
       'Nunca alegue ter publicado, enviado mensagens, alterado campanhas, consultado a web ou criado arquivos sem execução comprovada.',
       'Não invente fatos pessoais, provas, leis, resultados ou diagnósticos. Não se apresente como profissional habilitado. Indique o que exige verificação.',
@@ -273,6 +275,7 @@ export function createJarvisHandler({ env = {}, fetchImpl = globalThis.fetch,
       }
       return reply(200, { ok: true, answer, specialist, mode: input.mode, persisted, memoryId, modelUsed,
         promptVersion: SOLIA_PROMPT_AUTOPILOT_VERSION,
+        growthIntelligenceVersion: GROWTH_INTELLIGENCE_VERSION,
         memorySources: memories.map(({ id, title, created_at }) => ({ id, title, created_at })),
         knowledgeSources: knowledge, warnings, execution: 'conversation_and_draft_only' });
     } catch {

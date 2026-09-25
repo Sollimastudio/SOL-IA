@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-test('jarvis-mobile-boot renders on iPhone-sized WebKit/Chromium without a blank page', async ({ page }) => {
+test('jarvis-mobile-boot renders on iPhone-sized WebKit/Chromium without a blank page', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'desktop', 'mobile boot contract runs only in 390px mobile projects');
   const uncaught: string[] = [];
   page.on('pageerror', error => uncaught.push(error.message));
 
